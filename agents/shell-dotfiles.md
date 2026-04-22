@@ -1,0 +1,116 @@
+# AGENTS.md - Shell and Dotfiles v1.1
+
+Guidance for agents editing shell scripts, aliases, functions, and dotfiles.
+
+## Core Principles
+
+- Preserve behavior while improving clarity.
+- Keep edits minimal; do not mass-reformat unrelated lines.
+- Follow the existing file's style unless it is clearly broken.
+- Prefer portable, explicit shell code over dense one-liners.
+- Never add secrets, tokens, credentials, or machine-specific private data.
+
+## Workflow
+
+1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
+2. In Clarity Framework projects, read project documentation in this order:
+   - `docs/00-ai-context.md` — compressed overview of what the project is and its current status
+   - `docs/03-sad.md` — architecture context when the script is part of a larger system
+3. Identify whether the change affects behavior, formatting, portability, or security.
+4. Implement the smallest coherent change.
+5. Run `shellcheck` when available.
+6. Report changed files, commands run, and verification results.
+
+## Baseline Formatting
+
+- Use UTF-8.
+- Use LF line endings.
+- End files with a trailing newline.
+- Remove trailing whitespace unless Markdown or shell syntax intentionally needs it.
+- Keep one blank line between logical blocks.
+- Use clear section headers in large shell files when the existing style supports them.
+
+## Shebangs and Shell Mode
+
+- Bash scripts should use:
+
+```bash
+#!/usr/bin/env bash
+```
+
+- POSIX shell scripts should use:
+
+```sh
+#!/usr/bin/env sh
+```
+
+- Do not use Bash-only features in files intended for POSIX `sh`.
+- Keep `shellcheck` directives near the top and scope them narrowly.
+
+## Function Style
+
+- Use multi-line functions for non-trivial logic:
+
+```bash
+name() {
+  local value="$1"
+  printf '%s\n' "$value"
+}
+```
+
+- Use one-line functions only for trivial wrappers.
+- Use `local` for Bash function-local variables.
+- Keep names descriptive and consistent with nearby aliases/functions.
+
+## Indentation and Layout
+
+- Use 2 spaces for new or edited shell blocks unless the file clearly uses another style.
+- Keep `then` and `do` on the same line when readable.
+- Prefer readable multi-line conditionals over packed expressions.
+- Do not reindent entire legacy files just to normalize style.
+
+## Quoting and Expansion
+
+- Quote variable expansions by default: `"$var"` or `"${var}"`.
+- Use `${var}` when concatenating or disambiguating.
+- Use arrays in Bash when handling lists of arguments.
+- Use `read -r` when reading input.
+- Use `printf` instead of `echo` when output must be predictable.
+
+## Checks and Safety
+
+- Use `command -v name >/dev/null 2>&1` for command detection.
+- Avoid parsing `ls`; use globs, `find`, or shell arrays.
+- Avoid destructive commands unless the task requires them and the user intent is clear.
+- Guard deletes, overwrites, and recursive operations carefully.
+- Keep aliases and functions from surprising users with hidden network, delete, or privilege-escalation behavior.
+
+## Dotfiles
+
+- Group aliases and functions by topic.
+- Keep comments short and practical.
+- Avoid environment-specific absolute paths unless the file is intentionally local-only.
+- Prefer opt-in configuration for machine-specific tools.
+- Do not export secrets directly; reference external secret managers or local ignored files.
+
+## Tooling
+
+- Run `shellcheck` when available for shell script changes.
+- Run formatters only if the project already uses them.
+- For dotfiles, test by sourcing in a clean shell when practical.
+- If a script is executable, preserve or intentionally update executable permissions.
+
+## Documentation and Hygiene
+
+- In Clarity Framework projects, update the relevant docs when their content changes:
+  - `docs/07-runbook.md` — when operational scripts or runbook-relevant procedures change
+  - `docs/05-deployment-view.md` — when deployment or infrastructure scripts change
+  - `docs/08-andringshantering.md` — for change tracking
+
+## Definition of Done
+
+- Edited shell parses and preserves intended behavior.
+- Relevant checks run, or the reason they could not run is stated.
+- No unrelated formatting churn is included.
+- Risky operations remain explicit and guarded.
+- Relevant Clarity Framework docs are updated when their content is affected.

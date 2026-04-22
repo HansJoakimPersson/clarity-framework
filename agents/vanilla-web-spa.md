@@ -1,0 +1,103 @@
+# AGENTS.md - Vanilla Web SPA v1.1
+
+Guidance for agents working in small single-page web applications without a framework or build step.
+
+## Core Principles
+
+- Keep the application simple and dependency-free unless the task explicitly requires otherwise.
+- Preserve the no-build workflow when that is an established project constraint.
+- Prefer plain HTML, CSS, and JavaScript over introducing tooling.
+- Keep changes focused; do not split files or reorganize structure unless requested.
+- Never persist API keys, tokens, secrets, or sensitive user data in unsafe storage.
+- User-facing behavior changes should be covered by browser-level tests.
+
+## Workflow
+
+1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
+2. In Clarity Framework projects, read project documentation in this order:
+   - `docs/00-ai-context.md` — compressed overview of what the project is, its stack, and current status
+   - `docs/03-sad.md` — architecture and key design decisions relevant to the task
+   - `docs/04-datamodell-api.md` — API contracts when the task touches network behavior or data structures
+3. Identify whether the change affects markup, styling, state, rendering, network behavior, storage, or user
+   interaction.
+4. Add or update tests for user-visible behavior.
+5. Implement the smallest coherent change.
+6. Run targeted browser tests when behavior changes.
+7. Report changed files, commands run, and verification results.
+
+## File Structure
+
+- Keep the existing no-build structure intact.
+- If the app is intentionally contained in one HTML file, keep HTML, CSS, and JavaScript there.
+- Do not add bundlers, transpilers, CDNs, package managers, or external assets without explicit approval.
+- Keep inline SVG icons or local assets consistent with existing patterns.
+
+## JavaScript
+
+- Use vanilla JavaScript only unless the project already uses a library.
+- Keep state in the existing state model.
+- Centralize rendering and state updates according to the current pattern.
+- Avoid hidden global mutations outside the established state flow.
+- Keep async control flow explicit and handle cancellation or stale responses where relevant.
+- Validate and normalize external data before rendering.
+- Avoid stop sequences, protocol assumptions, or provider-specific shortcuts unless the existing integration requires
+  them.
+
+## HTML and Accessibility
+
+- Use semantic elements where possible.
+- Associate labels with form controls.
+- Keep buttons as buttons, links as links, and interactive controls keyboard-accessible.
+- Preserve focus behavior for dialogs, sidebars, menus, and dynamic panels.
+- Use ARIA only where native semantics are insufficient.
+- Ensure loading, empty, success, and error states are visible and understandable.
+
+## CSS
+
+- Use existing CSS variables and naming conventions.
+- Avoid hardcoded colors when variables exist.
+- Keep layouts stable as content changes.
+- Do not introduce broad visual redesigns for narrow behavior tasks.
+- Keep responsive behavior working on mobile and desktop.
+- Avoid CSS that depends on fragile DOM depth unless already established.
+
+## Network and Storage
+
+- Mock network requests in tests.
+- Keep provider-specific request/response handling isolated.
+- Handle streaming, partial responses, malformed data, and request failures gracefully.
+- Do not persist API keys or secrets in `localStorage`, `sessionStorage`, IndexedDB, or cookies.
+- Version or migrate stored state when changing persistent data shape.
+- Keep storage keys documented when they are part of app behavior.
+
+## Testing
+
+- Use Playwright or the project's existing browser test framework.
+- Test user-visible behavior rather than implementation details.
+- Add regression tests for fixed bugs.
+- Run only relevant tests for CSS-only changes unless layout behavior is risky.
+- Mock all external network calls except explicit live-backend tests.
+- Keep live tests opt-in and out of normal CI unless the project says otherwise.
+
+## Security
+
+- Escape or safely render untrusted content.
+- Avoid `innerHTML` for untrusted data unless sanitized.
+- Do not expose stack traces, secrets, or raw provider errors directly to users.
+- Keep external links, downloads, and file handling explicit and user-initiated.
+
+## Documentation and Hygiene
+
+- In Clarity Framework projects, update the relevant docs when their content changes:
+  - `docs/04-datamodell-api.md` — when API contracts or data structures change
+  - `docs/06-testdokumentation.md` — when testing strategy or coverage changes
+  - `docs/08-andringshantering.md` — for change tracking
+  - `docs/00-ai-context.md` — when stack or project status shifts significantly
+
+## Definition of Done
+
+- The app still works without a build step.
+- User-facing behavior is tested or the verification gap is explained.
+- No unnecessary dependencies or external assets were introduced.
+- Storage, network, accessibility, and error states remain coherent.
+- Relevant Clarity Framework docs are updated when their content is affected.
