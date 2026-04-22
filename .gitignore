@@ -1,0 +1,20 @@
+# Clarity Framework – .gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+.history/
+*.swp
+*.swo
+
+# Lokala environment-filer (används aldrig i detta repo men god vana)
+.env
+.env.local
+
+# Temporära filer
+*.tmp
+*.bak
