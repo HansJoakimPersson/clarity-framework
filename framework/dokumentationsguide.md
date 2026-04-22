@@ -1,6 +1,6 @@
 # Den ultimata guiden till mjukvarudokumentation
 
-## Clarity Framework v1.0.0
+## Clarity Framework v1.1.0
 
 ### Kravställning · Utveckling · Drift · Produktion
 

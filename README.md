@@ -4,7 +4,7 @@
 > Fungerar för alla skalor – från ett personligt sidoprojekt till ett team på 20 personer.  
 > AI-assistans är ett valfritt accelerationslager, inte en förutsättning.
 
-**Version:** 1.0.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 1.1.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ---
 
@@ -37,6 +37,9 @@ clarity-framework/
 │   ├── 06-testdokumentation.md
 │   ├── 07-runbook.md
 │   └── 08-andringshantering.md
+│
+├── agents/                             # AGENTS.md-starters per stack (Java, Swift, m.fl.)
+│   └── README.md                       # Välj och anpassa rätt starter
 │
 ├── docs-example/                       # Exempelprojekt – visar ifyllda mallar
 │   └── assets/
@@ -96,4 +99,4 @@ Föreslå förändringar via Pull Request mot `main`. Varje PR ska:
 
 ---
 
-*Clarity Framework v1.0.0*
+*Clarity Framework v1.1.0*
