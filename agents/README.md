@@ -24,6 +24,7 @@ Tillsammans ger de en AI-agent tillräcklig kontext för att fatta lokala beslut
 | Fil | Passar när... |
 | --- | --- |
 | `java-application.md` | Projektet är en Java-applikation, med eller utan Spring Boot |
+| `r-shiny.md` | Projektet är en R/Shiny-app, med eller utan plumber-API |
 | `vanilla-web-spa.md` | Projektet är en byggsstegssfri webbapp i ren HTML/CSS/JS |
 | `shell-dotfiles.md` | Du arbetar med shellskript, aliases eller dotfiles |
 | `macos-swift.md` | Projektet är en macOS-app i Swift |
