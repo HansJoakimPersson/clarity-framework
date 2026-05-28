@@ -18,12 +18,15 @@ Guidance for agents working in small single-page web applications without a fram
    - `docs/00-ai-context.md` — compressed overview of what the project is, its stack, and current status
    - `docs/03-sad.md` — architecture and key design decisions relevant to the task
    - `docs/04-datamodell-api.md` — API contracts when the task touches network behavior or data structures
-3. Identify whether the change affects markup, styling, state, rendering, network behavior, storage, or user
+3. If the project has a backend component, confirm the run model before starting anything: is the frontend served
+   by the backend process, or does it run as a separate server? If the project documentation does not make this
+   clear, ask before assuming. Never start a separate frontend server solely because a backend exists.
+4. Identify whether the change affects markup, styling, state, rendering, network behavior, storage, or user
    interaction.
-4. Add or update tests for user-visible behavior.
-5. Implement the smallest coherent change.
-6. Run targeted browser tests when behavior changes.
-7. Report changed files, commands run, and verification results.
+5. Add or update tests for user-visible behavior.
+6. Implement the smallest coherent change.
+7. Run targeted browser tests when behavior changes.
+8. Report changed files, commands run, and verification results.
 
 ## File Structure
 

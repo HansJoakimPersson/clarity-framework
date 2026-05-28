@@ -407,6 +407,30 @@ Use this profile when adding, removing, or upgrading dependencies.
 
 Use this profile when the repository includes browser UI code.
 
+### Development Run Model
+
+Before starting any server or running any build command, determine which run model the project uses. If it is not
+documented in `CLAUDE.md`, `AGENTS.md`, or `docs/03-sad.md`, ask before assuming.
+
+**Embedded (most common):** The frontend is built as a static artifact and consumed by Maven or Gradle packaging.
+The Java process serves everything — there is no separate frontend server in production or in normal development.
+
+- Build the frontend with `npm run build` (or the project's equivalent); do not start a standalone dev server
+  unless the project's instructions say to do so.
+- For hot reload during development, use the frontend tool's dev mode (e.g., Vite, webpack-dev-server) configured
+  to proxy API calls to the running Spring Boot process. Document the proxy target in the project's frontend config.
+- Enable `spring-boot-devtools` on the Java side for automatic class reloading without a full JVM restart. With
+  DevTools on the classpath, saving a Java file triggers a fast restart; static frontend assets served from
+  `src/main/resources/static` reload in the browser via the embedded LiveReload server.
+- Never infer that a `package.json` means the frontend should run as a separate server — read the project
+  documentation first.
+
+**Standalone:** The frontend is a separately deployed application with its own server and lifecycle.
+
+- This model requires explicit documentation in `CLAUDE.md` or `docs/03-sad.md`, including how CORS is configured
+  and which port each process uses.
+- Start both processes only when the project documentation instructs it.
+
 - Follow the existing framework, state management, routing, and styling patterns.
 - Keep API access centralized where the project already has a client layer.
 - Treat the API contract as the integration source of truth.

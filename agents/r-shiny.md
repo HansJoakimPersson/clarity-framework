@@ -38,6 +38,17 @@ optional profiles that match the project in front of you.
 6. Mark completed tasks in `TASKS.md` (if present) and continue to the next without waiting.
 7. Define "done" as: app launches without errors + all tests green + no regressions.
 
+### Hot Reload During Development
+
+- Enable `options(shiny.autoreload = TRUE)` before calling `shiny::runApp()` to activate file watching. Shiny
+  will monitor R source files and automatically reload the app in the browser when a file changes — no manual
+  restart or port juggling required.
+- Set this option in a dev-only `.Rprofile` or pass it interactively; never set it in `app.R` or `global.R`
+  where it would affect production or test runs.
+- `shiny.autoreload` watches files in the app directory. If the project splits logic across subdirectories,
+  verify that the watcher covers those paths or set `options(shiny.autoreload.pattern = ...)` accordingly.
+- For `golem`- or `rhino`-based projects, follow the framework's own dev-reload mechanism instead.
+
 ### R Style
 
 - Follow the project's style configuration first (`.lintr`, `.styler.R`, or project-level conventions).
