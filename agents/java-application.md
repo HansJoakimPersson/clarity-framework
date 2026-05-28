@@ -17,6 +17,8 @@ optional profiles that match the project in front of you.
 - Add **Spring Boot Platform** when the project is a Spring Boot service, monolith, or service-oriented platform.
 - Add **Packaging and Runtime** when the project produces a runnable artifact, library, container image, or
   distribution.
+- Add **MCP Server** when the project exposes tools, resources, or prompts to AI clients via the Model Context
+  Protocol.
 - Local project-specific instructions, `CLAUDE.md`, and local `AGENTS.md` files always take precedence when present.
 
 ## Core Rules
@@ -556,3 +558,72 @@ Use this profile when the project is a Spring Boot application or platform.
 - Use integration tests for repositories, messaging, external service adapters, and application wiring.
 - Use `*Test` for unit tests and `*IT` or the project's convention for integration tests.
 - Maintain meaningful service-layer coverage when the project tracks coverage.
+
+## Optional Profile: MCP Server
+
+Use this profile when the project exposes tools, resources, or prompts to AI clients via the Model Context Protocol.
+
+The official MCP Java SDK (`io.modelcontextprotocol.sdk`) is the foundation. For Spring Boot projects, the
+`spring-ai-starter-mcp-server` starter adds auto-configuration and annotation-based tool registration on top of
+the SDK — this is the recommended approach and requires no Python.
+
+### Transport Selection
+
+Choose transport based on how clients will connect to the server:
+
+| Transport | Use when |
+| --- | --- |
+| STDIO | Server is invoked locally by a single AI client (Claude Desktop, Claude Code, local agents). Simplest setup; no network config needed. |
+| Streamable HTTP (servlet) | Server needs to be network-accessible or shared across multiple clients. Use `spring-ai-starter-mcp-server` with the servlet transport. |
+| Streamable HTTP (reactive) | Same as above but the project already uses WebFlux. Use `spring-ai-starter-mcp-server-webflux`. |
+
+Do not expose an HTTP transport on a public port without authentication unless the MCP server is intentionally
+public. STDIO servers have no network surface and are safe by default for local use.
+
+### Tool Design
+
+- Annotate service methods with `@Tool` to expose them. Keep tool methods thin: validate input, delegate to the
+  service layer, and return a structured result.
+- Never put business logic inside a `@Tool` method. The annotation is a transport concern, not a domain concern.
+- Write tool descriptions that are precise and action-oriented — the description is what the AI uses to decide
+  whether and how to invoke the tool. Vague descriptions produce incorrect invocations.
+- Prefer structured return types over raw strings. The MCP client serializes return values to the AI; structured
+  types are more reliably interpreted.
+- Return error information as a value when the error is expected or recoverable (e.g., "no results found"). Throw
+  only for unexpected failures that should surface as protocol-level errors.
+- Keep tool names stable across releases. AI clients and agent configurations may reference tool names directly;
+  renaming a tool is a breaking change for those clients.
+- Document each tool's side effects explicitly. Read-only tools and mutating tools should be clearly
+  distinguishable in their descriptions and implementations.
+
+### Resources and Prompts
+
+- Expose resources for data that AI clients should be able to read (files, database views, configuration).
+  Keep resource URIs stable and document their schema.
+- Expose prompts for reusable prompt templates that clients can invoke by name. Keep prompt templates
+  focused and parameterized rather than hardcoded.
+- Do not expose resources that contain secrets, credentials, or data the calling client is not authorized to see.
+
+### Security
+
+- Treat every tool invocation as untrusted input. Validate and sanitize all parameters before using them in
+  queries, file paths, shell commands, or service calls.
+- Never pass tool input directly to `Runtime.exec()`, string-interpolated SQL, or file system operations without
+  validation.
+- Apply the principle of least privilege: expose only the tools, resources, and data the MCP client actually
+  needs.
+- For HTTP transports, enable authentication. The Spring AI MCP integration supports OAuth 2.0 and API key
+  mechanisms — use whichever fits the deployment context.
+- Log tool invocations at `INFO` level with enough context to audit usage; do not log sensitive parameter values.
+
+### Testing
+
+- Unit test the service methods that back each tool independently of MCP. The tool annotation is a thin wrapper;
+  the logic underneath is what matters.
+- Write integration tests that invoke tools through the MCP server to verify registration, parameter binding,
+  serialization, and error handling end-to-end.
+- Test that invalid, missing, and out-of-range tool inputs are rejected cleanly and return structured errors
+  rather than stack traces.
+- Test that read-only tools do not mutate state and that mutating tools do not produce partial writes on failure.
+- For HTTP transport, include an integration test that verifies the server starts, tools are listed correctly, and
+  at least one tool call round-trips successfully.
