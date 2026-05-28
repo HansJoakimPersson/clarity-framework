@@ -52,6 +52,21 @@ Guidance for agents working in small single-page web applications without a fram
 - Use ARIA only where native semantics are insufficient.
 - Ensure loading, empty, success, and error states are visible and understandable.
 
+### Automated Accessibility Testing
+
+- Use `@axe-core/playwright` to run axe against every major view and significant UI state.
+- Scan at WCAG 2.1 Level AA as the baseline unless the project sets a different target.
+- Run axe scans as part of the Playwright test suite, not as a separate pipeline, so failures
+  block the same CI gate as other browser tests.
+- Scope scans to the relevant component or region when testing a partial view; use a full-page
+  scan for new pages and major layout changes.
+- Treat every axe violation as a test failure. Do not suppress violations without explicit approval
+  and a documented reason.
+- Use `exclude()` only for third-party embeds or known platform limitations that cannot be fixed
+  in the project; document each exclusion.
+- Axe catches structural and attribute-level issues; it does not replace manual keyboard navigation
+  testing, screen reader testing, or color-contrast review in context.
+
 ## CSS
 
 - Use existing CSS variables and naming conventions.
@@ -72,12 +87,15 @@ Guidance for agents working in small single-page web applications without a fram
 
 ## Testing
 
-- Use Playwright or the project's existing browser test framework.
-- Test user-visible behavior rather than implementation details.
+- Use Playwright for browser-level tests unless the project has an established alternative.
+- Prefer Playwright's built-in locators (`getByRole`, `getByLabel`, `getByText`) over CSS selectors
+  and XPath — they reflect how users and assistive technology perceive the page, and break less often.
+- Test user-visible behavior: navigation, form submission, loading states, error states, and user
+  interactions. Do not test implementation details.
 - Add regression tests for fixed bugs.
-- Run only relevant tests for CSS-only changes unless layout behavior is risky.
-- Mock all external network calls except explicit live-backend tests.
-- Keep live tests opt-in and out of normal CI unless the project says otherwise.
+- Mock all external network calls with `page.route()` except explicit live-backend tests.
+- Keep live-backend tests opt-in and out of normal CI unless the project decides otherwise.
+- Run only tests relevant to the changed surface for CSS-only changes unless layout behavior is risky.
 
 ## Security
 

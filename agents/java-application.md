@@ -420,9 +420,23 @@ Use this profile when the repository includes browser UI code.
 - Do not add frontend dependencies to Java build files.
 - Use Playwright for browser-level and end-to-end tests when the project has web UI behavior to verify, unless an
   equivalent browser test framework is already established.
+- Prefer Playwright's built-in locators (`getByRole`, `getByLabel`, `getByText`) over CSS selectors and XPath — they
+  reflect how users and assistive technology perceive the page.
 - Cover user-facing interactions, routing, form validation, API error states, loading states, and regression fixes with
   browser tests.
 - Mock backend/network calls in frontend tests unless the test is explicitly a live integration test.
+
+#### Accessibility Testing
+
+- Use `@axe-core/playwright` to run axe against every major view and significant UI state as part of the Playwright
+  suite.
+- Scan at WCAG 2.1 Level AA as the baseline unless the project sets a different target.
+- Treat every axe violation as a test failure; do not suppress violations without explicit approval and a documented
+  reason.
+- Use `exclude()` only for third-party embeds or known platform constraints that cannot be fixed in the project;
+  document each exclusion.
+- Axe covers structural and attribute-level issues; it does not replace manual keyboard navigation testing or screen
+  reader testing.
 
 ## Optional Profile: Packaging and Runtime
 

@@ -108,6 +108,39 @@ optional profiles that match the project in front of you.
 - Do not remove tests unless explicitly requested.
 - Do not skip failing tests with `skip()` or `skip_on_*()` without explicit approval.
 
+#### Accessibility Testing
+
+Shiny apps render as HTML in a real browser, so three complementary layers of accessibility work apply:
+
+**Build-time: `a11yShiny`**
+
+- Prefer `a11yShiny` wrappers over their base Shiny equivalents for action buttons, text inputs, select inputs,
+  fluid page layouts, DT tables, and ggplot2 charts — they enforce ARIA attributes and WCAG 2.1 AA structural
+  requirements at construction time.
+- Treat `a11yShiny` as a building norm, not a substitute for scanning. Components built with it still need to be
+  verified in context.
+
+**Development inspection: `shinya11y`**
+
+- Use `shinya11y` (via `use_tota11y()` in the UI) during active development to surface accessibility issues as a
+  visual overlay in the running app.
+- Remove or gate `shinya11y` behind a dev-only flag before deployment; it is not intended for production.
+- `shinya11y` requires human review — it is not suitable as an automated CI gate.
+
+**Automated scanning: axe-core via `shinytest2`**
+
+- There is no first-class axe-core R package for Shiny. Automated WCAG scanning is done by injecting the
+  axe-core JavaScript library into the app's Chromium session through `shinytest2`'s `get_chromote_session()`
+  interface.
+- Run axe against every major view and significant UI state as part of the `shinytest2` suite.
+- Scan at WCAG 2.1 Level AA as the baseline unless the project sets a different target.
+- Treat every axe violation as a test failure. Do not suppress violations without explicit approval and a
+  documented reason.
+- Exclude only third-party embeds or platform constraints that cannot be fixed in the project; document each
+  exclusion.
+- Automated axe scanning catches structural and attribute-level issues (missing labels, poor contrast, invalid
+  ARIA). It does not replace manual keyboard navigation testing or screen reader testing.
+
 ### Documentation and Hygiene
 
 - Update README, usage docs, or release notes when user-visible behavior changes.
