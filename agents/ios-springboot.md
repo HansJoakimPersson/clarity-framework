@@ -147,9 +147,20 @@ Prefer Maven Wrapper when present:
 ./mvnw -q -DskipTests package
 ```
 
+### Lombok
+
+Lombok is mandatory on the Spring Boot side.
+
+- Use `@RequiredArgsConstructor` for constructor injection.
+- Use `@Slf4j` for logging.
+- Use `@Value` or records for immutable DTOs; use `@Builder` for complex construction.
+- Avoid `@Data` on JPA entities. Use `@Getter`, `@Setter`, and explicit `equals`/`hashCode` instead.
+- Avoid `@SneakyThrows`; handle or propagate exceptions explicitly.
+- In Maven `annotationProcessorPaths`, put Lombok before any processor that depends on Lombok-generated members.
+
 ### Spring Boot Style
 
-- Use constructor injection.
+- Use constructor injection via `@RequiredArgsConstructor` (Lombok).
 - Use `@ConfigurationProperties` for structured configuration.
 - Keep transaction boundaries in service or use-case classes, not in controllers.
 - Use Flyway for schema migrations when the project has a relational database.

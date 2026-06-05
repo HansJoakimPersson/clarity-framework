@@ -8,7 +8,6 @@ optional profiles that match the project in front of you.
 - Always follow **Core Rules**.
 - Add **Maven** when the project uses Maven.
 - Add **Gradle** when the project uses Gradle.
-- Add **Lombok** when Lombok is already present or explicitly requested.
 - Add **CLI** when the primary user interface is a command line.
 - Add **REST Web** when the project exposes HTTP APIs.
 - Add **Web Frontend** when the repository includes browser UI code.
@@ -224,29 +223,29 @@ Run only commands that exist in the project. Use `gradle` directly only when the
   conventions.
 - Do not make the build depend on IDE-only behavior.
 
-## Optional Profile: Lombok
+## Lombok
 
-Use this profile when Lombok is already present or explicitly requested.
+Lombok is mandatory in all Java projects covered by this guide. Always apply these rules.
 
-- Follow existing Lombok conventions in the module.
-- Prefer `@RequiredArgsConstructor` for constructor injection.
-- Use `@Slf4j` for logging when Lombok is in use unless the project has a different established logger pattern.
+- Use `@RequiredArgsConstructor` for constructor injection.
+- Use `@Slf4j` for logging unless the project has a different established logger pattern.
 - Prefer records, `@Value`, or final fields for immutable data.
-- Use `@Builder` for complex construction; combine it with no-args/all-args constructors when deserialization frameworks
-  require them.
+- Use `@Builder` for complex construction; combine it with no-args/all-args constructors when deserialization
+  frameworks require them.
 - Consider `@Builder(setterPrefix = "with")` only when it matches existing project style.
 - Use `@Builder.Default` for initialized collections.
-- Avoid `@Data` on JPA entities and classes where generated equality, mutability, or `toString` exposure is unsafe.
+- Avoid `@Data` on JPA entities and classes where generated equality, mutability, or `toString` exposure is
+  unsafe.
 - `@Getter` and `@Setter` are acceptable on mutable entities and POJOs when mutability is intentional.
 - Use `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` for entities when equality should be based on explicit
   identity fields.
-- Exclude lazy collections, bidirectional relationships, self-referential fields, and sensitive fields from generated
-  `toString`.
-- Prefer granular Lombok annotations such as `@Getter` and `@Setter` when only part of `@Data` is needed.
+- Exclude lazy collections, bidirectional relationships, self-referential fields, and sensitive fields from
+  generated `toString`.
+- Prefer granular annotations such as `@Getter` and `@Setter` when only part of `@Data` is needed.
 - Avoid `@SneakyThrows`; handle or propagate exceptions explicitly.
-- Keep annotation processor ordering compatible with Lombok and mapper processors.
-- In Maven `annotationProcessorPaths`, put Lombok before MapStruct or any processor that depends on Lombok-generated
-  members.
+- Keep annotation processor ordering compatible with Lombok and any other processors in use.
+- In Maven `annotationProcessorPaths`, put Lombok before MapStruct or any processor that depends on
+  Lombok-generated members.
 
 ## Optional Profile: CLI
 
