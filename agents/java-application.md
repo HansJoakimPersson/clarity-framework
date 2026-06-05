@@ -128,7 +128,8 @@ optional profiles that match the project in front of you.
   - `docs/06-testdokumentation.md` — when testing strategy or coverage targets change
   - `docs/08-andringshantering.md` — for change tracking and ADRs
   - `docs/00-ai-context.md` — when stack, status, or key context shifts significantly
-- Add Javadoc for public types and public/protected methods that are newly added or materially changed.
+- Add Javadoc for all types and all methods — public, protected, and private — that are newly added or materially
+  changed.
 - Document behavior, invariants, edge cases, and failure modes.
 - Use `{@link TypeName}` when referencing existing Java types in Javadoc.
 - Do not restate the method or class name in Javadoc; explain the contract.

@@ -166,6 +166,8 @@ Lombok is mandatory on the Spring Boot side.
 - Use Flyway for schema migrations when the project has a relational database.
 - Keep `ddl-auto` out of production schema management; prefer `validate` when migrations own the schema.
 - Enable `spring-boot-devtools` during local development for fast class reloading without full JVM restarts.
+- Add Javadoc for all types and all methods — public, protected, and private — that are newly added or materially
+  changed. Explain behavior, invariants, edge cases, and failure modes; do not restate the method name.
 
 ### REST API Rules
 
@@ -219,7 +221,8 @@ Adjust the simulator name to match what the project uses. Run only commands that
 - Avoid force unwraps and `try!` unless failure is truly unrecoverable and documented.
 - Use access control deliberately; keep implementation details `private` or `fileprivate`.
 - Use early returns to keep nesting shallow.
-- Add documentation comments for public or reused types with non-obvious contracts.
+- Add documentation comments for all types and all methods — public, internal, and private — that are newly added
+  or materially changed. Explain behavior, invariants, and non-obvious contracts; do not restate the name.
 
 ### Networking
 
