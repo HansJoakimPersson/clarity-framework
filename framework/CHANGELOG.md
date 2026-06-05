@@ -16,6 +16,10 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 - `agents/ios-springboot.md` – hybrid AGENTS.md-starter för Spring Boot-backend med native iOS/iPadOS-frontend i Swift; täcker Integration Contract, Development Networking (Simulator vs fysisk enhet), ATS-krav, authentication-flöde (JWT + Keychain), och Distribution
 - Lombok obligatoriskt i `agents/java-application.md`: flyttat från Optional Profile till egen obligatorisk sektion; borttaget ur How To Use-listan
 - Lombok obligatoriskt i `agents/ios-springboot.md`: tillagt som obligatorisk undersektionen i Spring Boot Backend-profilen
+- Ny mall `templates/09-grafisk-profil.md`: varumärkesgrunder, WCAG-kontrastkrav, design tokens i DTCG-format med fullständigt JSON-exempel, plattformstransformation via Style Dictionary, ägarskap och underhållsprocess
+- Grafisk profil tillagd i `framework/dokumentationsguide.md` som sektion 10: obligatorisk för projekt med UI, med fasdiagram och review-checklist uppdaterade
+- Grafisk profil tillagd i dokumenthierarkin i `templates/00-ai-context.md`
+- `agents/vanilla-web-spa.md`, `agents/macos-swift.md`, `agents/ios-springboot.md` och Web Frontend-profilen i `agents/java-application.md`: läs `docs/09-grafisk-profil.md` före visuellt arbete; inga hårdkodade visuella värden när tokens finns
 - MCP Server-profil i `agents/java-application.md`: transport-val (STDIO / Streamable HTTP), tool design, resurser och prompts, säkerhet och testning med Spring AI MCP Boot Starter
 - Hot Reload-sektion i `agents/r-shiny.md`: `shiny.autoreload`-konfiguration för filbevakad omladdning under utveckling
 - Development Run Model-sektion i `agents/java-application.md` (Web Frontend-profil): skiljer på Embedded och Standalone, kräver att körmodellen är dokumenterad, beskriver Spring Boot DevTools och hot reload via proxy

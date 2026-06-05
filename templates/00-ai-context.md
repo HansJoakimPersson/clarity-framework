@@ -89,6 +89,7 @@
 | --- | --- |
 | Varför byggs det? | `docs/01-vision-scope.md` |
 | Vad ska byggas? | `docs/02-kravdokumentation.md` |
+| Hur ska det se ut? (om UI) | `docs/09-grafisk-profil.md` |
 | Hur är det byggt? | `docs/03-sad.md` |
 | Datastruktur & API? | `docs/04-datamodell-api.md` |
 | Hur driftsätts det? | `docs/05-deployment-view.md` |

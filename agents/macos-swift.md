@@ -33,6 +33,8 @@ profiles.
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
 2. In Clarity Framework projects, read project documentation in this order:
    - `docs/00-ai-context.md` — compressed overview of what the app is, its stack, and current status
+   - `docs/09-grafisk-profil.md` — design tokens, colour palette, typography, and spacing; read before touching
+     any visual value. If this file does not exist, do not hardcode visual values — raise the gap instead.
    - `docs/03-sad.md` — architecture, component responsibilities, and key design decisions
    - `docs/02-kravdokumentation.md` — requirements context when the task touches functional behavior or product scope
    - `docs/05-deployment-view.md` — distribution and packaging context when the task affects builds or releases

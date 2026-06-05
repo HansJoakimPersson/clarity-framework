@@ -16,6 +16,8 @@ Guidance for agents working in small single-page web applications without a fram
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
 2. In Clarity Framework projects, read project documentation in this order:
    - `docs/00-ai-context.md` — compressed overview of what the project is, its stack, and current status
+   - `docs/09-grafisk-profil.md` — design tokens, colour palette, typography, spacing, and motion; read before
+     touching any visual value. If this file does not exist, do not hardcode visual values — raise the gap instead.
    - `docs/03-sad.md` — architecture and key design decisions relevant to the task
    - `docs/04-datamodell-api.md` — API contracts when the task touches network behavior or data structures
 3. If the project has a backend component, confirm the run model before starting anything: is the frontend served
@@ -72,8 +74,9 @@ Guidance for agents working in small single-page web applications without a fram
 
 ## CSS
 
+- Use design token values (CSS custom properties generated from `docs/09-grafisk-profil.md`) for all colours,
+  typography, spacing, radii, shadows, and animation durations. Never hardcode these values in stylesheets.
 - Use existing CSS variables and naming conventions.
-- Avoid hardcoded colors when variables exist.
 - Keep layouts stable as content changes.
 - Do not introduce broad visual redesigns for narrow behavior tasks.
 - Keep responsive behavior working on mobile and desktop.

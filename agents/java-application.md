@@ -433,6 +433,11 @@ The Java process serves everything — there is no separate frontend server in p
   and which port each process uses.
 - Start both processes only when the project documentation instructs it.
 
+- Read `docs/09-grafisk-profil.md` before touching any visual value — colours, typography, spacing, radii,
+  shadows, or animation durations. If this file does not exist, do not hardcode visual values; raise the gap
+  instead.
+- Use design tokens (from the project's generated token output) for all visual values. Never hardcode hex
+  colours, pixel values, or font names in stylesheets or components when tokens are available.
 - Follow the existing framework, state management, routing, and styling patterns.
 - Keep API access centralized where the project already has a client layer.
 - Treat the API contract as the integration source of truth.

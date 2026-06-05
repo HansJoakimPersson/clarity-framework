@@ -22,8 +22,9 @@
 7. [Testdokumentation](#7-testdokumentation)
 8. [Driftdokumentation (Runbook)](#8-driftdokumentation-runbook)
 9. [Ändringshantering och versionshistorik](#9-ändringshantering-och-versionshistorik)
-10. [Dokumentationsprocess – hur produceras vad och när](#10-dokumentationsprocess--hur-produceras-vad-och-när)
-11. [AI-assistans – valfritt accelerationslager](#11-ai-assistans--valfritt-accelerationslager)
+10. [Grafisk profil & Design Tokens](#10-grafisk-profil--design-tokens)
+11. [Dokumentationsprocess – hur produceras vad och när](#11-dokumentationsprocess--hur-produceras-vad-och-när)
+12. [AI-assistans – valfritt accelerationslager](#12-ai-assistans--valfritt-accelerationslager)
 
 ---
 
@@ -42,6 +43,9 @@ VARFÖR bygger vi det?
 
 VAD ska byggas?
 └── Kravdokumentation (funktionella krav + NFR)
+
+HUR ska det se ut? (obligatorisk om projektet har UI)
+└── Grafisk profil & Design Tokens
 
 HUR är det byggt?
 ├── System Architecture Document (SAD)
@@ -72,6 +76,7 @@ Clarity Framework skalas med projektet. Använd det som passar – hoppa inte ö
 | --- | --- | --- |
 | Vision & Scope | Strategisk snapshot | Vid större pivotar |
 | Kravdokumentation | Levande backlog | Kontinuerligt |
+| Grafisk profil & Design Tokens | Levande visuell standard (UI-projekt) | Vid varumärkes- eller tokenändringar |
 | SAD | Levande arkitektur | Vid designbeslut |
 | Datamodell & API | Levande kontrakt | Vid schemaändringar |
 | Deployment View | Levande infrastruktur | Vid infrastrukturförändringar |
@@ -706,7 +711,66 @@ När ett arkitekturellt beslut ändras, markera det gamla ADR:et som `Status: F�
 
 ---
 
-## 10. Dokumentationsprocess – hur produceras vad och när
+## 10. Grafisk profil & Design Tokens
+
+### Syfte
+
+Den grafiska profilen dokumenterar det visuella språket: färger, typografi, spacing, radier, skuggor och rörelse.
+Den är ett **ingångsvärde** – ska vara godkänd innan UI-kodning påbörjas – inte en efterhandsbeskrivning av vad
+som råkade hamna i koden.
+
+Design tokens i DTCG-format (W3C Design Token Community Group) gör profilen maskinläsbar. Det innebär att
+token-filen kan transformeras automatiskt till CSS custom properties, Swift-extensions, Kotlin-resurser och andra
+målformat via verktyg som Style Dictionary.
+
+### När produceras det?
+
+**Obligatorisk om projektet har ett visuellt gränssnitt** – webb, iOS/iPadOS, macOS eller annat. Skapas parallellt
+med kravarbetet och godkänns innan implementation av UI påbörjas.
+
+Projekt utan UI (rena backend-tjänster, CLI-verktyg, bibliotek) behöver inte detta dokument.
+
+### Vad ska det innehålla?
+
+**Varumärkesgrunder**
+Logotyp med varianter och frizon, färgpalett med semantiska roller, typografisystem med skalor och teckensnittsval,
+bildspråk och ikonografistil.
+
+**WCAG-kontrastkrav**
+Alla kritiska färgkombinationer dokumenteras med uppmätta kontraskvoter mot WCAG 2.1 AA (4,5:1 för normal text,
+3:1 för stor text och UI-komponenter).
+
+**Design tokens (DTCG-format)**
+En JSON-fil i W3C DTCG-format som definierar alla visuella värden: färg, typografi, spacing, radier, skuggor och
+animationstider. Filen är källan till sanning och versioneras i Git. Genererade plattformsfiler redigeras aldrig
+manuellt.
+
+**Plattformstransformation**
+Dokumentation av hur token-filen transformeras till respektive målplattform och vilket byggkommando som kör
+transformationen.
+
+**Ägarskap och underhållsprocess**
+Vem äger profilen, hur förändras tokens, och vad räknas som en breaking change.
+
+### Kvalitetskriterier
+
+- Alla färgkombinationer som används i UI uppfyller WCAG 2.1 AA
+- Token-filen är giltig DTCG-JSON och transformationspipelinen körs utan fel
+- Inga visuella hårdkodade värden (hex, px-värden, fontnamn) förekommer i kod när tokens finns dokumenterade
+- Genererade token-filer redigeras aldrig manuellt
+
+### Hur produceras det?
+
+1. Samla in befintliga varumärkesriktlinjer eller besluta om dem i ett designmöte
+2. Definiera semantiska roller för färger (primär, sekundär, semantiska tillstånd)
+3. Fatta beslutet om token-taxonomi och namngivning innan filen skapas – det är svårt att ändra i efterhand
+4. Skapa `design/tokens.json` i DTCG-format och sätt upp transformationspipeline
+5. Granska mot WCAG-kontrastkrav och justera vid behov
+6. Godkänn dokumentet innan UI-kodning påbörjas
+
+---
+
+## 11. Dokumentationsprocess – hur produceras vad och när
 
 ### Faser och aktiviteter
 
@@ -723,8 +787,11 @@ När ett arkitekturellt beslut ändras, markera det gamla ADR:et som `Status: F�
 │ FAS 2: KRAV & DESIGN                                            │
 │                                                                 │
 │  → Producera: Kravdokumentation, SAD (utkast), Datamodell       │
-│  → Aktivitet: Kravworkshops, arkitekturskisser, ADR-sessioner   │
-│  → Output: Prioriterad backlog, godkänd arkitektur              │
+│               Grafisk profil & Design Tokens (om UI finns)      │
+│  → Aktivitet: Kravworkshops, arkitekturskisser, ADR-sessioner,  │
+│               token-taxonomibeslut, WCAG-granskning             │
+│  → Output: Prioriterad backlog, godkänd arkitektur,             │
+│            godkänd grafisk profil (innan UI-kodning startar)    │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -764,6 +831,12 @@ ARKITEKTUR (SAD)
 ☐ Ändrade teknologival har ADR
 ☐ Diagram är uppdaterade
 
+GRAFISK PROFIL & DESIGN TOKENS (om projektet har UI)
+☐ Inga hårdkodade visuella värden i ny kod – tokens används
+☐ Nya tokens är tillagda i tokens.json och transformationspipelinen körs utan fel
+☐ Breaking token-ändringar är dokumenterade och kommunicerade
+☐ WCAG-kontrastkrav är verifierade för nya färgkombinationer
+
 DATAMODELL & API
 ☐ Schemamigrationer är dokumenterade
 ☐ Nya/ändrade endpoints är dokumenterade i Swagger/OpenAPI
@@ -792,7 +865,7 @@ För ett personligt projekt eller hobby-projekt är Vision & Scope + README + SA
 
 ---
 
-## 11. AI-assistans – valfritt accelerationslager
+## 12. AI-assistans – valfritt accelerationslager
 
 > Se även det separata dokumentet `09-ai-usage-guide.md` för fullständiga riktlinjer.
 

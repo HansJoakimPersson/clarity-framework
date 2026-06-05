@@ -38,6 +38,9 @@ boundary.
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
 2. In Clarity Framework projects, read project documentation in this order:
    - `docs/00-ai-context.md` — stack overview, current status, and which part of the monorepo owns what
+   - `docs/09-grafisk-profil.md` — design tokens, colour palette, typography, and spacing; read before touching
+     any visual value on the iOS side. If this file does not exist, do not hardcode visual values — raise the
+     gap instead.
    - `docs/03-sad.md` — architecture, component responsibilities, and which layer owns what decisions
    - `docs/04-datamodell-api.md` — API contracts, authentication flows, and data model; read this before any
      task that touches network behavior
