@@ -19,3 +19,6 @@ Thumbs.db
 # Temporära filer
 *.tmp
 *.bak
+
+# Lokal Markdown-konfiguration
+.markdownlint.json
