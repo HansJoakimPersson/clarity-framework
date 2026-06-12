@@ -160,6 +160,42 @@ DB_URL, DB_PASSWORD, SMTP_HOST, SMTP_PORT
 
 > Pipeline-konfigurationen versioneras i repot under `.github/workflows/` eller motsvarande.
 
+### Repository- och mergeflöde
+
+| Regel | Projektets val |
+| --- | --- |
+| Primär branch | `main` |
+| Branchstrategi | [Kortlivade feature-branches / trunk-based / dokumenterat soloflöde] |
+| Branchnamn | `[feature|fix|chore]/[kort-beskrivning]` |
+| Commitformat | [Imperativ beskrivning, eventuell issue-referens] |
+| Direkt push till `main` | [Nej / dokumenterat undantag] |
+| Mergekrav | [Godkänd review, CI grön, branch uppdaterad] |
+| Merge-metod | [Squash / merge commit / rebase] |
+
+**Grundregler:**
+
+- En commit ska vara en sammanhängande och fungerande förändringsenhet
+- Pusha en branch och öppna en pull request när ändringen är redo för CI och granskning
+- Berörda tester och dokument uppdateras i samma pull request som implementationen
+- Hemligheter, lokala `.env`-filer och ej avsedda byggartefakter får aldrig committas
+
+### GitHub Actions-workflows
+
+| Workflow | Fil | Trigger | Syfte | Kräver godkännande |
+| --- | --- | --- | --- | --- |
+| CI | `.github/workflows/ci.yml` | `pull_request`, push till `main` | Bygg, test och statisk analys | Nej |
+| Release | `.github/workflows/release.yml` | Tagg `v*` / `workflow_dispatch` | Verifiera och publicera byggd artefakt | [Ja / Nej] |
+| Deploy staging | `.github/workflows/deploy-staging.yml` | Push till `main` | Deploy och smoke test | Nej |
+| Deploy produktion | `.github/workflows/deploy-production.yml` | Publicerad release / manuellt | Produktionsdeploy och smoke test | Ja |
+
+**Workflow-skydd:**
+
+- Ange minsta nödvändiga `permissions`; skrivbehörighet aktiveras endast för jobb som publicerar
+- Lagra känsliga värden i GitHub Secrets eller extern secrets manager
+- Använd GitHub Environments för staging och produktion, inklusive reviewers och miljöspecifika secrets
+- Sätt `concurrency` för deployments så att två produktionsdeployments inte körs samtidigt
+- Dokumentera tredjeparts-actions och hur deras versioner uppdateras
+
 ### Flöde
 
 ```text
@@ -198,6 +234,32 @@ Tagg / manuellt godkännande (vid release)
 | Smoke test staging | Efter staging-deploy | Ja | Ja |
 | Deploy produktion | Manuellt / Git-tagg | Manuell trigger | — |
 | Smoke test produktion | Efter prod-deploy | Ja | Utlöser alert vid fel |
+
+### Release och GitHub Release
+
+| Egenskap | Projektets val |
+| --- | --- |
+| Versionsstrategi | [Semantic Versioning / annan dokumenterad strategi] |
+| Release-trigger | [Annoterad tagg `vX.Y.Z` / manuellt workflow] |
+| Källa för releasenoter | [`CHANGELOG.md` / PR-etiketter / manuellt kuraterade noter] |
+| Artefakter | [Container-image, binär, paket, checksummor, SBOM] |
+| Ansvarig | [Roll eller namn] |
+
+Varje produktionsrelease ska kunna spåras till samma version och commit i:
+
+- Git-tagg
+- GitHub Release
+- Publicerade artefakter eller container-image
+- Produktionsdeployment
+
+GitHub-releasen ska minst innehålla:
+
+- Sammanfattning av användar- och driftpåverkande ändringar
+- Breaking changes och eventuella migreringssteg
+- Kända problem eller begränsningar
+- Länk till fullständig changelog och jämförelse mot föregående version
+- Publicerade artefakter och relevanta verifieringsuppgifter
+- Deploymentstatus eller länk till deploymentkörningen
 
 ### Rollback-procedur
 

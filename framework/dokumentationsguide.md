@@ -485,17 +485,51 @@ Om Docker används:
 
 #### 6.3 CI/CD-pipeline
 
-Beskriv stegen från kod-commit till produktion:
+Beskriv hela flödet från lokal förändring till publicerad release. Dokumentationen ska skilja på
+repository-arbetsflöde, verifiering och release/publicering.
+
+**Repository-arbetsflöde**
+
+- Ange branchstrategi, namnkonvention och om direkt push till `main` är tillåten
+- Använd kortlivade branches och pull requests som normalflöde; avvikelser för soloprojekt dokumenteras explicit
+- Håll commits atomiska och skriv commitmeddelanden i imperativ form
+- Pusha inte kod som innehåller hemligheter, lokala konfigurationsfiler eller genererade artefakter som inte ska versioneras
+- Definiera vilka statuskontroller och godkännanden som krävs innan merge
+- Dokumentation, tester och implementation som hör till samma förändring ingår i samma pull request
+
+**Verifieringsflöde**
 
 ```text
-Commit → Bygg → Enhetstester → Integrationstester
-      → Statisk kodanalys → Docker build → Push image
-      → Deploy till staging → Smoke test → Deploy till produktion
+Lokal commit → Push till branch → Pull request
+             → Bygg → Enhetstester → Integrationstester
+             → Statisk kodanalys → Granskning → Merge till main
+             → Deploy till staging → Smoke test
 ```
 
 - Vilket CI/CD-verktyg används? (GitHub Actions, GitLab CI, Jenkins)
-- Vilka steg är automatiska vs. manuella?
-- Vad triggar en deployment till produktion? (manuell godkännning, tagg, merge till main)
+- Vilka workflow-filer ansvarar för CI, release och deployment?
+- Vilka händelser triggar dem (`pull_request`, push till `main`, versionstagg eller manuell körning)?
+- Vilka steg är automatiska respektive manuellt godkända?
+- Vilka behörigheter, secrets, environments och branch protection-regler krävs?
+- Hur undviks att samma commit byggs på olika sätt i staging och produktion?
+
+**Releaseflöde**
+
+En produktionsrelease ska utgå från en identifierbar commit och skapa reproducerbara, spårbara artefakter:
+
+```text
+Godkänd commit på main → Version fastställs → Annoterad Git-tagg
+                       → Release-workflow verifierar byggd artefakt
+                       → Samma oföränderliga artefakt publiceras
+                       → GitHub Release med releasenoter skapas
+                       → Deploy till produktion → Smoke test
+```
+
+- Dokumentera versionsstrategi, normalt Semantic Versioning, och vem som beslutar versionsnumret
+- Ange om releasen triggas av versionstagg eller `workflow_dispatch`; merge till `main` bör inte ensam skapa en produktionsrelease
+- Bygg artefakten en gång och främja samma checksummeidentifierade artefakt mellan miljöer
+- Git-taggen, GitHub-releasen, container-imagen och deploymenten ska kunna kopplas till samma commit och version
+- Releasen ska inte betraktas som klar förrän releasenoter, deploymentresultat och eventuell rollback är dokumenterade
 - Hur hanteras rollback?
 
 #### 6.4 Konfigurationshantering
@@ -515,6 +549,8 @@ Commit → Bygg → Enhetstester → Integrationstester
 
 - En ny teammedlem ska kunna sätta upp en lokal miljö enbart baserat på Deployment View + README
 - CI/CD-pipelinen ska vara definierad som kod (inte klick-konfigurerat i UI)
+- Repository-, CI- och releaseflöden ska ha namngivna triggers, ansvariga workflow-filer och skyddsregler
+- Varje produktionsrelease ska vara spårbar från GitHub Release till tagg, commit, byggartefakt och deployment
 - Inga hemligheter i klartext i dokumentation eller repo
 
 ### Hur produceras det?
@@ -664,9 +700,13 @@ MÖJLIGA ORSAKER:
 #### 8.6 Releaseprocess
 
 - Förberedelsechecklist inför release
+- Hur version och releasekandidat väljs
+- Kommandon eller workflow för att skapa och pusha tagg
+- Hur GitHub Release och releasenoter skapas, verifieras och vid behov rättas
 - Steg för att rulla ut en ny version
 - Rollback-procedur om release misslyckas
 - Smoke test-checklist efter deployment
+- Var releaseutfall, kända problem och rollbackbeslut dokumenteras
 
 ### Kvalitetskriterier
 
@@ -696,6 +736,13 @@ Alla dokumentförändringar görs via pull requests i samma repo som koden. Dett
 
 **Atomic commits**  
 En PR som ändrar arkitekturen ska också uppdatera SAD. En PR som lägger till en endpoint ska också uppdatera API-kontraktet. Dokumentuppdateringar ska vara en del av definition of done.
+
+**Releasedokumentation**
+
+GitHub Release är den publicerade sammanfattningen för en specifik version och ska länka till tagg, ändringar,
+artefakter och kända begränsningar. `CHANGELOG.md` är den kumulativa versionshistoriken, Runbook beskriver hur
+releasen genomförs och återställs, och releasehistoriken registrerar utfall och produktionsdatum. Dokumenten har
+olika syften och ska länka till varandra i stället för att ersätta varandra.
 
 **Versionshistorik i dokumenthuvud**  
 Varje dokument bär en enkel historiktabell längst upp:

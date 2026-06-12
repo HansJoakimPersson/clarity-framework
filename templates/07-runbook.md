@@ -103,11 +103,39 @@ docker compose -f docker-compose.prod.yml restart db
 FÖRBEREDELSECHECKLIST
 ☐ Alla tester passerar i CI
 ☐ Smoke test passerar i staging
-☐ Releasenoter är skrivna
+☐ Releaseversion och releasekandidatens commit är fastställda
+☐ CHANGELOG och GitHub-releasenoter är skrivna
+☐ Breaking changes, migreringssteg och kända problem är dokumenterade
 ☐ Databasmigration är testad i staging (om tillämpligt)
 ☐ Rollback-plan är klar
 ☐ [Eventuell underhållssida är förberedd]
 ```
+
+### Skapa release i GitHub
+
+| Egenskap | Projektets val |
+| --- | --- |
+| Trigger | [Push av annoterad tagg / manuell körning av `release.yml`] |
+| Workflow | `.github/workflows/release.yml` |
+| Godkännare | [Roll eller namn] |
+
+```bash
+# 1. Kontrollera att rätt commit på main ska releasas
+git switch main
+git pull --ff-only origin main
+git status --short
+git log -1 --oneline
+
+# 2. Skapa och pusha en annoterad versionstagg
+git tag -a vX.Y.Z -m "[Produktnamn] vX.Y.Z"
+git push origin vX.Y.Z
+
+# 3. Verifiera att release-workflow och GitHub Release har skapats
+# [Projektets gh-kommando eller URL till Actions och Releases]
+```
+
+Verifiera före deployment att GitHub-releasen pekar på avsedd commit, att artefakterna är kompletta och att
+releasenoterna innehåller ändringar, migreringssteg, kända problem och länk till fullständig changelog.
 
 ### Deploy till produktion
 
@@ -148,6 +176,15 @@ curl -f https://[domän]/health
 ```
 
 **OBS vid databasmigrationer:** Om den nya versionen innehöll en databasmigration som inte är reversibel, kontakta [ansvarig] innan rollback. Databasåterställning kräver backup-restore (se avsnitt 5).
+
+### Dokumentera releaseutfall
+
+Efter deployment:
+
+- Markera deploymentresultat och smoke test i GitHub Release eller länka till workflow-körningen
+- Registrera version, produktionsdatum och utfall i `docs/08-andringshantering.md`
+- Dokumentera rollback, avbruten release eller kända produktionsproblem i samma releasepost
+- Uppdatera Runbook och Deployment View om releasen avslöjade en processlucka
 
 ---
 

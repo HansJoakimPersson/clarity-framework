@@ -12,6 +12,9 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ### Tillagt
 
+- Repository- och releaseflöde för projekt som använder Clarity Framework: commit/push-regler, pull requests,
+  GitHub Actions-workflows, taggbaserade GitHub Releases, releasenoter och spårbar releasehistorik i Deployment
+  View, Runbook, ändringshantering och dokumentationsguiden
 - `agents/r-shiny.md` – AGENTS.md-starter för R/Shiny-applikationer med valfria profiler för renv, Tidyverse, Persistence (DBI), Plumber och Deployment
 - `agents/ios-springboot.md` – hybrid AGENTS.md-starter för Spring Boot-backend med native iOS/iPadOS-frontend i Swift; täcker Integration Contract, Development Networking (Simulator vs fysisk enhet), ATS-krav, authentication-flöde (JWT + Keychain), och Distribution
 - Lombok obligatoriskt i `agents/java-application.md`: flyttat från Optional Profile till egen obligatorisk sektion; borttaget ur How To Use-listan

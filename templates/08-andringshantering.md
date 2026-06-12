@@ -34,11 +34,14 @@
 
 ## 3. Releasehistorik
 
-| Version | Datum | Typ | Sammanfattning |
-| --- | --- | --- | --- |
-| v1.0.0 | ÅÅÅÅ-MM-DD | Major | Initial produktionsrelease |
-| v1.1.0 | ÅÅÅÅ-MM-DD | Minor | [Ny funktionalitet] |
-| v1.1.1 | ÅÅÅÅ-MM-DD | Patch | [Buggfix] |
+> Länka varje version till dess GitHub Release. Detaljerade releasenoter hör hemma i GitHub Release eller
+> `CHANGELOG.md`; tabellen registrerar vad som faktiskt nådde produktion och utfallet av releasen.
+
+| Version | Produktionsdatum | Typ | GitHub Release | Commit / artefakt | Utfall | Sammanfattning |
+| --- | --- | --- | --- | --- | --- | --- |
+| v1.0.0 | ÅÅÅÅ-MM-DD | Major | [Länk] | `[SHA / digest]` | Lyckad | Initial produktionsrelease |
+| v1.1.0 | ÅÅÅÅ-MM-DD | Minor | [Länk] | `[SHA / digest]` | Lyckad | [Ny funktionalitet] |
+| v1.1.1 | ÅÅÅÅ-MM-DD | Patch | [Länk] | `[SHA / digest]` | Rollback | [Buggfix och orsak till rollback] |
 
 ---
 
