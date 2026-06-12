@@ -87,16 +87,4 @@ clarity-framework/
 
 ---
 
-## Bidra till ramverket
-
-Se [CHANGELOG.md](./framework/CHANGELOG.md) för versionshanteringsprinciper.
-
-Föreslå förändringar via Pull Request mot `main`. Varje PR ska:
-
-- Motivera förändringen mot de tre kärnprinciperna
-- Uppdatera CHANGELOG med rätt versionstyp (patch / minor / major)
-- Uppdatera guiden om riktlinjerna påverkas
-
----
-
 *Clarity Framework v1.1.0*

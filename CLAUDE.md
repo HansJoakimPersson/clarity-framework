@@ -76,7 +76,6 @@ MAJOR.MINOR.PATCH
 4. `git add . && git commit -m "[minor|major|patch]: Release vX.Y.Z"`
 5. `git tag -a vX.Y.Z -m "Clarity Framework vX.Y.Z – beskrivning"`
 6. `git push origin main --tags`
-7. Påminn om att synka Claude.ai-projekten
 
 ---
 
