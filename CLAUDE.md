@@ -13,7 +13,7 @@ Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutv
 
 **Tre kärnprinciper:** Just enough documentation · Dokumentation som kod · Klarhet framför fullständighet
 
-**Nuvarande version:** 1.1.0
+**Nuvarande version:** 1.2.0
 
 **Repo-struktur:**
 
@@ -79,4 +79,4 @@ MAJOR.MINOR.PATCH
 
 ---
 
-*Clarity Framework v1.1.0*
+*Clarity Framework v1.2.0*

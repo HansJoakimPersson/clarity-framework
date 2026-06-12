@@ -10,6 +10,8 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ## [Unreleased]
 
+## [1.2.0] – 2026-06-12
+
 ### Tillagt
 
 - Repository- och releaseflöde för projekt som använder Clarity Framework: commit/push-regler, pull requests,
@@ -31,6 +33,11 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 - Automated Accessibility Testing-sektion i `agents/vanilla-web-spa.md` med `@axe-core/playwright`, WCAG 2.1 AA-baslinje och riktlinjer för undantag
 - Accessibility Testing-sektion i `agents/java-application.md` (Web Frontend-profil) med motsvarande axe-core/Playwright-riktlinjer
 - Uppdaterade Testing-sektioner i `vanilla-web-spa.md` och `java-application.md` med riktlinjer för Playwright-lokaliserare (`getByRole`, `getByLabel`, `getByText`)
+
+### Borttaget
+
+- Versionshanterad `.markdownlint.json`; konfigurationen används lokalt och ignoreras av Git
+- Inaktuella samarbetsinstruktioner för Claude.ai-synkning och pull requests till solo-repot
 
 ## [1.1.0] – 2026-04-22
 

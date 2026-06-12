@@ -4,7 +4,7 @@
 > Fungerar för alla skalor – från ett personligt sidoprojekt till ett team på 20 personer.  
 > AI-assistans är ett valfritt accelerationslager, inte en förutsättning.
 
-**Version:** 1.1.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 1.2.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ---
 
@@ -87,4 +87,4 @@ clarity-framework/
 
 ---
 
-*Clarity Framework v1.1.0*
+*Clarity Framework v1.2.0*

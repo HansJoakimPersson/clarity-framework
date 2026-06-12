@@ -57,7 +57,7 @@ AI Context Document är en komprimerad projektöversikt designad specifikt för 
 ## Projektöversikt för ny session
 
 **Senast uppdaterad:** ÅÅÅÅ-MM-DD  
-**Ramverksversion:** Clarity Framework v1.0.0
+**Ramverksversion:** Clarity Framework v1.2.0
 
 ---
 
@@ -159,5 +159,5 @@ Clarity Framework fungerar fullt ut. AI Usage Guide och `00-ai-context.md` är v
 
 ---
 
-*Detta dokument är en del av Clarity Framework v1.0.0*  
+*Detta dokument är en del av Clarity Framework v1.2.0*
 *Nästa steg: Skapa `00-ai-context.md` för ditt specifika projekt*

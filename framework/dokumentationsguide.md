@@ -1,6 +1,6 @@
 # Den ultimata guiden till mjukvarudokumentation
 
-## Clarity Framework v1.1.0
+## Clarity Framework v1.2.0
 
 ### Kravställning · Utveckling · Drift · Produktion
 
@@ -935,4 +935,4 @@ Intressentdialoger, prioriteringsbeslut, formellt godkännande och användarvali
 
 ---
 
-*Clarity Framework v1..0 | Uppdaterad: 2026-04*
+*Clarity Framework v1.2.0 | Uppdaterad: 2026-06*
