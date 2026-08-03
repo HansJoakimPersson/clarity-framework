@@ -29,6 +29,7 @@ Tillsammans ger de en AI-agent tillräcklig kontext för att fatta lokala beslut
 | `vanilla-web-spa.md` | Projektet är en byggsstegssfri webbapp i ren HTML/CSS/JS |
 | `shell-dotfiles.md` | Du arbetar med shellskript, aliases eller dotfiles |
 | `macos-swift.md` | Projektet är en macOS-app i Swift |
+| `electron-desktop.md` | Projektet är en Electron-baserad desktop-app som ska kännas native |
 
 ---
 

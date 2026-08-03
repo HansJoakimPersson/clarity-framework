@@ -10,6 +10,14 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ## [Unreleased]
 
+### Tillagt
+
+- `agents/electron-desktop.md` – AGENTS.md-starter för Electron-baserade desktop-appar med native känsla: obligatorisk
+  säkerhetssektion (context isolation, sandbox, contextBridge, CSP, IPC-validering), processarkitektur main/preload/
+  renderer, Native Platform Integration (fönsterchrome, menyer med `role`, plattformsgenvägar, native dialoger,
+  systemtema, `ready-to-show`), Development Run Model, prestanda och Playwright-baserad testning; valfria profiler för
+  Renderer Framework, Local Persistence, Auto Update, Packaging and Distribution och Native Modules
+
 ## [1.2.0] – 2026-06-12
 
 ### Tillagt
