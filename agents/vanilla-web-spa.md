@@ -7,7 +7,9 @@ Guidance for agents working in small single-page web applications without a fram
 - Keep the application simple and dependency-free unless the task explicitly requires otherwise.
 - Preserve the no-build workflow when that is an established project constraint.
 - Prefer plain HTML, CSS, and JavaScript over introducing tooling.
-- Keep changes focused; do not split files or reorganize structure unless requested.
+- Deliver the task's full scope. A skeleton or partial implementation offered with "let me know if you want me to
+  continue" is an incomplete delivery, not a small one.
+- Stay inside the task's scope; do not split files or reorganize structure unless requested.
 - Never persist API keys, tokens, secrets, or sensitive user data in unsafe storage.
 - User-facing behavior changes should be covered by browser-level tests.
 
@@ -26,9 +28,10 @@ Guidance for agents working in small single-page web applications without a fram
 4. Identify whether the change affects markup, styling, state, rendering, network behavior, storage, or user
    interaction.
 5. Add or update tests for user-visible behavior.
-6. Implement the smallest coherent change.
+6. Implement the task in full, within its stated scope.
 7. Run targeted browser tests when behavior changes.
-8. Report changed files, commands run, and verification results.
+8. Report whether the task is done. If it is not, say what remains and why. Do not list changed files — the diff
+   already shows them. Summarize by affected area only when the change spans several components.
 
 ## File Structure
 

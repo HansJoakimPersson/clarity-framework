@@ -5,7 +5,9 @@ Guidance for agents editing shell scripts, aliases, functions, and dotfiles.
 ## Core Principles
 
 - Preserve behavior while improving clarity.
-- Keep edits minimal; do not mass-reformat unrelated lines.
+- Deliver the task's full scope. A skeleton or partial implementation offered with "let me know if you want me to
+  continue" is an incomplete delivery, not a small one.
+- Stay inside the task's scope; do not mass-reformat unrelated lines.
 - Follow the existing file's style unless it is clearly broken.
 - Prefer portable, explicit shell code over dense one-liners.
 - Never add secrets, tokens, credentials, or machine-specific private data.
@@ -17,9 +19,10 @@ Guidance for agents editing shell scripts, aliases, functions, and dotfiles.
    - `docs/00-ai-context.md` — compressed overview of what the project is and its current status
    - `docs/03-sad.md` — architecture context when the script is part of a larger system
 3. Identify whether the change affects behavior, formatting, portability, or security.
-4. Implement the smallest coherent change.
+4. Implement the task in full, within its stated scope.
 5. Run `shellcheck` when available.
-6. Report changed files, commands run, and verification results.
+6. Report whether the task is done. If it is not, say what remains and why. Do not list changed files — the diff
+   already shows them.
 
 ## Baseline Formatting
 

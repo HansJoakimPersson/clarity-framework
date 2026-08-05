@@ -18,7 +18,9 @@ profiles.
 
 ### Operating Principles
 
-- Keep changes minimal and localized.
+- Deliver the task's full scope. A skeleton or partial implementation offered with "let me know if you want me to
+  continue" is an incomplete delivery, not a small one.
+- Stay inside the task's scope — no refactors, renames, reformatting, or improvements beyond what the task requires.
 - Preserve established public APIs, user-visible workflows, bundle behavior, permissions, and distribution assumptions
   unless the task explicitly changes them.
 - Treat product correctness, user safety, privacy, and distribution viability as first-class constraints.
@@ -45,7 +47,8 @@ profiles.
    while keeping tests green.
 6. Update all build-system references when files, resources, targets, bundles, or schemes change.
 7. Run relevant SwiftPM and Xcode verification when feasible.
-8. Report changed files, commands run, test results, behavior impact, distribution impact, and any residual risks.
+8. Report whether the task is done, and flag any residual risk to behavior, permissions, or distribution. If it is
+   not done, say what remains and why. Do not list changed files — the diff already shows them.
 
 ### Swift Style
 

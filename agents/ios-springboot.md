@@ -24,7 +24,9 @@ boundary.
 
 ### Operating Principles
 
-- Keep changes minimal and localized — no drive-by refactors outside the task scope.
+- Deliver the task's full scope. A skeleton or partial implementation offered with "let me know if you want me to
+  continue" is an incomplete delivery, not a small one.
+- Stay inside the task's scope — no refactors, renames, reformatting, or improvements beyond what the task requires.
 - The API contract is a shared public interface. Changes to it affect both sides simultaneously; treat API changes
   as the highest-risk category of change in this project.
 - Never commit secrets, credentials, tokens, personal data, or environment-specific values in source code.

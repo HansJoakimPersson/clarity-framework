@@ -10,6 +10,15 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ## [Unreleased]
 
+### Ändrat
+
+- Scope-reglerna i samtliga sju starters skrivna om från storlek till gräns: `Keep changes minimal and localized` /
+  `Implement the smallest coherent change` ersatta med `Deliver the task's full scope` plus `Stay inside the task's
+  scope`. Den gamla formuleringen fick agenter att leverera skelett och fråga om de skulle fortsätta när uppgiften
+  var att bygga något komplett. TDD-loopens `smallest change` är orörd – den gäller per testcykel, inte per uppgift
+- Rapporteringsregeln i `electron-desktop.md`, `macos-swift.md`, `shell-dotfiles.md` och `vanilla-web-spa.md`:
+  rapportera om uppgiften är klar eller inte, inte en lista över ändrade filer
+
 ### Tillagt
 
 - `agents/electron-desktop.md` – AGENTS.md-starter för Electron-baserade desktop-appar med native känsla: obligatorisk

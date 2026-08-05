@@ -17,7 +17,9 @@ optional profiles that match the project in front of you.
 
 ### Operating Principles
 
-- Keep changes minimal and localized — no drive-by refactors outside the task scope.
+- Deliver the task's full scope. A skeleton or partial implementation offered with "let me know if you want me to
+  continue" is an incomplete delivery, not a small one.
+- Stay inside the task's scope — no refactors, renames, reformatting, or improvements beyond what the task requires.
 - Preserve established public APIs and existing conventions.
 - Do not introduce new packages unless the task explicitly requires them.
 - Never commit secrets, tokens, credentials, or personal data.

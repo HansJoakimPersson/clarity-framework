@@ -22,7 +22,9 @@ like a website in a window" as a defect, not a starting point.
 
 ### Operating Principles
 
-- Keep changes minimal and localized — no drive-by refactors outside the task scope.
+- Deliver the task's full scope. A skeleton or partial implementation offered with "let me know if you want me to
+  continue" is an incomplete delivery, not a small one.
+- Stay inside the task's scope — no refactors, renames, reformatting, or improvements beyond what the task requires.
 - Never weaken a security setting to make a feature work. Find another way or raise the constraint.
 - Do not introduce new dependencies unless the task explicitly requires them; every dependency ships to the user's
   machine with full Node privileges in the main process.
@@ -43,10 +45,11 @@ like a website in a window" as a defect, not a starting point.
    appears to need code in more than one process, define the IPC contract first.
 4. Confirm the development run model before starting anything (see **Development Run Model**).
 5. Add or update tests for the changed behaviour.
-6. Implement the smallest coherent change.
+6. Implement the task in full, within its stated scope.
 7. Run targeted tests, and verify on macOS and Windows when the change touches window chrome, menus, shortcuts, or
    file paths.
-8. Report changed files, commands run, and verification results.
+8. Report whether the task is done. If it is not, say what remains and why. Do not list changed files — the diff
+   already shows them. Summarize by affected area only when the change spans several components.
 
 ### Process Architecture
 
