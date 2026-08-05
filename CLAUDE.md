@@ -51,6 +51,7 @@ Solo direkt på `main`. En commit = en meningsfull, komplett enhet av förändri
 | Förändring | Måste inkludera |
 | --- | --- |
 | Mallförändring | Mall + eventuell guidejustering |
+| `templates/plan.md` | Även `skills/planstyrt-bygge/plan-mall.md` – skillen bär en egen kopia eftersom den kopieras ut ensam |
 | Ny mall | Ny fil + README + CHANGELOG-entry |
 | Riktlinjeändring i guiden | Guiden + berörda mallar |
 | Release | CHANGELOG + versionsnummer i alla berörda filer + Git-tagg |

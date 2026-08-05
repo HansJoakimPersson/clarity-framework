@@ -53,6 +53,8 @@ clarity-framework/
 ├── skills/                             # Skills att kopiera till .claude/skills/
 │   ├── README.md                       # Vad en skill är och hur den används
 │   └── planstyrt-bygge/                # Claude planerar, Codex bygger
+│       ├── SKILL.md
+│       └── plan-mall.md                # Kopia av templates/plan.md – följer med skillen
 │
 ├── docs-example/                       # Exempelprojekt – visar ifyllda mallar
 │   └── assets/

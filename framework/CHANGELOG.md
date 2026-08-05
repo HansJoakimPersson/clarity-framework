@@ -12,6 +12,13 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ### Ändrat
 
+- `skills/planstyrt-bygge/` bär nu en egen kopia av planmallen som `plan-mall.md`. Förutsättningen
+  pekade på `templates/plan.md`, en sökväg som bara finns i ramverksrepot och aldrig i projekt som
+  använder ramverket – flödet stannade därför på en förutsättning som var omöjlig att uppfylla.
+  Synkkravet mot `templates/plan.md` är infört i `CLAUDE.md`
+- `skills/planstyrt-bygge/`: nytt steg 6 som committar bygget. Flödet lämnade arbetsträdet smutsigt
+  och blockerade därmed sin egen nästa körning på förutsättningen om rent repo. Kravet på rent repo
+  är samtidigt motiverat i skillen – det finns för att göra Codex ändringar särskiljbara
 - Scope-reglerna i samtliga sju starters skrivna om från storlek till gräns: `Keep changes minimal and localized` /
   `Implement the smallest coherent change` ersatta med `Deliver the task's full scope` plus `Stay inside the task's
   scope`. Den gamla formuleringen fick agenter att leverera skelett och fråga om de skulle fortsätta när uppgiften

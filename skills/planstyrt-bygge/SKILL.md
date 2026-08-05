@@ -12,16 +12,24 @@ Du planerar och granskar. **Codex bygger.** Du skriver ingen produktionskod i de
 Kontrollera innan du börjar. Saknas något: rapportera det och stanna, improvisera inte förbi.
 
 - `codex` finns i PATH (`command -v codex`)
-- Repot är rent (`git status --porcelain` tomt) och du står på rätt gren
 - `AGENTS.md` finns i projektroten
-- `templates/plan.md` finns, eller så känner du planmallens struktur från `docs/`
+- Repot är rent (`git status --porcelain` tomt) och du står på rätt gren
+
+Rent repo är inte formalia: Codex skriver direkt i arbetsträdet, och är det smutsigt när bygget
+startar går det inte längre att se vad Codex gjorde och vad som redan låg där. Är det smutsigt –
+rapportera vad som ligger oincheckat och låt användaren avgöra. Committa, stasha eller återställ
+aldrig åt användaren utan att fråga.
+
+Planmallen ligger i skillen som `plan-mall.md` och följer med när skillen kopieras. Leta inte efter
+`templates/plan.md` – den sökvägen finns i ramverksrepot, inte i projekt som använder ramverket.
 
 ## Steg 1 – Skriv planen
 
 Läs `docs/00-ai-context.md` och därifrån bara det uppgiften faktiskt berör.
 
-Skriv planen till `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md` enligt planmallen. Använd dagens
-faktiska datum.
+Kopiera `plan-mall.md` från den här skillkatalogen till `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md` och
+fyll i kopian. Använd dagens faktiska datum. Redigera aldrig mallen på plats – då finns ingen mall
+till nästa plan.
 
 Planen ska kunna byggas av en agent som inte deltagit i konversationen och inte kan fråga
 användaren. Det ställer krav:
@@ -80,10 +88,22 @@ utanför `Ingår`.
 användaren avgöra. Att ta över är det tysta felet som gör hela flödet meningslöst — då har
 användaren betalat för orkestreringen utan att få den.
 
+## Steg 6 — Committa resultatet
+
+Lämna aldrig bygget oincheckat. Ett smutsigt arbetsträd blockerar nästa körning av det här flödet,
+och då går det inte längre att skilja förra varvets ändringar från nästa varvs.
+
+Föreslå en commit och vänta på godkännande — committa inte självmant om inte projektet säger annat.
+Följer projektet Clarity Frameworks commit-disciplin ska berörda `docs/` med i samma commit.
+
+Krävs fler varv för att bli klar stannar planen kvar i repot tills allt är byggt.
+
 ## Städa
 
-Planen är transient. Radera den när ändringen är mergad. Det som var värt att behålla har
-redan flyttat till `docs/03-sad.md` eller `docs/08-andringshantering.md`.
+Planen är transient. Radera den när ändringen är mergad, i en egen commit. Det som var värt att
+behålla har redan flyttat till `docs/03-sad.md` eller `docs/08-andringshantering.md`.
+
+`plan-mall.md` stannar i skillkatalogen och raderas aldrig — den är mallen, inte en plan.
 
 ## Att veta
 
