@@ -18,8 +18,15 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
   var att bygga något komplett. TDD-loopens `smallest change` är orörd – den gäller per testcykel, inte per uppgift
 - Rapporteringsregeln i `electron-desktop.md`, `macos-swift.md`, `shell-dotfiles.md` och `vanilla-web-spa.md`:
   rapportera om uppgiften är klar eller inte, inte en lista över ändrade filer
-- `framework/09-ai-usage-guide.md`: ny sektion 5 om flera agenter – roller, planen som artefakt, praktiska
+- `framework/ai-usage-guide.md`: ny sektion 5 om flera agenter – roller, planen som artefakt, praktiska
   begränsningar och vad vinsten faktiskt är; tidigare sektion 5 omnumrerad till 6
+- `framework/09-ai-usage-guide.md` omdöpt till `framework/ai-usage-guide.md`. Sifferprefixet kolliderade med
+  `templates/09-grafisk-profil.md` och antydde att filen var ett projektdokument i `docs/`-sekvensen; den
+  inledande dementin om detta är borttagen
+- Inline-kopian av `00-ai-context.md`-mallen i `ai-usage-guide.md` § 3 ersatt med en hänvisning till
+  `templates/00-ai-context.md`. Kopian hade glidit isär från mallen – saknade tabellstruktur, grafisk profil
+  och avsnittet AI-arbetsflöde
+- Rolltabellen i `ai-usage-guide.md` § 2 kompletterad med rad för grafisk profil
 - Repo-strukturen i `README.md` uppdaterad – `09-grafisk-profil.md` och `agents/`-filerna saknades
 
 ### Tillagt

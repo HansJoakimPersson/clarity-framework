@@ -914,7 +914,7 @@ För ett personligt projekt eller hobby-projekt är Vision & Scope + README + SA
 
 ## 12. AI-assistans – valfritt accelerationslager
 
-> Se även det separata dokumentet `09-ai-usage-guide.md` för fullständiga riktlinjer.
+> Se även det separata dokumentet `ai-usage-guide.md` för fullständiga riktlinjer.
 
 AI-assistans är ett lager ovanpå Clarity Framework – inte en förutsättning. Ramverket fungerar lika bra för ett team som arbetar utan AI som för en soloutvecklare som använder Claude som kodpartner.
 
@@ -927,11 +927,11 @@ AI-assistans är ett lager ovanpå Clarity Framework – inte en förutsättning
 
 ### Vad AI inte ersätter
 
-Intressentdialoger, prioriteringsbeslut, formellt godkännande och användarvalidering kräver alltid en människa. Se `09-ai-usage-guide.md` för fullständig lista.
+Intressentdialoger, prioriteringsbeslut, formellt godkännande och användarvalidering kräver alltid en människa. Se `ai-usage-guide.md` för fullständig lista.
 
 ### Flera agenter
 
-Om arbetet delas upp mellan flera AI-agenter – en planerar, en bygger, en granskar – måste överlämningen ske via en fil. Agenter delar ingen kontext, och allt som inte är skrivet går förlorat vid överlämningen. Planen läggs som en transient arbetsorder i `docs/plans/` med `templates/plan.md` som mall, och raderas när ändringen är mergad. Roller definieras per projekt i `00-ai-context.md`. Se `09-ai-usage-guide.md` § 5.
+Om arbetet delas upp mellan flera AI-agenter – en planerar, en bygger, en granskar – måste överlämningen ske via en fil. Agenter delar ingen kontext, och allt som inte är skrivet går förlorat vid överlämningen. Planen läggs som en transient arbetsorder i `docs/plans/` med `templates/plan.md` som mall, och raderas när ändringen är mergad. Roller definieras per projekt i `00-ai-context.md`. Se `ai-usage-guide.md` § 5.
 
 ### AI Context Document
 

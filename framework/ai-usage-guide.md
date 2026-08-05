@@ -2,7 +2,6 @@
 
 ## Clarity Framework – Valfritt accelerationslager
 
-> **Viktigt:** Detta dokument är en del av *ramverket*, inte av projektdokumentationen.  
 > AI-assistans är ett **valfritt lager** ovanpå Clarity Framework. Ramverket fungerar fullt ut utan AI – för ett team av människor, en soloutvecklare, eller en kombination. AI accelererar processen men ersätter inte beslut, intressentdialoger eller ansvar.
 
 ---
@@ -30,6 +29,7 @@ AI kan snabbt producera ett utkast till en SAD eller en lista med NFR – men de
 | Initiering | Vision & Scope | Samtalspartner – ställer klargörande frågor, hjälper formulera vision | Kan inte känna till ditt affärssammanhang utan att du berättar |
 | Krav | Kravdokumentation | Formulerar stories, skriver acceptanskriterier, identifierar saknade NFR | Kan inte prioritera åt dig – MoSCoW kräver affärsbeslut |
 | Design | SAD | Föreslår arkitekturmönster, skriver ADR-utkast, ifrågasätter beslut | Känner inte till teamkompetens, budget eller befintliga beroenden |
+| Design | Grafisk profil | Strukturerar tokens i DTCG-format, räknar kontrastvärden, föreslår skalor för spacing och typografi | Kan inte fatta varumärkesbeslut – färgval och uttryck kräver en människa |
 | Design | Datamodell & API | Genererar scheman, föreslår API-struktur, skriver OpenAPI-spec | Kan inte avgöra rätt domänmodell utan djup domänkunskap |
 | Driftsättning | Deployment View | Genererar docker-compose, CI/CD-pipelines, infrastrukturdiagram | Kan inte verifiera att konfigurationen fungerar i din miljö |
 | Implementation | — | Skriver kod utifrån dokumenten som kontext | Kod utan dokumentkontext tenderar att avvika från arkitekturen |
@@ -42,7 +42,7 @@ AI kan snabbt producera ett utkast till en SAD eller en lista med NFR – men de
 
 ### Vad är det?
 
-AI Context Document är en komprimerad projektöversikt designad specifikt för att **klistras in i en ny AI-session**. Det destillerar all väsentlig information från projektets 8 dokument till en enda fil som ger en AI omedelbar förståelse för projektet utan att den behöver läsa allt.
+AI Context Document är en komprimerad projektöversikt designad specifikt för att **klistras in i en ny AI-session**. Det destillerar all väsentlig information från projektets övriga dokument till en enda fil som ger en AI omedelbar förståelse för projektet utan att den behöver läsa allt.
 
 ### När används det?
 
@@ -50,57 +50,9 @@ AI Context Document är en komprimerad projektöversikt designad specifikt för 
 - Som onboarding-dokument för en ny teammedlem (mänsklig eller AI)
 - Som en löpande "state of the project"-sammanfattning
 
-### Mall: `00-ai-context.md`
+### Mall
 
-```markdown
-# AI Context – [Produktnamn]
-## Projektöversikt för ny session
-
-**Senast uppdaterad:** ÅÅÅÅ-MM-DD  
-**Ramverksversion:** Clarity Framework v1.2.0
-
----
-
-### Vad är detta?
-[2–3 meningar. Vad produkten gör och vilket problem den löser.]
-
-### Teknisk stack
-- Backend: [teknologi]
-- Frontend: [teknologi]
-- Databas: [teknologi]
-- Hosting: [teknologi]
-- CI/CD: [teknologi]
-
-### Arkitektur i korthet
-[3–5 meningar om arkitekturmönster och de viktigaste komponenterna.]
-
-### Viktigaste NFR
-- Prestanda: [konkret krav]
-- Tillgänglighet: [konkret krav]
-- [Övriga kritiska NFR]
-
-### Aktuell status
-- **Fas:** Initiering / Krav / Design / Implementation / Drift
-- **Senaste release:** [version eller "ej releasad"]
-- **Pågående arbete:** [vad som är aktivt just nu]
-
-### Öppna arkitekturella frågor
-- [Fråga eller beslut som ännu inte är fattat]
-- [...]
-
-### Känd teknisk skuld
-- [TD-001: kort beskrivning]
-- [...]
-
-### Viktiga avgränsningar (out of scope)
-- [Vad som medvetet exkluderats]
-- [...]
-
-### Dokument att läsa för djupare kontext
-- Vision & Scope: `docs/01-vision-scope.md`
-- SAD: `docs/03-sad.md`
-- API-kontrakt: `docs/04-datamodell-api.md`
-```
+Mallen finns i `templates/00-ai-context.md` och kopieras därifrån. Den återges inte här – en kopia i två filer glider isär, och mallen är den som gäller.
 
 ### Hur håller man det uppdaterat?
 

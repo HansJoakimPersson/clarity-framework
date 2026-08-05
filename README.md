@@ -23,7 +23,7 @@ clarity-framework/
 │
 ├── framework/                          # Ramverkets egna dokument
 │   ├── dokumentationsguide.md          # Huvudguiden – riktlinjer för alla dokumenttyper
-│   ├── 09-ai-usage-guide.md            # AI som valfritt accelerationslager
+│   ├── ai-usage-guide.md               # AI som valfritt accelerationslager
 │   ├── PROJEKTINSTRUKTIONER.md         # Instruktioner för Claude/OpenAI projekt
 │   └── CHANGELOG.md                   # Versionshistorik
 │
