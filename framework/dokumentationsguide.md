@@ -929,6 +929,10 @@ AI-assistans är ett lager ovanpå Clarity Framework – inte en förutsättning
 
 Intressentdialoger, prioriteringsbeslut, formellt godkännande och användarvalidering kräver alltid en människa. Se `09-ai-usage-guide.md` för fullständig lista.
 
+### Flera agenter
+
+Om arbetet delas upp mellan flera AI-agenter – en planerar, en bygger, en granskar – måste överlämningen ske via en fil. Agenter delar ingen kontext, och allt som inte är skrivet går förlorat vid överlämningen. Planen läggs som en transient arbetsorder i `docs/plans/` med `templates/plan.md` som mall, och raderas när ändringen är mergad. Roller definieras per projekt i `00-ai-context.md`. Se `09-ai-usage-guide.md` § 5.
+
 ### AI Context Document
 
 `00-ai-context.md` är den enda filen som är designad primärt för att läsas av en AI. Den destillerar projektets alla dokument till max en sida och klistras in i början av en ny session. Se mallen i ramverket.

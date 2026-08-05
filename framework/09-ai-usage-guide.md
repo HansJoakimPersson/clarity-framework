@@ -146,7 +146,49 @@ Clarity Framework fungerar fullt ut. AI Usage Guide och `00-ai-context.md` är v
 
 ---
 
-## 5. Vad AI inte kan ersätta
+## 5. Flera agenter – planering, bygge och granskning
+
+Att dela upp arbetet mellan flera AI-agenter (till exempel Claude Code och Codex) är valfritt. Om du gör det finns bara en fråga som spelar roll:
+
+**Agenterna delar ingen kontext.** Separata sessioner, separat minne, separata resonemangskedjor. Allt som inte är skrivet till fil finns inte vid överlämningen. Hela integrationen reduceras därför till: *vad är överlämningsartefakten, och var ligger den?*
+
+### Roller
+
+| Roll | Ansvar | Får inte |
+| --- | --- | --- |
+| **Planerare** | Skriver planen till `docs/plans/` utifrån krav, SAD och grafisk profil | Bygga |
+| **Byggare** | Bygger enligt planen, i full omfattning | Planera om – stannar vid blockerande fråga |
+| **Granskare** | Jämför diffen mot planen före merge | Godkänna sin egen kod |
+
+Rollerna definieras per projekt i `docs/00-ai-context.md`. Ett projekt som använder en enda agent hoppar över avsnittet.
+
+### Planen som artefakt
+
+Planen är en **arbetsorder, inte projektdokumentation**. Den skapas, konsumeras och raderas när ändringen är mergad. Den ska aldrig samlas till ett arkiv av inaktuella planer – det bryter mot *klarhet framför fullständighet*. Det som var värt att behålla har redan flyttat till `03-sad.md` eller `08-andringshantering.md`.
+
+Mall: `templates/plan.md`. Placering: `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md`.
+
+Två fält gör mest nytta: **Ingår inte** och **BLOCKERANDE**. Agentdrift och tyst gissande är de vanligaste felen vid överlämning, och det är dessa två fält som adresserar dem.
+
+### Praktiska begränsningar
+
+- En molnbaserad agent ser bara det som är **committat och pushat**. Planen måste ligga i repot – inte i en chatt.
+- Planen måste vara mer explicit än en plan du skriver åt dig själv. Byggagenten har noll tyst kontext.
+- När planen visar sig fel mitt i bygget kan byggaren inte planera om bra – den vet inte *varför* planen såg ut som den gjorde. Därför regeln att stanna och rapportera.
+
+### Vad vinsten faktiskt är
+
+Inte att en viss modell är bättre på att planera. Vinsten är att:
+
+- Planen blir en **granskningspunkt innan kod finns** – den billigaste platsen att ingripa på.
+- Granskningen blir **objektiv**: stämmer diffen mot planen? Det är en skarpare fråga än "är koden bra".
+- Granskaren delar inte byggarens resonemangskedja och ser därför andra fel.
+
+Rolldelningen tvingar fram disciplinen. Du får merparten av värdet även med en enda agent som skriver planen till fil först.
+
+---
+
+## 6. Vad AI inte kan ersätta
 
 | Aktivitet | Varför det kräver människa |
 | --- | --- |

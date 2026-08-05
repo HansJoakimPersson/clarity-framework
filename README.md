@@ -36,10 +36,19 @@ clarity-framework/
 │   ├── 05-deployment-view.md
 │   ├── 06-testdokumentation.md
 │   ├── 07-runbook.md
-│   └── 08-andringshantering.md
+│   ├── 08-andringshantering.md
+│   ├── 09-grafisk-profil.md            # Varumärke och design tokens (DTCG)
+│   └── plan.md                         # Arbetsorder vid planstyrt AI-arbetsflöde
 │
-├── agents/                             # AGENTS.md-starters per stack (Java, Swift, m.fl.)
-│   └── README.md                       # Välj och anpassa rätt starter
+├── agents/                             # AGENTS.md-starters per stack
+│   ├── README.md                       # Välj och anpassa rätt starter
+│   ├── java-application.md
+│   ├── ios-springboot.md
+│   ├── electron-desktop.md
+│   ├── macos-swift.md
+│   ├── r-shiny.md
+│   ├── vanilla-web-spa.md
+│   └── shell-dotfiles.md
 │
 ├── docs-example/                       # Exempelprojekt – visar ifyllda mallar
 │   └── assets/

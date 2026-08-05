@@ -83,6 +83,22 @@
 
 ---
 
+## AI-arbetsflöde
+
+[Utelämna hela avsnittet om projektet inte delar upp arbetet mellan flera agenter.]
+
+| Roll | Agent | Ansvar |
+| --- | --- | --- |
+| Planerare | [t.ex. Claude Code] | Skriver plan till `docs/plans/`. Bygger inte. |
+| Byggare | [t.ex. Codex] | Bygger enligt planen. Planerar inte om – stannar vid blockerande fråga. |
+| Granskare | [t.ex. Claude Code] | Jämför diff mot plan före merge. |
+
+**Planer:** `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md` (mall: ramverkets `templates/plan.md`). Planen måste vara committad och pushad för att en molnagent ska kunna läsa den. Raderas när ändringen är mergad.
+
+**Kräver alltid människa:** [t.ex. godkännande av plan, merge, releasebeslut]
+
+---
+
 ## Var finns mer kontext?
 
 | Fråga | Dokument |
@@ -95,6 +111,7 @@
 | Hur driftsätts det? | `docs/05-deployment-view.md` |
 | Hur testas det? | `docs/06-testdokumentation.md` |
 | Hur driftas det? | `docs/07-runbook.md` |
+| Vad byggs just nu, konkret? | `docs/plans/` (om planstyrt arbetsflöde används) |
 
 ---
 

@@ -40,6 +40,8 @@ boundary.
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
 2. In Clarity Framework projects, read project documentation in this order:
    - `docs/00-ai-context.md` — stack overview, current status, and which part of the monorepo owns what
+   - `docs/plans/` — if a plan governs this task, read it before anything else. Its scope section is
+     authoritative; do not re-plan. If the plan is wrong or incomplete, stop and report rather than improvising.
    - `docs/09-grafisk-profil.md` — design tokens, colour palette, typography, and spacing; read before touching
      any visual value on the iOS side. If this file does not exist, do not hardcode visual values — raise the
      gap instead.

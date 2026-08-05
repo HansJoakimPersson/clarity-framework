@@ -30,6 +30,8 @@ optional profiles that match the project in front of you.
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
 2. In Clarity Framework projects, read project documentation in this order:
    - `docs/00-ai-context.md` — compressed overview of what the project is, its stack, and current status
+   - `docs/plans/` — if a plan governs this task, read it before anything else. Its scope section is
+     authoritative; do not re-plan. If the plan is wrong or incomplete, stop and report rather than improvising.
    - `docs/03-sad.md` — architecture, component responsibilities, and key design decisions
    - `docs/02-kravdokumentation.md` — requirements context when the task touches functional behavior
    - `docs/04-datamodell-api.md` — data model and API contracts when the task touches persistence or APIs

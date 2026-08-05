@@ -18,9 +18,19 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
   var att bygga något komplett. TDD-loopens `smallest change` är orörd – den gäller per testcykel, inte per uppgift
 - Rapporteringsregeln i `electron-desktop.md`, `macos-swift.md`, `shell-dotfiles.md` och `vanilla-web-spa.md`:
   rapportera om uppgiften är klar eller inte, inte en lista över ändrade filer
+- `framework/09-ai-usage-guide.md`: ny sektion 5 om flera agenter – roller, planen som artefakt, praktiska
+  begränsningar och vad vinsten faktiskt är; tidigare sektion 5 omnumrerad till 6
+- Repo-strukturen i `README.md` uppdaterad – `09-grafisk-profil.md` och `agents/`-filerna saknades
 
 ### Tillagt
 
+- `templates/plan.md` – transient arbetsorder för planstyrt arbetsflöde där en agent planerar och en annan bygger;
+  auktoritativt omfattningsavsnitt med `Ingår` / `Ingår inte`, blockerande frågor och kontrollerbar Definition of Done
+- Avsnitt `AI-arbetsflöde` i `templates/00-ai-context.md`: rolltabell (planerare / byggare / granskare) och
+  planplacering, utelämnas av projekt som använder en enda agent
+- Läsordningen i samtliga sju starters utökad med `docs/plans/` – planens omfattningsavsnitt är auktoritativt,
+  byggagenten planerar inte om utan stannar och rapporterar
+- Avsnitt `Flera agenter` i `framework/dokumentationsguide.md` § 12
 - `agents/electron-desktop.md` – AGENTS.md-starter för Electron-baserade desktop-appar med native känsla: obligatorisk
   säkerhetssektion (context isolation, sandbox, contextBridge, CSP, IPC-validering), processarkitektur main/preload/
   renderer, Native Platform Integration (fönsterchrome, menyer med `role`, plattformsgenvägar, native dialoger,

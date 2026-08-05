@@ -36,6 +36,8 @@ like a website in a window" as a defect, not a starting point.
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
 2. In Clarity Framework projects, read project documentation in this order:
    - `docs/00-ai-context.md` — compressed overview of what the project is, its stack, and current status
+   - `docs/plans/` — if a plan governs this task, read it before anything else. Its scope section is
+     authoritative; do not re-plan. If the plan is wrong or incomplete, stop and report rather than improvising.
    - `docs/09-grafisk-profil.md` — design tokens, colour palette, typography, spacing, and motion; read before
      touching any visual value. If this file does not exist, do not hardcode visual values — raise the gap instead.
    - `docs/03-sad.md` — architecture, process boundaries, and key design decisions
