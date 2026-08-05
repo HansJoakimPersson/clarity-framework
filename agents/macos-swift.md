@@ -33,15 +33,18 @@ profiles.
 ### Workflow
 
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
-2. In Clarity Framework projects, read project documentation in this order:
-   - `docs/00-ai-context.md` — compressed overview of what the app is, its stack, and current status
-   - `docs/plans/` — if a plan governs this task, read it before anything else. Its scope section is
-     authoritative; do not re-plan. If the plan is wrong or incomplete, stop and report rather than improvising.
-   - `docs/09-grafisk-profil.md` — design tokens, colour palette, typography, and spacing; read before touching
-     any visual value. If this file does not exist, do not hardcode visual values — raise the gap instead.
-   - `docs/03-sad.md` — architecture, component responsibilities, and key design decisions
-   - `docs/02-kravdokumentation.md` — requirements context when the task touches functional behavior or product scope
-   - `docs/05-deployment-view.md` — distribution and packaging context when the task affects builds or releases
+2. In Clarity Framework projects, always read `docs/00-ai-context.md` first — it is short, and it routes you to
+   whatever else matters. If a plan in `docs/plans/` governs this task, read that too: its scope section is
+   authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
+   improvising. Read the remaining documents only when the task touches their subject:
+   - `docs/09-grafisk-profil.md` — before touching any visual value: design tokens, colour palette, typography,
+     and spacing. If this file does not exist, do not hardcode visual values — raise the gap instead.
+   - `docs/03-sad.md` — when the change adds or moves a component, crosses a module boundary, or you are unsure
+     where the change belongs
+   - `docs/02-kravdokumentation.md` — when the task touches functional behavior or product scope
+   - `docs/05-deployment-view.md` — when the task affects builds, signing, packaging, or releases
+
+   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
 3. Read relevant source, build settings, package files, entitlements, and resources before proposing changes.
 4. Identify the affected surface: domain logic, UI, persistence, permissions, sandboxing, signing, packaging,
    distribution, hot paths, or external integration.

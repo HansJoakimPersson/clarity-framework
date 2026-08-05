@@ -28,6 +28,9 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
   och avsnittet AI-arbetsflöde
 - Rolltabellen i `ai-usage-guide.md` § 2 kompletterad med rad för grafisk profil
 - Repo-strukturen i `README.md` uppdaterad – `09-grafisk-profil.md` och `agents/`-filerna saknades
+- Läsordningen i samtliga sju starters villkorad: bara `docs/00-ai-context.md` och en eventuell styrande plan läses
+  alltid, övriga dokument läses när uppgiften berör deras ämne. Startern läste tidigare upp till fem dokument oavsett
+  uppgift, vilket kostade kontext utan att tillföra något för till exempel en ren CSS-ändring
 
 ### Tillagt
 

@@ -15,11 +15,11 @@ Guidance for agents editing shell scripts, aliases, functions, and dotfiles.
 ## Workflow
 
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
-2. In Clarity Framework projects, read project documentation in this order:
-   - `docs/00-ai-context.md` — compressed overview of what the project is and its current status
-   - `docs/plans/` — if a plan governs this task, read it before anything else. Its scope section is
-     authoritative; do not re-plan. If the plan is wrong or incomplete, stop and report rather than improvising.
-   - `docs/03-sad.md` — architecture context when the script is part of a larger system
+2. In Clarity Framework projects, always read `docs/00-ai-context.md` first — it is short, and it routes you to
+   whatever else matters. If a plan in `docs/plans/` governs this task, read that too: its scope section is
+   authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
+   improvising. Read `docs/03-sad.md` only when the script is part of a larger system and the change touches how
+   it fits in. Do not read a document speculatively.
 3. Identify whether the change affects behavior, formatting, portability, or security.
 4. Implement the task in full, within its stated scope.
 5. Run `shellcheck` when available.

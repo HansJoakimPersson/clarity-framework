@@ -34,15 +34,18 @@ like a website in a window" as a defect, not a starting point.
 ### Workflow
 
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
-2. In Clarity Framework projects, read project documentation in this order:
-   - `docs/00-ai-context.md` — compressed overview of what the project is, its stack, and current status
-   - `docs/plans/` — if a plan governs this task, read it before anything else. Its scope section is
-     authoritative; do not re-plan. If the plan is wrong or incomplete, stop and report rather than improvising.
-   - `docs/09-grafisk-profil.md` — design tokens, colour palette, typography, spacing, and motion; read before
-     touching any visual value. If this file does not exist, do not hardcode visual values — raise the gap instead.
-   - `docs/03-sad.md` — architecture, process boundaries, and key design decisions
-   - `docs/04-datamodell-api.md` — IPC contracts, data structures, and external API contracts
-   - `docs/05-deployment-view.md` — target platforms, packaging, signing, and update channel
+2. In Clarity Framework projects, always read `docs/00-ai-context.md` first — it is short, and it routes you to
+   whatever else matters. If a plan in `docs/plans/` governs this task, read that too: its scope section is
+   authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
+   improvising. Read the remaining documents only when the task touches their subject:
+   - `docs/09-grafisk-profil.md` — before touching any visual value: design tokens, colour palette, typography,
+     spacing, and motion. If this file does not exist, do not hardcode visual values — raise the gap instead.
+   - `docs/03-sad.md` — when the change crosses a process boundary, adds a component, or you are unsure where the
+     change belongs
+   - `docs/04-datamodell-api.md` — when the task touches IPC contracts, data structures, or external APIs
+   - `docs/05-deployment-view.md` — when the task affects packaging, signing, target platforms, or the update channel
+
+   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
 3. Determine which process the change belongs in — main, preload, or renderer — before writing any code. If a change
    appears to need code in more than one process, define the IPC contract first.
 4. Confirm the development run model before starting anything (see **Development Run Model**).

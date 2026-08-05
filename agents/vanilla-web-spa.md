@@ -16,14 +16,17 @@ Guidance for agents working in small single-page web applications without a fram
 ## Workflow
 
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
-2. In Clarity Framework projects, read project documentation in this order:
-   - `docs/00-ai-context.md` — compressed overview of what the project is, its stack, and current status
-   - `docs/plans/` — if a plan governs this task, read it before anything else. Its scope section is
-     authoritative; do not re-plan. If the plan is wrong or incomplete, stop and report rather than improvising.
-   - `docs/09-grafisk-profil.md` — design tokens, colour palette, typography, spacing, and motion; read before
-     touching any visual value. If this file does not exist, do not hardcode visual values — raise the gap instead.
-   - `docs/03-sad.md` — architecture and key design decisions relevant to the task
-   - `docs/04-datamodell-api.md` — API contracts when the task touches network behavior or data structures
+2. In Clarity Framework projects, always read `docs/00-ai-context.md` first — it is short, and it routes you to
+   whatever else matters. If a plan in `docs/plans/` governs this task, read that too: its scope section is
+   authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
+   improvising. Read the remaining documents only when the task touches their subject:
+   - `docs/09-grafisk-profil.md` — before touching any visual value: design tokens, colour palette, typography,
+     spacing, and motion. If this file does not exist, do not hardcode visual values — raise the gap instead.
+   - `docs/03-sad.md` — when the change adds or moves a component, crosses a module boundary, or you are unsure
+     where the change belongs
+   - `docs/04-datamodell-api.md` — when the task touches network behavior or data structures
+
+   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
 3. If the project has a backend component, confirm the run model before starting anything: is the frontend served
    by the backend process, or does it run as a separate server? If the project documentation does not make this
    clear, ask before assuming. Never start a separate frontend server solely because a backend exists.

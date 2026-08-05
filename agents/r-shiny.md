@@ -28,13 +28,16 @@ optional profiles that match the project in front of you.
 ### Workflow
 
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
-2. In Clarity Framework projects, read project documentation in this order:
-   - `docs/00-ai-context.md` — compressed overview of what the project is, its stack, and current status
-   - `docs/plans/` — if a plan governs this task, read it before anything else. Its scope section is
-     authoritative; do not re-plan. If the plan is wrong or incomplete, stop and report rather than improvising.
-   - `docs/03-sad.md` — architecture, component responsibilities, and key design decisions
-   - `docs/02-kravdokumentation.md` — requirements context when the task touches functional behavior
-   - `docs/04-datamodell-api.md` — data model and API contracts when the task touches persistence or APIs
+2. In Clarity Framework projects, always read `docs/00-ai-context.md` first — it is short, and it routes you to
+   whatever else matters. If a plan in `docs/plans/` governs this task, read that too: its scope section is
+   authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
+   improvising. Read the remaining documents only when the task touches their subject:
+   - `docs/03-sad.md` — when the change adds or moves a module, crosses a module boundary, or you are unsure where
+     the change belongs
+   - `docs/02-kravdokumentation.md` — when the task touches functional behavior
+   - `docs/04-datamodell-api.md` — when the task touches persistence, data structures, or API contracts
+
+   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
 3. Read relevant source code before proposing changes — never guess reactive variable names, module IDs, or function signatures.
 4. For non-trivial logic: write or update the failing test first with testthat, implement the smallest change, then refactor
    while keeping tests green.
