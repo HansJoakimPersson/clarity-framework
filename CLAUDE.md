@@ -20,6 +20,8 @@ Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutv
 ```text
 /framework/    – Ramverkets egna dokument (guide, CHANGELOG, instruktioner)
 /templates/    – Mallar att kopiera till ett projekts /docs
+/agents/       – AGENTS.md-starters per stack
+/skills/       – Skills att kopiera till ett projekts .claude/skills
 /docs-example/ – Exempelprojekt med ifyllda mallar
 ```
 

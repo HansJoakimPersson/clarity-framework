@@ -138,6 +138,12 @@ Inte att en viss modell är bättre på att planera. Vinsten är att:
 
 Rolldelningen tvingar fram disciplinen. Du får merparten av värdet även med en enda agent som skriver planen till fil först.
 
+### Automatisera flödet
+
+`skills/planstyrt-bygge/` är en färdig skill för Claude Code som kör hela kedjan: skriver planen, låter Codex CLI granska den mot koden read-only, stannar för ditt godkännande av omfattningen, och låter sedan Codex bygga. Kopiera den till projektets `.claude/skills/` när flödet behövs.
+
+Stoppunkten före bygget är inte en artighet – den är hela poängen. En automatisering som hoppar över den ger dig ett bygge du inte har godkänt omfattningen på.
+
 ---
 
 ## 6. Vad AI inte kan ersätta

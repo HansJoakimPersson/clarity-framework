@@ -50,6 +50,10 @@ clarity-framework/
 │   ├── vanilla-web-spa.md
 │   └── shell-dotfiles.md
 │
+├── skills/                             # Skills att kopiera till .claude/skills/
+│   ├── README.md                       # Vad en skill är och hur den används
+│   └── planstyrt-bygge/                # Claude planerar, Codex bygger
+│
 ├── docs-example/                       # Exempelprojekt – visar ifyllda mallar
 │   └── assets/
 │

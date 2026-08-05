@@ -41,6 +41,12 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 - Läsordningen i samtliga sju starters utökad med `docs/plans/` – planens omfattningsavsnitt är auktoritativt,
   byggagenten planerar inte om utan stannar och rapporterar
 - Avsnitt `Flera agenter` i `framework/dokumentationsguide.md` § 12
+- Ny katalog `/skills/` med skills att kopiera till ett projekts `.claude/skills/`, plus `skills/README.md`
+  som förklarar vad en skill är, hur den skiljer sig från `AGENTS.md` och vad som gäller före vad
+- `skills/planstyrt-bygge/` – kör hela det planstyrda flödet: Claude Code skriver planen, Codex CLI granskar
+  den mot koden read-only, flödet stannar för godkännande av omfattningen, Codex bygger i bakgrunden med
+  `workspace-write`, Claude Code granskar diffen mot Definition of Done och tar aldrig över bygget
+- Avsnitt `Automatisera flödet` i `framework/ai-usage-guide.md` § 5
 - `agents/electron-desktop.md` – AGENTS.md-starter för Electron-baserade desktop-appar med native känsla: obligatorisk
   säkerhetssektion (context isolation, sandbox, contextBridge, CSP, IPC-validering), processarkitektur main/preload/
   renderer, Native Platform Integration (fönsterchrome, menyer med `role`, plattformsgenvägar, native dialoger,
