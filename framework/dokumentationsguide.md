@@ -1,6 +1,6 @@
 # Den ultimata guiden till mjukvarudokumentation
 
-## Clarity Framework v1.2.0
+## Clarity Framework v1.3.0
 
 ### Kravställning · Utveckling · Drift · Produktion
 
@@ -65,7 +65,7 @@ Clarity Framework skalas med projektet. Använd det som passar – hoppa inte ö
 
 | Projektstorlek | Minsta dokumentationsuppsättning | Valfritt |
 | --- | --- | --- |
-| **Personligt projekt / hobby** | Vision & Scope, README, AI Context | Övriga dokument vid behov |
+| **Personligt projekt / hobby** | Vision & Scope, README | AI Context, övriga dokument vid behov |
 | **Sidoprojekt med lansering** | + Kravdokumentation, SAD (förenklad) | Deployment View, Runbook |
 | **Litet team (2–5 pers)** | Alla 8 kärnmallar | AI Usage Guide |
 | **Större team (5–20 pers)** | Alla 8 kärnmallar + striktare DoD | Formell releaseprocess |
@@ -937,6 +937,8 @@ Om arbetet delas upp mellan flera AI-agenter – en planerar, en bygger, en gran
 
 `00-ai-context.md` är den enda filen som är designad primärt för att läsas av en AI. Den destillerar projektets alla dokument till max en sida och klistras in i början av en ny session. Se mallen i ramverket.
 
+I praktiken drivs de flesta projekt som använder Clarity Framework idag tillsammans med en AI-agent. Dokumentet förblir formellt valfritt – kärnramverket (mall 01–08) fungerar utan det – men är värt att skapa redan i Fas 1 så fort en agent är inblandad, även för ett personligt projekt.
+
 ---
 
-*Clarity Framework v1.2.0 | Uppdaterad: 2026-06*
+*Clarity Framework v1.3.0 | Uppdaterad: 2026-08*

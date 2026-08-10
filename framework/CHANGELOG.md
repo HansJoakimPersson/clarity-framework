@@ -10,8 +10,28 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ## [Unreleased]
 
+## [1.3.0] – 2026-08-10
+
 ### Ändrat
 
+- `.gitignore`: `.token-pilot/` tillagd. Katalogen låg oskyddad och riskerade att committas av
+  misstag, till skillnad från `.claude/` som redan ignorerades
+- Skalningstabellen i `framework/dokumentationsguide.md` § 1: `00-ai-context.md` flyttad från
+  obligatoriskt till valfritt för personliga/hobbyprojekt. Tabellen motsade `README.md` och § 12:s
+  egen regel att AI-lagret är valfritt – ett personligt projekt kunde läsa två olika svar på om
+  filen krävs
+- `skills/planstyrt-bygge/SKILL.md` översatt till engelska. Ny språkkonvention i `CLAUDE.md`:
+  innehåll som primärt läses av en agent (`agents/`, `SKILL.md`) skrivs på engelska, innehåll som
+  läses och godkänns av en människa (`templates/`, ramverkets guider) på svenska
+- `README.md` och `CLAUDE.md`: `docs-example/` borttagen ur repo-strukturen. Katalogen fanns aldrig
+  i repot – referensen pekade på ingenting
+- Avsnitt `Vid avslut` i `templates/plan.md` och `skills/planstyrt-bygge/plan-mall.md`: tre frågor som
+  måste besvaras innan planen raderas – vad som hör hemma i `03-sad.md`, vad som hör hemma i
+  `08-andringshantering.md`, och vad som var fel i planen. Planen raderades tidigare utan att något
+  tvingade fram kontrollen, och lärdomen försvann med den
+- `skills/planstyrt-bygge/`: nytt steg 7 (grind före merge) och steg 8 (avsluta planen). Flödet hade
+  bara en namngiven grind – före bygget. Diffen granskades men ingen punkt gjorde godkännandet till
+  ett uttalat beslut
 - `skills/planstyrt-bygge/` bär nu en egen kopia av planmallen som `plan-mall.md`. Förutsättningen
   pekade på `templates/plan.md`, en sökväg som bara finns i ramverksrepot och aldrig i projekt som
   använder ramverket – flödet stannade därför på en förutsättning som var omöjlig att uppfylla.
@@ -41,6 +61,17 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ### Tillagt
 
+- `framework/dokumentationsguide.md` § 12: ny mening om att `00-ai-context.md` i praktiken är värt
+  att skapa redan i Fas 1 när en AI-agent är inblandad, trots att den formellt är valfri
+- `CLAUDE.md`: ny sektion `Språkkonvention`
+- `skills/planstyrt-bygge/SKILL.md` steg 4: hantering av abonnemangs-/tokenlimit mitt i bygget via
+  [aimux](https://github.com/Digital-Threads/aimux) om verktyget redan är installerat och
+  konfigurerat – sammanfattningsöverlämning till en annan CLI/konto istället för att bygget bara
+  tappas. Oprövat i skarpt läge; flödet instrueras att falla tillbaka till stanna-och-rapportera om
+  det inte fungerar som beskrivet
+- `framework/ai-usage-guide.md` § 5: ny sektion `Verktygsdetektion` – principen att kompletterande
+  verktyg (limit-failover, kontextkomprimering) får användas om de redan finns installerade, men
+  aldrig krävs
 - `templates/plan.md` – transient arbetsorder för planstyrt arbetsflöde där en agent planerar och en annan bygger;
   auktoritativt omfattningsavsnitt med `Ingår` / `Ingår inte`, blockerande frågor och kontrollerbar Definition of Done
 - Avsnitt `AI-arbetsflöde` i `templates/00-ai-context.md`: rolltabell (planerare / byggare / granskare) och

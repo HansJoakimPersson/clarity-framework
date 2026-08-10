@@ -144,6 +144,14 @@ Rolldelningen tvingar fram disciplinen. Du får merparten av värdet även med e
 
 Stoppunkten före bygget är inte en artighet – den är hela poängen. En automatisering som hoppar över den ger dig ett bygge du inte har godkänt omfattningen på.
 
+### Verktygsdetektion – komplement som får användas om de finns
+
+Långkörande automatiserade flöden ska inte kräva kompletterande verktyg, men får dra nytta av dem om de redan finns. Principen är detektion, inte beroende: kontrollera om verktyget finns, använd det om det gör det, fortsätt fungera om det inte gör det.
+
+**Limit-failover.** Ett bygge som når ett abonnemangs- eller tokenlimit mitt i ska inte bara tappa arbetet om ett alternativ finns. En multiplexer som [aimux](https://github.com/Digital-Threads/aimux) kan, om den redan är installerad och konfigurerad med fler profiler, fortsätta samma session under ett annat CLI eller konto via en sammanfattningsöverlämning. `skills/planstyrt-bygge/` känner av detta och beskriver det konkreta flödet under "If the build hits a subscription/usage limit mid-run".
+
+**Kontextkomprimering och terse-svar.** Verktyg som komprimerar verktygsoutput innan den når kontexten, eller gör agentens egna svar kortare (t.ex. hooks-baserade plugins), verkar under agentens körlager. De kräver ingen integration i skills eller `AGENTS.md` – de är på eller av oberoende av vad ramverket säger, och nämns här enbart så att ingen skill råkar motverka dem.
+
 ---
 
 ## 6. Vad AI inte kan ersätta
@@ -159,5 +167,5 @@ Stoppunkten före bygget är inte en artighet – den är hela poängen. En auto
 
 ---
 
-*Detta dokument är en del av Clarity Framework v1.2.0*
+*Detta dokument är en del av Clarity Framework v1.3.0*
 *Nästa steg: Skapa `00-ai-context.md` för ditt specifika projekt*

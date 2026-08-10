@@ -13,7 +13,7 @@ Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutv
 
 **Tre kärnprinciper:** Just enough documentation · Dokumentation som kod · Klarhet framför fullständighet
 
-**Nuvarande version:** 1.2.0
+**Nuvarande version:** 1.3.0
 
 **Repo-struktur:**
 
@@ -22,8 +22,20 @@ Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutv
 /templates/    – Mallar att kopiera till ett projekts /docs
 /agents/       – AGENTS.md-starters per stack
 /skills/       – Skills att kopiera till ett projekts .claude/skills
-/docs-example/ – Exempelprojekt med ifyllda mallar
 ```
+
+---
+
+## Språkkonvention
+
+Regeln avgörs av vem som är primär läsare, inte av filtyp:
+
+| Innehåll | Språk | Varför |
+| --- | --- | --- |
+| `agents/*.md`, `skills/*/SKILL.md` | Engelska | Läses primärt av en AI-agent som exekverar instruktionerna, inte av dig löpande. Engelska ger mindre tvetydighet för modellen och matchar hur skill-beskrivningar tolkas av agentkörtider. |
+| `templates/*.md`, ramverkets egna guider (`framework/`, `README.md`, `CLAUDE.md`) | Svenska | Läses och godkänns av dig eller andra människor – planen i `templates/plan.md` visas t.ex. explicit för användaren innan bygge startar. |
+
+En skill eller starter som byter primär läsare (blir ett dokument du själv fyller i och godkänner) byter språk med den. Filnamnet `SKILL.md`/`AGENTS.md` avgör inte språket – syftet gör.
 
 ---
 
@@ -82,4 +94,4 @@ MAJOR.MINOR.PATCH
 
 ---
 
-*Clarity Framework v1.2.0*
+*Clarity Framework v1.3.0*

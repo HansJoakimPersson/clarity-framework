@@ -4,7 +4,7 @@
 > Fungerar för alla skalor – från ett personligt sidoprojekt till ett team på 20 personer.  
 > AI-assistans är ett valfritt accelerationslager, inte en förutsättning.
 
-**Version:** 1.2.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 1.3.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ---
 
@@ -56,9 +56,6 @@ clarity-framework/
 │       ├── SKILL.md
 │       └── plan-mall.md                # Kopia av templates/plan.md – följer med skillen
 │
-├── docs-example/                       # Exempelprojekt – visar ifyllda mallar
-│   └── assets/
-│
 └── README.md                           # Denna fil
 ```
 
@@ -102,4 +99,4 @@ clarity-framework/
 
 ---
 
-*Clarity Framework v1.2.0*
+*Clarity Framework v1.3.0*

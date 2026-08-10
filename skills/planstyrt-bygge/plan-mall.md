@@ -77,4 +77,16 @@
 
 ---
 
-*Clarity Framework v1.2.0 – Planmall*
+## Vid avslut
+
+Besvaras innan planen raderas. "Inget" är ett giltigt svar – uteblivet svar är det inte.
+
+- [ ] Vilka beslut från bygget hör hemma i `docs/03-sad.md`?
+- [ ] Vad ska in i `docs/08-andringshantering.md`?
+- [ ] Vad var fel i planen? En mening – den gör nästa plan bättre.
+
+> Planen raderas här. Utan de här svaren raderas lärdomen med den.
+
+---
+
+*Clarity Framework v1.3.0 – Planmall*

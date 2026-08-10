@@ -1,116 +1,155 @@
 ---
 name: planstyrt-bygge
-description: Planstyrt arbetsflöde där Claude Code skriver en plan enligt Clarity Frameworks planmall, låter Codex CLI granska den mot koden, och efter godkännande låter Codex bygga den. Använd när en uppgift är stor nog att omfattningen behöver godkännas innan kod skrivs.
+description: Plan-driven workflow where Claude Code writes a plan following Clarity Framework's plan template, has Codex CLI review it against the code, and after approval lets Codex build it. Use when a task is large enough that its scope needs approval before code is written.
 ---
 
-# Planstyrt bygge
+# Plan-Driven Build (planstyrt-bygge)
 
-Du planerar och granskar. **Codex bygger.** Du skriver ingen produktionskod i det här flödet.
+You plan and review. **Codex builds.** You write no production code in this workflow.
 
-## Förutsättningar
+## Prerequisites
 
-Kontrollera innan du börjar. Saknas något: rapportera det och stanna, improvisera inte förbi.
+Check before you start. If anything is missing: report it and stop, don't improvise past it.
 
-- `codex` finns i PATH (`command -v codex`)
-- `AGENTS.md` finns i projektroten
-- Repot är rent (`git status --porcelain` tomt) och du står på rätt gren
+- `codex` is on PATH (`command -v codex`)
+- `AGENTS.md` exists in the project root
+- The repo is clean (`git status --porcelain` empty) and you're on the right branch
+- Optional: `aimux` on PATH (`command -v aimux`) — if installed and configured with more than
+  one profile, it can continue a session under another CLI/account when a subscription or usage
+  limit is hit mid-build. See Step 4. Its absence is not a blocker.
 
-Rent repo är inte formalia: Codex skriver direkt i arbetsträdet, och är det smutsigt när bygget
-startar går det inte längre att se vad Codex gjorde och vad som redan låg där. Är det smutsigt –
-rapportera vad som ligger oincheckat och låt användaren avgöra. Committa, stasha eller återställ
-aldrig åt användaren utan att fråga.
+A clean repo isn't a formality: Codex writes directly into the working tree, and if it's dirty
+when the build starts, you can no longer tell what Codex did from what was already there. If it's
+dirty — report what's uncommitted and let the user decide. Never commit, stash, or reset on the
+user's behalf without asking.
 
-Planmallen ligger i skillen som `plan-mall.md` och följer med när skillen kopieras. Leta inte efter
-`templates/plan.md` – den sökvägen finns i ramverksrepot, inte i projekt som använder ramverket.
+The plan template lives in this skill as `plan-mall.md` and travels with it when the skill is
+copied. Don't look for `templates/plan.md` — that path exists in the framework repo, not in
+projects that use the framework.
 
-## Steg 1 – Skriv planen
+## Step 1 – Write the plan
 
-Läs `docs/00-ai-context.md` och därifrån bara det uppgiften faktiskt berör.
+Read `docs/00-ai-context.md`, and from there only what the task actually touches.
 
-Kopiera `plan-mall.md` från den här skillkatalogen till `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md` och
-fyll i kopian. Använd dagens faktiska datum. Redigera aldrig mallen på plats – då finns ingen mall
-till nästa plan.
+Copy `plan-mall.md` from this skill directory to `docs/plans/YYYY-MM-DD-short-name.md` and fill in
+the copy. Use today's actual date. Never edit the template in place — then there's no template left
+for the next plan.
 
-Planen ska kunna byggas av en agent som inte deltagit i konversationen och inte kan fråga
-användaren. Det ställer krav:
+The plan must be buildable by an agent that did not take part in the conversation and cannot ask
+the user. That imposes requirements:
 
-- **Omfattning** – `Ingår` och `Ingår inte` ska vara konkreta beteenden eller ytor, inte teman.
-  `Ingår inte` är det fält som hindrar drift; hoppa aldrig över det.
-- **Steg** – faktiska filsökvägar och ett körbart `Verifiering:`-kommando per steg.
-- **Öppna frågor** – är något oklart nog att bygget skulle gissa fel, skriv det som
-  `BLOCKERANDE`. Anta inte åt användaren.
-- **Definition of Done** – kontrollerbara villkor, inte omdömen.
+- **Scope** — `Ingår` (In scope) and `Ingår inte` (Out of scope) must be concrete behaviors or
+  surfaces, not themes. `Ingår inte` is the field that prevents drift; never skip it.
+- **Steps** — actual file paths and a runnable `Verifiering:` (Verification:) command per step.
+- **Open questions** — if something is unclear enough that the build would guess wrong, mark it
+  `BLOCKERANDE` (BLOCKING). Don't assume on the user's behalf.
+- **Definition of Done** — checkable conditions, not judgment calls.
 
-Bygg ingenting i det här steget.
+Build nothing in this step.
 
-## Steg 2 – Låt Codex granska planen
+## Step 2 – Have Codex review the plan
 
-Kör read-only så att Codex inte kan ändra planen den granskar:
-
-```bash
-codex exec -s read-only -o /tmp/codex-plangranskning.md "Läs AGENTS.md och docs/plans/<planfil>. Granska planen mot koden — bygg ingenting och ändra inga filer. Stämmer filsökvägarna? Finns funktionerna och modulerna planen förutsätter? Går verifieringskommandona att köra som de står? Räcker stegen för att bygga utan att gissa? Ligger något under Ingår som redan finns? Svara med konkreta invändningar och föreslagna planändringar, inte ett omdöme."
-```
-
-Läs `/tmp/codex-plangranskning.md`.
-
-## Steg 3 – Revidera och stanna
-
-Skriv in de invändningar du håller med om i planen. Motivera kort de du avfärdar — tyst
-avfärdande döljer att granskningen skedde.
-
-Sätt `Status: Godkänd`.
-
-Visa användaren: målet, `Ingår` / `Ingår inte`, alla `BLOCKERANDE`-frågor, och vad
-granskningen ändrade.
-
-**Stanna här.** Att godkänna omfattningen innan kod skrivs är hela poängen med flödet.
-Gå inte vidare utan klartecken. Blockerande frågor besvaras av användaren, inte av dig.
-
-## Steg 4 – Låt Codex bygga
-
-Efter klartecken: committa planen först, så att det går att se vilken version som byggdes.
-
-Kör bygget **i bakgrunden**. Ett bygge överskrider regelmässigt förgrundstimeouten, och en
-dödad Codex-process lämnar halva ändringen på disk.
+Run read-only so Codex can't change the plan it's reviewing:
 
 ```bash
-codex exec -s workspace-write "Läs AGENTS.md och docs/plans/<planfil>, i den ordningen. Bygg planen. Omfattningsavsnittet är auktoritativt — planera inte om, och bygg inget som inte står under Ingår. Visar sig planen fel eller ofullständig: stanna och rapportera, improvisera inte vidare. Kör verifieringen efter varje steg."
+codex exec -s read-only -o /tmp/codex-plangranskning.md "Read AGENTS.md and docs/plans/<plan-file>. Review the plan against the code — build nothing and change no files. Do the file paths hold up? Do the functions and modules the plan assumes exist? Do the verification commands run as written? Are the steps enough to build without guessing? Is anything under 'In scope' already there? Answer with concrete objections and proposed plan changes, not a verdict."
 ```
 
-## Steg 5 – Granska diffen mot planen
+Read `/tmp/codex-plangranskning.md`.
 
-Läs `git diff` och jämför mot planens Definition of Done, ett villkor i taget.
+## Step 3 – Revise and stop
 
-Rapportera vad som är klart och vad som inte är det. Peka ut allt Codex byggde som ligger
-utanför `Ingår`.
+Write the objections you agree with into the plan. Briefly justify the ones you dismiss — silent
+dismissal hides the fact that the review happened.
 
-**Bygg inte klart själv om Codex stannade.** Rapportera varför den stannade och låt
-användaren avgöra. Att ta över är det tysta felet som gör hela flödet meningslöst — då har
-användaren betalat för orkestreringen utan att få den.
+Set `Status: Godkänd` (Approved).
 
-## Steg 6 — Committa resultatet
+Show the user: the goal, `Ingår` / `Ingår inte`, all `BLOCKERANDE` questions, and what the review
+changed.
 
-Lämna aldrig bygget oincheckat. Ett smutsigt arbetsträd blockerar nästa körning av det här flödet,
-och då går det inte längre att skilja förra varvets ändringar från nästa varvs.
+**Stop here.** Approving the scope before code is written is the entire point of this workflow.
+Do not proceed without a go-ahead. Blocking questions are answered by the user, not by you.
 
-Föreslå en commit och vänta på godkännande — committa inte självmant om inte projektet säger annat.
-Följer projektet Clarity Frameworks commit-disciplin ska berörda `docs/` med i samma commit.
+## Step 4 – Have Codex build
 
-Krävs fler varv för att bli klar stannar planen kvar i repot tills allt är byggt.
+After the go-ahead: commit the plan first, so it's possible to see which version was built.
 
-## Städa
+Run the build **in the background**. A build routinely exceeds the foreground timeout, and a
+killed Codex process leaves half the change on disk.
 
-Planen är transient. Radera den när ändringen är mergad, i en egen commit. Det som var värt att
-behålla har redan flyttat till `docs/03-sad.md` eller `docs/08-andringshantering.md`.
+```bash
+codex exec -s workspace-write "Read AGENTS.md and docs/plans/<plan-file>, in that order. Build the plan. The scope section is authoritative — do not re-plan, and build nothing that isn't listed under 'In scope'. If the plan turns out wrong or incomplete: stop and report, don't improvise further. Run verification after each step."
+```
 
-`plan-mall.md` stannar i skillkatalogen och raderas aldrig — den är mallen, inte en plan.
+### If the build hits a subscription/usage limit mid-run
 
-## Att veta
+Codex or Claude may hit a rate, token, or subscription limit before the build finishes. Default
+behavior is unchanged: stop and report to the user, as in Step 5.
 
-- `-s workspace-write` låter Codex ändra filer utan att fråga användaren. Du ser resultatet
-  först när det är klart. Det är rätt avvägning när planen är granskad och omfattningen snäv,
-  fel avvägning när planen är vag — då är det bättre att låta användaren köra Codex själv.
-- Flödet kostar två modeller på samma uppgift plus din granskning. För en ändring användaren
-  kan överblicka på fem minuter är det inte värt det. Säg det istället för att köra flödet.
-- Ska en annan byggagent användas är det bara kommandot i steg 2 och 4 som byts. Rollerna,
-  planen och stoppunkten är oberoende av verktyg.
+If `aimux` is available and already configured with a second profile for an alternate CLI or
+account, it can continue the same session elsewhere via a summary handoff instead of losing the
+run:
+
+```bash
+aimux handoff <sessionId> --to <profile>
+```
+
+This is not a native resume — aimux reads the source transcript, summarizes it for the target
+profile, and launches the target CLI seeded with that summary. Treat the summary as lossy: after
+the handoff, re-check the new session's understanding of the plan's scope and Definition of Done
+before trusting it to continue unattended. This path has not been exercised end-to-end in this
+framework yet — the first real use is the test. If it doesn't work as expected, fall back to
+stopping and reporting rather than guessing at a fix mid-build.
+
+## Step 5 – Review the diff against the plan
+
+Read `git diff` and compare it to the plan's Definition of Done, one condition at a time.
+
+Report what's done and what isn't. Point out anything Codex built that falls outside `Ingår`.
+
+**Don't finish the build yourself if Codex stopped.** Report why it stopped and let the user
+decide. Taking over is the silent failure that makes the whole workflow pointless — the user paid
+for the orchestration without getting it.
+
+## Step 6 — Commit the result
+
+Never leave the build uncommitted. A dirty working tree blocks the next run of this workflow, and
+then it's no longer possible to distinguish this round's changes from the next round's.
+
+Propose a commit and wait for approval — don't commit on your own unless the project says
+otherwise. If the project follows Clarity Framework's commit discipline, affected `docs/` files
+must be in the same commit.
+
+If more rounds are needed to finish, the plan stays in the repo until everything is built.
+
+## Step 7 — Gate before merge
+
+The build is committed, not approved. Ask outright whether the change may be merged, and make the
+question answerable: state which Definition of Done conditions are met, which aren't, and what
+you're unsure about. Never approve on the user's behalf.
+
+If the gate fails — the plan stays, and the workflow goes back to Step 4 with what remains.
+
+## Step 8 — Close out the plan
+
+After merge: go through the plan's **Vid avslut** (On closing) section with the user before the
+plan is deleted.
+
+The answers drive actual changes. If an architectural decision belongs in `docs/03-sad.md`, write
+it there now, don't just note the intent. "Nothing" is a valid answer to every question — but don't
+skip the question because the answer seems obvious. This is the last point where the lesson still
+exists.
+
+Then delete the plan in its own commit.
+
+`plan-mall.md` stays in the skill directory and is never deleted — it's the template, not a plan.
+
+## Good to know
+
+- `-s workspace-write` lets Codex change files without asking the user. You see the result only
+  once it's done. That's the right tradeoff when the plan is reviewed and the scope is narrow, the
+  wrong tradeoff when the plan is vague — then it's better to let the user run Codex themselves.
+- The workflow costs two models on the same task plus your review. For a change the user can
+  review in five minutes, it isn't worth it. Say so instead of running the workflow.
+- To use a different build agent, only the command in Step 2 and Step 4 changes. The roles, the
+  plan, and the stop point are tool-independent.

@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Senast uppdaterad** | ÅÅÅÅ-MM-DD |
-| **Ramverksversion** | Clarity Framework v1.2.0 |
+| **Ramverksversion** | Clarity Framework v1.3.0 |
 | **Projektfas** | Initiering / Krav / Design / Implementation / Drift |
 
 ---
@@ -115,4 +115,4 @@
 
 ---
 
-*Clarity Framework v1.2.0 – AI Context Document*
+*Clarity Framework v1.3.0 – AI Context Document*

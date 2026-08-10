@@ -56,4 +56,4 @@ En skill som motsäger projektets `AGENTS.md` ska anpassas, inte följas.
 
 ---
 
-*Clarity Framework v1.2.0*
+*Clarity Framework v1.3.0*
