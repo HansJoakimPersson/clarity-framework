@@ -25,6 +25,11 @@ Clarity Framework-dokument i vad den svarar på:
 | Katalog | Passar när... |
 | --- | --- |
 | `planstyrt-bygge/` | Uppgiften är stor nog att omfattningen behöver godkännas innan kod skrivs, och du vill att Claude Code orchestrerar medan planering, granskning och bygge dispatchas till andra CLI:er/konton |
+| `ramverksuppdatering/` | Projektet ligger på en äldre version av ramverket och ska lyftas till senaste releasen utan att det som redan är ifyllt går förlorat |
+
+De två är oberoende av varandra. `ramverksuppdatering/` dispatchar ingenting och har inget med
+orkestrering att göra – den kör i din session och rör bara `docs/`, `AGENTS.md` och
+`.claude/skills/`.
 
 ---
 

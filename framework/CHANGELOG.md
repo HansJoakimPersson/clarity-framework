@@ -12,6 +12,17 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ### Tillagt
 
+- `skills/ramverksuppdatering/` – ny skill som lyfter ett projekt till senaste releasen. Hämtar
+  ramverket från GitHub och klassar varje fil genom en **trevägsjämförelse**: filen vid projektets
+  baseline-version, filen vid den nya versionen, och filen i projektet. Det gör skillnaden mellan
+  "orörd sedan den kopierades" (säker att ersätta) och "ifylld eller anpassad" (rörs aldrig) exakt
+  istället för gissad. Ifyllt innehåll flyttas in i den nya strukturen ordagrant; innehåll som inte
+  har någon plats i den nya strukturen behålls och flaggas hellre än raderas. Skillen dispatchar
+  ingenting och har ingen koppling till `planstyrt-bygge` – den kör i din egen session
+- `docs/.clarity-version` – ny projektartefakt som `ramverksuppdatering` skriver: version, datum,
+  vald `agents/`-starter och installerade skills. Versionen gick tidigare bara att läsa ur
+  `00-ai-context.md`, som är valfri för mindre projekt – ett projekt kunde alltså sakna varje spår
+  av vilken version det byggdes på
 - `skills/planstyrt-bygge/prompts/` – dispatch-prompterna flyttade från `SKILL.md` till fyra
   separata filer (`1-plan`, `2-kritik`, `4-bygge`, `5-verifiering`). Motivet är rent
   kostnadsmässigt: prompterna utgjorde omkring 500 av `SKILL.md`:s 2 287 ord, och lästes in i

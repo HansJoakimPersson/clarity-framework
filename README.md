@@ -52,6 +52,8 @@ clarity-framework/
 │
 ├── skills/                             # Skills att kopiera till .claude/skills/
 │   ├── README.md                       # Vad en skill är och hur den används
+│   ├── ramverksuppdatering/            # Lyfter ett projekt till senaste releasen
+│   │   └── SKILL.md
 │   └── planstyrt-bygge/                # Claude orkestrerar, Codex planerar och bygger
 │       ├── SKILL.md                    # Proceduren – det enda orchestratorn läser
 │       ├── codex-orchestrator.md       # Frontend: Codex tar orchestratorrollen
@@ -82,6 +84,17 @@ clarity-framework/
 | Sidoprojekt med lansering | 01, 02, 03, README | 04, 05, 07 |
 | Litet team (2–5 pers) | Alla 01–08 | 00, 09 |
 | Större team (5–20 pers) | Alla 00–08 | 09 |
+
+### Befintligt projekt på en äldre version
+
+Kopiera `skills/ramverksuppdatering/` till projektets `.claude/skills/` och anropa den. Den hämtar
+senaste releasen, jämför projektets filer mot den version de kopierades från, och lyfter projektet
+till nuvarande struktur utan att skriva över något du fyllt i. Nya mallar och avsnitt kommer in
+tomma – rapporten säger vilka som behöver fyllas.
+
+Den skriver också `docs/.clarity-version`, vilket gör nästa uppgradering exakt istället för härledd.
+Ett projekt som satts upp innan skillen fanns saknar den filen och får versionen härledd vid första
+körningen – skillen säger uttryckligen till när den härleder istället för att läsa.
 
 ## Dokumentflöde
 
