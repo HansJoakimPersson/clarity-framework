@@ -14,21 +14,30 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 - `skills/planstyrt-bygge/prompts/` – dispatch-prompterna flyttade från `SKILL.md` till fyra
   separata filer (`1-plan`, `2-kritik`, `4-bygge`, `5-verifiering`). Motivet är rent
-  kostnadsmässigt: prompterna utgjorde omkring 950 ord av `SKILL.md`, som laddas in i
-  orchestratorns kontext vid varje anrop trots att orchestratorn aldrig behöver läsa dem. Den
-  fyller platshållare (`{{PLAN}}`, `{{TASK}}`, `{{DATE}}`, `{{SHA}}`) och ser aldrig innehållet
+  kostnadsmässigt: prompterna utgjorde omkring 500 av `SKILL.md`:s 2 287 ord, och lästes in i
+  orchestratorns kontext vid varje anrop trots att orchestratorn aldrig behöver dem. Utflyttade
+  kunde de dessutom göras mer explicita (nu 682 ord) utan att det kostar orchestratorn något.
+  Orchestratorn fyller platshållare (`{{PLAN}}`, `{{TASK}}`, `{{DATE}}`, `{{SHA}}`) och ser
+  aldrig innehållet
 - `skills/planstyrt-bygge/dispatch.sh` – enda vägen till en dispatch. Renderar promptfilen, sätter
   sandbox **och** approval-policy tillsammans, upptäcker saknad `aimux`-profil och rapporterar det
   som en explicit `FALLBACK:`-rad istället för att tyst landa på inloggat konto, och skriver ut
   rapportens radantal mätt mot budgeten. Bakgrundsläge skriver exitkoden till en sentinelfil.
   Ett skript med stabil sökväg är dessutom det enda en permissionsregel kan matcha pålitligt –
   ett env-prefixat, bakgrundskört sammansatt kommando är det inte
-- `skills/planstyrt-bygge/kor-mall.md` – körjournal (`docs/plans/*.run.md`). Flödets tillstånd
+- `skills/planstyrt-bygge/journal-mall.md` – körjournal (`docs/plans/*.run.md`). Flödets tillstånd
   levde tidigare enbart i orchestratorns kontextfönster, vilket gjorde orchestratorn oersättlig:
   en tokengräns mitt i ett bygge tappade hela flödet och "byt CLI" var inte en möjlig manöver.
   Journalen uppdateras efter varje steg och committas med planen
+- `skills/planstyrt-bygge/codex-orchestrator.md` – frontend som låter Codex hålla orchestrator-
+  rollen, kopieras till `~/.codex/prompts/planstyrt-bygge.md`. Flödet låg tidigare inbakat i ett
+  Claude-skillformat, så "byt orchestrator när ett abonnemang tar slut" var i praktiken en
+  omskrivning av flödet, inte ett byte. Filen duplicerar inte proceduren – den pekar på samma
+  `SKILL.md` och beskriver bara de fem delta som gäller när Codex håller rollen, bland annat att
+  budgeten där saknar `deny`-regler och alltså vilar på instruktion
 - `skills/planstyrt-bygge/uppsattning.md` – engångsuppsättning per maskin: aimux-profiler,
-  Codex-profil med `network_access` för orchestratorrollen, permissionslista, gitignore
+  Codex-profil med `network_access` för orchestratorrollen, installation av Codex-frontenden,
+  permissionslista, gitignore
 - `skills/planstyrt-bygge/settings.exempel.json` – permissionslista för Claude Code. `deny`-halvan
   (`git diff`, `git show`, läsning av `prompts/`) gör läsbudgeten till en regel istället för en
   uppmaning

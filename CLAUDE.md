@@ -24,9 +24,10 @@ Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutv
 /skills/       – Skills att kopiera till ett projekts .claude/skills
 ```
 
-**Språkundantag i `skills/planstyrt-bygge/`:** `SKILL.md` och `prompts/*.txt` är engelska (läses av
-agenter), medan `plan-mall.md`, `kor-mall.md` och `uppsattning.md` är svenska (fylls i, godkänns
-eller följs av dig). Samma regel som annars – primär läsare avgör, inte katalogen.
+**Språkundantag i `skills/planstyrt-bygge/`:** `SKILL.md`, `codex-orchestrator.md` och
+`prompts/*.txt` är engelska (läses av agenter), medan `plan-mall.md`, `journal-mall.md` och
+`uppsattning.md` är svenska (fylls i, godkänns eller följs av dig). Samma regel som annars – primär
+läsare avgör, inte katalogen.
 
 ---
 

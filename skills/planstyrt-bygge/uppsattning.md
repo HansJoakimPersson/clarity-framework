@@ -84,6 +84,20 @@ betalar. De utesluter inte varandra.
 standardläge – hela poängen med att låta implementation köra utan att fråga är att sandboxen står
 kvar.
 
+Installera frontenden som gör Codex till orchestrator:
+
+```bash
+cp codex-orchestrator.md ~/.codex/prompts/planstyrt-bygge.md
+```
+
+Sedan `/planstyrt-bygge` i Codex. Filen duplicerar inte flödet – den pekar på samma `SKILL.md` och
+beskriver bara det som skiljer när Codex håller rollen. Verifiera att din Codex-version läser
+`~/.codex/prompts/`; gör den inte det fungerar filen lika bra inklistrad som första meddelande.
+
+Den vanligaste anledningen att byta orchestrator mitt i är att den första tog slut. Då är det
+körjournalen som bär över flödet, inte den här filen – frontenden säger bara åt Codex att läsa den
+och fortsätta från rätt steg.
+
 ### Claude Code som orchestrator
 
 Kopiera `settings.exempel.json` till projektets `.claude/settings.json` (eller slå ihop med en

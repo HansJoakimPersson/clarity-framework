@@ -206,6 +206,8 @@ Nivådelningen tvingar fram disciplinen. Du får merparten av värdet även med 
 
 Skillen är byggd enligt principerna ovan snarare än att bara beskriva dem: dispatch-prompterna ligger i separata filer så att de aldrig hamnar i orchestratorns kontext, all dispatch går genom ett skript som sätter sandbox och approval tillsammans och mäter rapporternas storlek mot budgeten, och tillståndet skrivs till körjournalen efter varje steg. En medföljande `settings.exempel.json` gör budgeten till permissionsregler.
 
+Proceduren i `SKILL.md` är skriven för orchestratorrollen, inte för ett visst verktyg. `codex-orchestrator.md` är en tunn frontend som pekar Codex på samma fil och bara beskriver det som skiljer – det är så en påbörjad körning kan fortsätta under ett annat CLI när det första abonnemanget tar slut. Notera att den enforcement som `deny`-reglerna ger i Claude Code saknar motsvarighet där; budgeten vilar då på instruktion, vilket är svagare och värt att veta om.
+
 Stoppunkten före bygget är inte en artighet – den är hela poängen. En automatisering som hoppar över den ger dig ett bygge du inte har godkänt omfattningen på.
 
 ### Verktygsdetektion – komplement som får användas om de finns

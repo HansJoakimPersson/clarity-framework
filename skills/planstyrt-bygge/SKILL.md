@@ -65,7 +65,7 @@ Check, and if anything is missing: report it and stop.
   context. `dispatch.sh` detects this and prints a `FALLBACK:` line — pass it on to the user and
   record it in the journal rather than letting it scroll past.
 
-Templates: `plan-mall.md` and `kor-mall.md` in this skill's directory. Copy them, never edit them in
+Templates: `plan-mall.md` and `journal-mall.md` in this skill's directory. Copy them, never edit them in
 place. Do not look for `templates/` — that path exists in the framework repo, not in projects.
 
 ## Step 0 — Open the run journal
@@ -78,7 +78,7 @@ SKILLDIR=.claude/skills/planstyrt-bygge
 PLAN=docs/plans/$ID.md
 JOURNAL=docs/plans/$ID.run.md
 RUN=docs/plans/.runs/$ID
-mkdir -p "$RUN" && cp "$SKILLDIR/kor-mall.md" "$JOURNAL"
+mkdir -p "$RUN" && cp "$SKILLDIR/journal-mall.md" "$JOURNAL"
 ```
 
 Every dispatch goes through `$SKILLDIR/dispatch.sh`, which takes its instructions from
@@ -217,7 +217,7 @@ a valid answer to every question, but do not skip a question because the answer 
 this is the last point where the lesson still exists.
 
 Then delete the plan and its journal in their own commit, and remove `$RUN`. `plan-mall.md` and
-`kor-mall.md` stay in the skill directory — they are templates, not artifacts.
+`journal-mall.md` stay in the skill directory — they are templates, not artifacts.
 
 ## Resuming an interrupted run
 
@@ -236,3 +236,6 @@ step the journal records as done, and do not reconstruct context by reading code
 - The rationale behind all of this — why cost separation and not just context isolation, why the
   gates sit where they do — is in the framework's `ai-usage-guide.md` § 5. It is not needed to run
   the workflow, which is why it is not here.
+- This file is the procedure for whoever holds the orchestrator role, not for Claude Code
+  specifically. `codex-orchestrator.md` is a thin frontend that points another CLI at this same
+  file, which is how a run continues when the first orchestrator hits a usage limit.

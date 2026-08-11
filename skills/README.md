@@ -45,11 +45,12 @@ Clarity Framework-dokument i vad den svarar på:
 
 | Fil | Roll |
 | --- | --- |
-| `SKILL.md` | Proceduren. Det enda orchestratorn läser vid anrop |
+| `SKILL.md` | Proceduren. Det enda orchestratorn läser vid anrop – skriven för rollen, inte för ett visst CLI |
+| `codex-orchestrator.md` | Frontend som låter Codex hålla orchestratorrollen. Kopieras till `~/.codex/prompts/`. Duplicerar inte flödet – pekar på `SKILL.md` och beskriver bara det som skiljer |
 | `prompts/*.txt` | Instruktionerna till de dispatchade agenterna. Ligger i filer just för att hållas utanför orchestratorns kontext – orchestratorn fyller platshållare, den läser dem inte |
 | `dispatch.sh` | Enda vägen till en dispatch. Sätter sandbox och approval tillsammans, upptäcker saknad kontoprofil, mäter rapportens storlek mot budgeten |
 | `plan-mall.md` | Planmallen. Identisk kopia av ramverkets `templates/plan.md` – skillen kopieras ensam och måste bära sin egen |
-| `kor-mall.md` | Körjournalmallen. Flödets tillstånd utanför orchestratorns kontext |
+| `journal-mall.md` | Körjournalmallen. Flödets tillstånd utanför orchestratorns kontext |
 | `uppsattning.md` | Engångsuppsättning: profiler, permissions, gitignore |
 | `settings.exempel.json` | Permissionslista för Claude Code. `deny`-halvan gör läsbudgeten till en regel istället för en uppmaning |
 
