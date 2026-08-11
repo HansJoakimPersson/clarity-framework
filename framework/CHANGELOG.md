@@ -8,7 +8,7 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ---
 
-## [1.5.1] – ej släppt
+## [1.5.1] – 2026-08-11
 
 ### Åtgärdat
 
