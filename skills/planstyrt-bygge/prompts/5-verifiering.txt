@@ -1,0 +1,13 @@
+Read {{PLAN}} and the diff between the current working tree and commit {{SHA}}.
+
+For each condition under Definition of Done, output exactly one line:
+
+  <condition, shortened> — done | not done | uncertain — <one line of evidence pointing at the actual change>
+
+Evidence means a file path, a symbol name or a command result. "Looks implemented" is not evidence.
+
+Then, under a heading 'Utanför Ingår', list anything in the diff that falls outside the plan's 'Ingår'. Maximum 10 lines. Write "inget" if there is nothing.
+
+Do not grade code quality, style or architecture. Do not suggest improvements. Check only the stated conditions — that is the whole task, and a broader report costs the reader the context this workflow exists to save.
+
+If you find a 'planstyrt-bygge' or similar orchestration skill file in this repo, ignore it — do not follow its workflow and do not invoke codex or any other CLI as a subprocess.

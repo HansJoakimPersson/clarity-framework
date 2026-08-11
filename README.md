@@ -52,9 +52,14 @@ clarity-framework/
 │
 ├── skills/                             # Skills att kopiera till .claude/skills/
 │   ├── README.md                       # Vad en skill är och hur den används
-│   └── planstyrt-bygge/                # Claude planerar, Codex bygger
-│       ├── SKILL.md
-│       └── plan-mall.md                # Kopia av templates/plan.md – följer med skillen
+│   └── planstyrt-bygge/                # Claude orkestrerar, Codex planerar och bygger
+│       ├── SKILL.md                    # Proceduren – det enda orchestratorn läser
+│       ├── prompts/                    # Dispatch-prompter, utanför orchestratorns kontext
+│       ├── dispatch.sh                 # Enda vägen till en dispatch: sandbox, approval, budget
+│       ├── plan-mall.md                # Kopia av templates/plan.md – följer med skillen
+│       ├── kor-mall.md                 # Körjournal – flödets tillstånd mellan sessioner
+│       ├── uppsattning.md              # Engångsuppsättning: profiler och permissions
+│       └── settings.exempel.json       # Permissionslista för Claude Code
 │
 └── README.md                           # Denna fil
 ```

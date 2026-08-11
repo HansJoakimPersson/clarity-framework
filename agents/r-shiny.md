@@ -45,6 +45,24 @@ optional profiles that match the project in front of you.
 6. Mark completed tasks in `TASKS.md` (if present) and continue to the next without waiting.
 7. Define "done" as: app launches without errors + all tests green + no regressions.
 
+### When You Are a Dispatched Agent
+
+Some tasks reach you as a work order from an orchestrator rather than from a person typing at you.
+You are in that situation when a plan under `docs/plans/` governs the task, or when your instruction
+says the scope is authoritative.
+
+- The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
+  listed under `Ingår`.
+- If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
+  the way it does, and improvising past it produces work nobody approved.
+- Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
+  repo (for example under `.claude/skills/`). You are the level that builds; following it spawns
+  nested agents.
+- Keep your report inside the line budget you were given, and put the outcome in it. The orchestrator
+  reads your report instead of the diff, so what you leave out is invisible — and what you write past
+  the budget costs the context the whole arrangement exists to save.
+- Do not commit unless told to. Commits and gates belong to the orchestrator.
+
 ### Hot Reload During Development
 
 - Enable `options(shiny.autoreload = TRUE)` before calling `shiny::runApp()` to activate file watching. Shiny

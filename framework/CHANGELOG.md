@@ -10,7 +10,66 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ## [Unreleased]
 
+### Tillagt
+
+- `skills/planstyrt-bygge/prompts/` – dispatch-prompterna flyttade från `SKILL.md` till fyra
+  separata filer (`1-plan`, `2-kritik`, `4-bygge`, `5-verifiering`). Motivet är rent
+  kostnadsmässigt: prompterna utgjorde omkring 950 ord av `SKILL.md`, som laddas in i
+  orchestratorns kontext vid varje anrop trots att orchestratorn aldrig behöver läsa dem. Den
+  fyller platshållare (`{{PLAN}}`, `{{TASK}}`, `{{DATE}}`, `{{SHA}}`) och ser aldrig innehållet
+- `skills/planstyrt-bygge/dispatch.sh` – enda vägen till en dispatch. Renderar promptfilen, sätter
+  sandbox **och** approval-policy tillsammans, upptäcker saknad `aimux`-profil och rapporterar det
+  som en explicit `FALLBACK:`-rad istället för att tyst landa på inloggat konto, och skriver ut
+  rapportens radantal mätt mot budgeten. Bakgrundsläge skriver exitkoden till en sentinelfil.
+  Ett skript med stabil sökväg är dessutom det enda en permissionsregel kan matcha pålitligt –
+  ett env-prefixat, bakgrundskört sammansatt kommando är det inte
+- `skills/planstyrt-bygge/kor-mall.md` – körjournal (`docs/plans/*.run.md`). Flödets tillstånd
+  levde tidigare enbart i orchestratorns kontextfönster, vilket gjorde orchestratorn oersättlig:
+  en tokengräns mitt i ett bygge tappade hela flödet och "byt CLI" var inte en möjlig manöver.
+  Journalen uppdateras efter varje steg och committas med planen
+- `skills/planstyrt-bygge/uppsattning.md` – engångsuppsättning per maskin: aimux-profiler,
+  Codex-profil med `network_access` för orchestratorrollen, permissionslista, gitignore
+- `skills/planstyrt-bygge/settings.exempel.json` – permissionslista för Claude Code. `deny`-halvan
+  (`git diff`, `git show`, läsning av `prompts/`) gör läsbudgeten till en regel istället för en
+  uppmaning
+- `skills/planstyrt-bygge/SKILL.md`: avsnitt om grindprofiler, orchestratorbudget och
+  återupptagande av avbruten körning
+- `framework/ai-usage-guide.md` § 5: fyra nya avsnitt – *Orchestratorbudget*, *Tillståndet ligger i
+  filer, inte i orchestratorn*, *Permissionsmodellen* och *Grindprofiler*. Nivåtabellen utökad med
+  en valfri Granskning-nivå
+- `agents/*.md` (samtliga sju starters): sektionen *When You Are a Dispatched Agent*. Reglerna för
+  en dispatchad agent – planens omfattning är auktoritativ, stanna vid fel plan, spawna inga
+  subprocesser, håll rapportbudgeten, committa inte – låg tidigare bara som upprepade textrader i
+  dispatch-prompterna och försvann om någon redigerade en prompt
+- `templates/plan.md` och `skills/planstyrt-bygge/plan-mall.md`: fälten `Grindprofil`,
+  `Rapportbudget` och `Körjournal`, samt krav på att Definition of Done-villkor ska gå att belägga
+  med filväg, symbolnamn eller kommandoutfall
+- `templates/00-ai-context.md`: avsnittet *AI-arbetsflöde* omgjort till ett runtime-kontrakt med
+  kolumner för profil och sandbox/approval per nivå, plus fälten körjournal och orchestratorbudget
+
 ### Ändrat
+
+- `skills/planstyrt-bygge/` steg 2 körs nu under en egen `granskning`-profil med `--fallback
+  reasoning`. Kritikpasset var tidigare en självgranskning inom samma nivå, med den bedömnings-
+  blindfläck det innebär. Med ett tredje konto blir det en korsgranskning utan extra kostnad på
+  orchestratorn; saknas profilen faller det tillbaka och `dispatch.sh` säger till
+- `skills/planstyrt-bygge/` steg 4: bygget körs inte längre som ett `nohup`-kommando vars enda spår
+  är en PID i orchestratorns kontext. `dispatch.sh --background` skriver exitkoden till en
+  sentinelfil, så färdigstatus kan konstateras med en filkontroll istället för genom att följa
+  byggloggen – och ett bygge överlever den session som startade det
+- `skills/planstyrt-bygge/` samtliga dispatcher sätter nu approval-policy explicit (`-a never`)
+  vid sidan av sandbox. Tidigare sattes bara sandbox, vilket lämnade approval på sitt default –
+  den vanligaste orsaken till att en obevakad körning stannar och frågar mitt i ett bygge
+- `skills/planstyrt-bygge/` dispatch-artefakter flyttade från `/tmp` till `docs/plans/.runs/`.
+  Ramverkets egen regel säger att en agent bara ser det som ligger i repot, och samma sak gäller
+  vid överlämning mellan CLI:er – `/tmp` motsade den regeln
+- `skills/planstyrt-bygge/plan-mall.md` är nu en exakt kopia av `templates/plan.md`. Filerna
+  skilde sig på två rader, vilket gjorde dubblettkontrollen till en bedömningsfråga; nu är den
+  `diff templates/plan.md skills/planstyrt-bygge/plan-mall.md`
+- `framework/dokumentationsguide.md` § 12: avsnittet *Flera agenter* utökat med budget, körjournal
+  och principen att grindar ska ligga på beslut, inte på verktygsanrop
+- `CLAUDE.md`: språkundantaget för `skills/planstyrt-bygge/` explicitgjort, och commit-regeln för
+  planmallen skärpt till ett verifierbart `diff`-kommando
 
 - `skills/planstyrt-bygge/` dispatch-kommandon (steg 1, 2, 4, 5) prefixade med `CODEX_HOME="$HOME/.aimux/profiles/<profil>"`.
   Kommandona körde tidigare bara `codex exec` rakt av, vilket observerades i skarpt bruk – de landade

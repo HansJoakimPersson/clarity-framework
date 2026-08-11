@@ -24,6 +24,10 @@ Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutv
 /skills/       – Skills att kopiera till ett projekts .claude/skills
 ```
 
+**Språkundantag i `skills/planstyrt-bygge/`:** `SKILL.md` och `prompts/*.txt` är engelska (läses av
+agenter), medan `plan-mall.md`, `kor-mall.md` och `uppsattning.md` är svenska (fylls i, godkänns
+eller följs av dig). Samma regel som annars – primär läsare avgör, inte katalogen.
+
 ---
 
 ## Språkkonvention
@@ -63,7 +67,8 @@ Solo direkt på `main`. En commit = en meningsfull, komplett enhet av förändri
 | Förändring | Måste inkludera |
 | --- | --- |
 | Mallförändring | Mall + eventuell guidejustering |
-| `templates/plan.md` | Även `skills/planstyrt-bygge/plan-mall.md` – skillen bär en egen kopia eftersom den kopieras ut ensam |
+| `templates/plan.md` | Även `skills/planstyrt-bygge/plan-mall.md` – skillen bär en egen kopia eftersom den kopieras ut ensam. Filerna ska vara **identiska**; verifiera med `diff templates/plan.md skills/planstyrt-bygge/plan-mall.md` |
+| `skills/planstyrt-bygge/prompts/*` | Även `SKILL.md` om platshållarna (`{{VAR}}`) ändras – `dispatch.sh` avbryter på en ofylld platshållare |
 | Ny mall | Ny fil + README + CHANGELOG-entry |
 | Riktlinjeändring i guiden | Guiden + berörda mallar |
 | Release | CHANGELOG + versionsnummer i alla berörda filer + Git-tagg |

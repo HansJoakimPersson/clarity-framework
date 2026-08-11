@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.claude/skills/planstyrt-bygge/dispatch.sh:*)",
+      "Bash(command -v:*)",
+      "Bash(aimux profile list)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(mkdir -p docs/plans/:*)",
+      "Bash(cp .claude/skills/planstyrt-bygge/:*)",
+      "Bash(test -f docs/plans/:*)",
+      "Bash(cat docs/plans/:*)",
+      "Bash(tail -30 docs/plans/:*)",
+      "Read(docs/plans/**)",
+      "Edit(docs/plans/**)",
+      "Write(docs/plans/**)"
+    ],
+    "deny": [
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Read(.claude/skills/planstyrt-bygge/prompts/**)"
+    ]
+  }
+}

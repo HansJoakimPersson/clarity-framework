@@ -36,8 +36,22 @@ Clarity Framework-dokument i vad den svarar på:
    cp -r skills/planstyrt-bygge /sökväg/till/projektet/.claude/skills/
    ```
 
-2. Anpassa `SKILL.md` efter projektet – kommandon, verktyg och sökvägar skiljer sig åt.
-3. Anropa den i Claude Code med `/planstyrt-bygge`.
+2. Gå igenom `uppsattning.md` – profiler, sandbox- och approval-inställningar, permissionslista.
+   Det är en engångsuppsättning per maskin och den som avgör om flödet kan köra obevakat.
+3. Anpassa `SKILL.md` och `prompts/` efter projektet – kommandon, verktyg och sökvägar skiljer sig åt.
+4. Anropa den i Claude Code med `/planstyrt-bygge`.
+
+### Vad filerna i `planstyrt-bygge/` gör
+
+| Fil | Roll |
+| --- | --- |
+| `SKILL.md` | Proceduren. Det enda orchestratorn läser vid anrop |
+| `prompts/*.txt` | Instruktionerna till de dispatchade agenterna. Ligger i filer just för att hållas utanför orchestratorns kontext – orchestratorn fyller platshållare, den läser dem inte |
+| `dispatch.sh` | Enda vägen till en dispatch. Sätter sandbox och approval tillsammans, upptäcker saknad kontoprofil, mäter rapportens storlek mot budgeten |
+| `plan-mall.md` | Planmallen. Identisk kopia av ramverkets `templates/plan.md` – skillen kopieras ensam och måste bära sin egen |
+| `kor-mall.md` | Körjournalmallen. Flödets tillstånd utanför orchestratorns kontext |
+| `uppsattning.md` | Engångsuppsättning: profiler, permissions, gitignore |
+| `settings.exempel.json` | Permissionslista för Claude Code. `deny`-halvan gör läsbudgeten till en regel istället för en uppmaning |
 
 Skills versioneras i projektrepot som all annan dokumentation som kod.
 

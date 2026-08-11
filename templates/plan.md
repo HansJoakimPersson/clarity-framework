@@ -9,6 +9,14 @@
 | **Skapad** | ÅÅÅÅ-MM-DD |
 | **Gren** | `[branch-namn]` |
 | **Status** | Utkast / Godkänd / Under bygge / Klar |
+| **Grindprofil** | interaktiv / halvautomatisk / obevakad |
+| **Rapportbudget** | Kritik 40 rader · Verifiering: ett svar per DoD-villkor + 10 rader avvikelser |
+| **Körjournal** | `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.run.md` (om automatiserat flöde används) |
+
+> **Grindprofil** avgör var flödet stannar för dig. `interaktiv` stannar vid omfattning, commit,
+> merge och avslut. `halvautomatisk` stannar vid omfattning och merge. `obevakad` stannar bara vid
+> merge – och kräver att varje villkor under Definition of Done går att kontrollera med ett
+> kommando. Merge-grinden finns i alla tre. Välj efter risk, inte efter otålighet.
 
 ---
 
@@ -72,6 +80,11 @@
 - [ ] [Kontrollerbart villkor – inte "fungerar bra" utan "kommando X ger utfall Y"]
 - [ ] Tester gröna
 - [ ] Berörda Clarity Framework-dokument uppdaterade
+
+> Villkoren granskas ett i taget mot diffen, med krav på konkret bevis per villkor. Ett villkor som
+> inte går att belägga med en filväg, ett symbolnamn eller ett kommandoutfall går inte att verifiera
+> – då är det formulerat som en bedömning, inte som ett villkor. Vid `obevakad` grindprofil är det
+> ett hårt krav, inte en rekommendation.
 
 ---
 

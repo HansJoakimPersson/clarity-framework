@@ -65,8 +65,10 @@ Om du lägger till en ny stack:
 1. Namnge filen `[stack].md` med gemener och bindestreck
 2. Följ samma struktur: *How To Use*, *Core Rules*, valfria profiler, *Definition of Done*
 3. Referera till Clarity Framework-dokument i Workflow-steget
-4. Lägg till en rad i tabellen ovan
-5. Lägg till en entry i `framework/CHANGELOG.md`
+4. Ta med sektionen *When You Are a Dispatched Agent* – den gäller oavsett stack och är det som
+   håller en agent inom planens omfattning när den anropas av en orchestrator istället för av dig
+5. Lägg till en rad i tabellen ovan
+6. Lägg till en entry i `framework/CHANGELOG.md`
 
 ---
 
