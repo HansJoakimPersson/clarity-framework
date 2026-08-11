@@ -931,7 +931,7 @@ Intressentdialoger, prioriteringsbeslut, formellt godkännande och användarvali
 
 ### Flera agenter
 
-Om arbetet delas upp mellan flera AI-agenter – en planerar, en bygger, en granskar – måste överlämningen ske via en fil. Agenter delar ingen kontext, och allt som inte är skrivet går förlorat vid överlämningen. Planen läggs som en transient arbetsorder i `docs/plans/` med `templates/plan.md` som mall, och raderas när ändringen är mergad. Roller definieras per projekt i `00-ai-context.md`. Se `ai-usage-guide.md` § 5.
+Om arbetet delas upp mellan flera AI-agenter – en orchestrator som sekvenserar, en reasoning-nivå som planerar och granskar, en implementation-nivå som bygger – måste överlämningen ske via en fil. Agenter delar ingen kontext, och allt som inte är skrivet går förlorat vid överlämningen. Planen läggs som en transient arbetsorder i `docs/plans/` med `templates/plan.md` som mall, och raderas när ändringen är mergad. Reasoning och implementation ska köras under ett annat CLI eller konto än orchestratorn – annars fördelas ingen kostnad, bara kontext. Nivåerna definieras per projekt i `00-ai-context.md`. Se `ai-usage-guide.md` § 5.
 
 ### AI Context Document
 

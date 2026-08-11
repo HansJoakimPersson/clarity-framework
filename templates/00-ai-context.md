@@ -87,11 +87,11 @@
 
 [Utelämna hela avsnittet om projektet inte delar upp arbetet mellan flera agenter.]
 
-| Roll | Agent | Ansvar |
+| Nivå | Agent | Ansvar |
 | --- | --- | --- |
-| Planerare | [t.ex. Claude Code] | Skriver plan till `docs/plans/`. Bygger inte. |
-| Byggare | [t.ex. Codex] | Bygger enligt planen. Planerar inte om – stannar vid blockerande fråga. |
-| Granskare | [t.ex. Claude Code] | Jämför diff mot plan före merge. |
+| Orchestrator | [t.ex. Claude Code] | Sekvenserar flödet, äger godkännande-grindarna. Läser inte hela kodbasen/diffen själv. |
+| Reasoning | [t.ex. Codex, planeringsprofil] | Skriver plan till `docs/plans/` och granskar diff mot plan. Bygger inte, godkänner inte sitt eget arbete. Ska köras under ett annat CLI/konto än Orchestrator. |
+| Implementation | [t.ex. Codex, byggprofil] | Bygger enligt planen. Planerar inte om – stannar vid blockerande fråga. |
 
 **Planer:** `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md` (mall: ramverkets `templates/plan.md`). Planen måste vara committad och pushad för att en molnagent ska kunna läsa den. Raderas när ändringen är mergad.
 

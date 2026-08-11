@@ -98,21 +98,25 @@ Clarity Framework fungerar fullt ut. AI Usage Guide och `00-ai-context.md` är v
 
 ---
 
-## 5. Flera agenter – planering, bygge och granskning
+## 5. Flera agenter – orchestrator, reasoning och implementation
 
 Att dela upp arbetet mellan flera AI-agenter (till exempel Claude Code och Codex) är valfritt. Om du gör det finns bara en fråga som spelar roll:
 
 **Agenterna delar ingen kontext.** Separata sessioner, separat minne, separata resonemangskedjor. Allt som inte är skrivet till fil finns inte vid överlämningen. Hela integrationen reduceras därför till: *vad är överlämningsartefakten, och var ligger den?*
 
-### Roller
+### Nivåer
 
-| Roll | Ansvar | Får inte |
+Rollerna beskrivs som nivåer av resonemang och capability, inte som specifika modeller – vilken agent som fyller en nivå är ett projektbeslut, inte ett ramverksbeslut.
+
+| Nivå | Ansvar | Får inte |
 | --- | --- | --- |
-| **Planerare** | Skriver planen till `docs/plans/` utifrån krav, SAD och grafisk profil | Bygga |
-| **Byggare** | Bygger enligt planen, i full omfattning | Planera om – stannar vid blockerande fråga |
-| **Granskare** | Jämför diffen mot planen före merge | Godkänna sin egen kod |
+| **Orchestrator** | Sekvenserar flödet, håller sin egen kontext minimal, presenterar destillat för dig, äger godkännande-grindarna | Läsa hela kodbasen eller diffen själv, skriva produktionskod |
+| **Reasoning** | Djup kontext in (dokument, kod, diff), destillat ut: en plan med `BLOCKERANDE`-frågor, eller ett pass/fail per Definition of Done-villkor | Godkänna sitt eget arbete, prata direkt med dig, fatta scope-beslut |
+| **Implementation** | Bygger en redan godkänd, konkret plan i full omfattning | Planera om – stannar vid blockerande fråga |
 
-Rollerna definieras per projekt i `docs/00-ai-context.md`. Ett projekt som använder en enda agent hoppar över avsnittet.
+Reasoning och Implementation kan vara samma agent i olika lägen eller två separata – men båda ska köras under ett **annat CLI eller konto än orchestratorn**. Det är inte bara kontextisolering, det är kostnadsfördelning: en Claude-subagent (Task-verktyget) delar abonnemang med orchestratorn och löser därför inte problemet den här uppdelningen finns för, även om den isolerar kontexten. Se `skills/planstyrt-bygge/` för en konkret implementation.
+
+Nivåerna definieras per projekt i `docs/00-ai-context.md`. Ett projekt som använder en enda agent hoppar över avsnittet.
 
 ### Planen som artefakt
 
@@ -125,8 +129,9 @@ Två fält gör mest nytta: **Ingår inte** och **BLOCKERANDE**. Agentdrift och 
 ### Praktiska begränsningar
 
 - En molnbaserad agent ser bara det som är **committat och pushat**. Planen måste ligga i repot – inte i en chatt.
-- Planen måste vara mer explicit än en plan du skriver åt dig själv. Byggagenten har noll tyst kontext.
-- När planen visar sig fel mitt i bygget kan byggaren inte planera om bra – den vet inte *varför* planen såg ut som den gjorde. Därför regeln att stanna och rapportera.
+- Planen måste vara mer explicit än en plan du skriver åt dig själv. Implementation-agenten har noll tyst kontext.
+- När planen visar sig fel mitt i bygget kan implementation-agenten inte planera om bra – den vet inte *varför* planen såg ut som den gjorde. Därför regeln att stanna och rapportera.
+- Reasoning-nivån levererar ett destillat, inte ett transkript. Om orchestratorn ändå läser hela diffen eller hela källdokumenten "för säkerhets skull" är kostnadsfördelningen bara skenbar – disciplinen ligger i att faktiskt lita på destillatet, med stickprov vid behov, inte i att läsa allt två gånger.
 
 ### Vad vinsten faktiskt är
 
@@ -134,13 +139,14 @@ Inte att en viss modell är bättre på att planera. Vinsten är att:
 
 - Planen blir en **granskningspunkt innan kod finns** – den billigaste platsen att ingripa på.
 - Granskningen blir **objektiv**: stämmer diffen mot planen? Det är en skarpare fråga än "är koden bra".
-- Granskaren delar inte byggarens resonemangskedja och ser därför andra fel.
+- Reasoning-nivån delar inte implementation-agentens resonemangskedja och ser därför andra fel.
+- Orchestratorns egen kontext – och räkning – hålls liten genom hela flödet, oavsett hur stor kodbasen eller diffen är.
 
-Rolldelningen tvingar fram disciplinen. Du får merparten av värdet även med en enda agent som skriver planen till fil först.
+Nivådelningen tvingar fram disciplinen. Du får merparten av värdet även med en enda agent som skriver planen till fil först.
 
 ### Automatisera flödet
 
-`skills/planstyrt-bygge/` är en färdig skill för Claude Code som kör hela kedjan: skriver planen, låter Codex CLI granska den mot koden read-only, stannar för ditt godkännande av omfattningen, och låter sedan Codex bygga. Kopiera den till projektets `.claude/skills/` när flödet behövs.
+`skills/planstyrt-bygge/` är en färdig skill för Claude Code som kör hela kedjan: dispatchar planen och den efterföljande diffgranskningen till en reasoning-nivå (ett annat CLI eller konto, read-only), stannar för ditt godkännande av omfattningen, och dispatchar sedan bygget till en implementation-nivå. Kopiera den till projektets `.claude/skills/` när flödet behövs.
 
 Stoppunkten före bygget är inte en artighet – den är hela poängen. En automatisering som hoppar över den ger dig ett bygge du inte har godkänt omfattningen på.
 

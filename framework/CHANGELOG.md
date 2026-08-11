@@ -10,6 +10,46 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ## [Unreleased]
 
+### Ändrat
+
+- `skills/planstyrt-bygge/` dispatch-kommandon (steg 1, 2, 4, 5) prefixade med `CODEX_HOME="$HOME/.aimux/profiles/<profil>"`.
+  Kommandona körde tidigare bara `codex exec` rakt av, vilket observerades i skarpt bruk – de landade
+  då på vilket konto som redan var inloggat på maskinen istället för en separat `aimux`-profil, vilket
+  gör hela poängen med nivåuppdelningen (kostnadsfördelning över konton) skenbar. Förutsättningarna
+  kräver nu två namngivna `aimux`-profiler (`reasoning`, `implementation`) med fallback till vanlig
+  `codex exec` – och en tydlig varning till användaren om fallbacken används
+- `skills/planstyrt-bygge/` dispatch-prompts (steg 1, 2, 4, 5): tillagd instruktion att ignorera ett
+  eventuellt kopierat `planstyrt-bygge`-skillfilerna i målrepot och aldrig anropa `codex` som
+  subprocess. Observerat i skarpt bruk: en dispatchad agent som hittar skillfilen i repot kan annars
+  försöka följa orkestreringsflödet själv och spawna nästlade `codex exec`-processer
+- `.gitignore`: `.claudeignore` och `.mcp.json` tillagda. Båda genererades lokalt av token-pilots
+  bootstrap-hook och innehåller bara personlig tooling-konfiguration (token-pilot, context-mode) –
+  samma resonemang som `.token-pilot/` i förra releasen
+- Rollmodellen för flera agenter döpt om från Planerare/Byggare/Granskare till
+  Orchestrator/Reasoning/Implementation i `framework/ai-usage-guide.md` § 5,
+  `templates/00-ai-context.md` och `framework/dokumentationsguide.md` § 12. Planerare och Granskare
+  slås ihop till Reasoning – den enda konkreta implementationen (`skills/planstyrt-bygge/`) körde
+  redan båda som samma agent, tabellen låtsades att de var separata
+- `skills/planstyrt-bygge/`: orchestratorn (Claude Code) skriver inte längre planen själv och läser
+  inte längre hela diffen själv. Steg 1 (plan) och steg 5 (verifiering mot Definition of Done)
+  dispatchas nu till en reasoning-nivå som körs under ett annat CLI/konto, och orchestratorn läser
+  bara det destillerade resultatet. Motivet: orchestratorns egen kontext och tokenförbrukning ska
+  hållas liten oavsett hur stor kodbasen eller diffen är, och kostnaden ska faktiskt fördelas över
+  separata konton – inte bara isoleras i kontext, vilket en Claude-subagent (Task-verktyget) inte
+  uppnår eftersom den delar abonnemang med orchestratorn
+- `skills/planstyrt-bygge/`: `Status: Godkänd` sätts nu efter användarens klartecken, inte innan.
+  Tidigare ordning satte statusen före stoppunkten för godkännande, vilket lät fältet påstå ett
+  beslut som ännu inte fattats
+
+### Tillagt
+
+- `framework/ai-usage-guide.md` § 5: ny sektion om kostnadsfördelning – varför Reasoning och
+  Implementation måste köras under ett annat CLI/konto än orchestratorn för att faktiskt spara
+  tokens på den interaktiva sessionen, inte bara isolera kontext
+- `skills/planstyrt-bygge/` steg 2: explicit notering att kritikpasset är en självgranskning inom
+  samma nivå, inte en korsgranskning mellan olika agenter som tidigare – en medveten avvägning värd
+  att känna till, inte en dold försämring
+
 ## [1.3.0] – 2026-08-10
 
 ### Ändrat

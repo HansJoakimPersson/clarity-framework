@@ -24,7 +24,7 @@ Clarity Framework-dokument i vad den svarar på:
 
 | Katalog | Passar när... |
 | --- | --- |
-| `planstyrt-bygge/` | Uppgiften är stor nog att omfattningen behöver godkännas innan kod skrivs, och du vill att Claude Code planerar medan Codex bygger |
+| `planstyrt-bygge/` | Uppgiften är stor nog att omfattningen behöver godkännas innan kod skrivs, och du vill att Claude Code orchestrerar medan planering, granskning och bygge dispatchas till andra CLI:er/konton |
 
 ---
 
