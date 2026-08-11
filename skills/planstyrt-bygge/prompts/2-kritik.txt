@@ -1,9 +1,9 @@
-Read AGENTS.md and {{PLAN}}. Review the plan against the actual code. Build nothing and change no files.
+Read AGENTS.md, project-specific instructions in CLAUDE.md when present, and {{PLAN}}. Review the plan against the actual code. Build nothing and change no files.
 
 Answer these, in order:
 - Do the file paths in the plan exist as written?
 - Do the functions, modules and commands the plan assumes exist actually exist?
-- Do the verification commands run as written?
+- Are the verification commands present in the project and syntactically plausible as written? Do not run commands that write caches, build output or other files in this read-only pass; flag those for Implementation to execute.
 - Are the steps enough to build from without guessing?
 - Is anything listed under 'Ingår' already implemented?
 - Is anything under 'Ingår inte' unavoidably touched by the steps as written?

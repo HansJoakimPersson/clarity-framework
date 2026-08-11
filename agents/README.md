@@ -1,12 +1,17 @@
 # Agents – AI-beteendeinstruktioner per stack
 
-Den här katalogen innehåller fördefinierade `AGENTS.md`-filer för vanliga projektyper. De är startpunkter att kopiera och anpassa – inte normerande standarder.
+Den här katalogen innehåller fördefinierade `AGENTS.md`-filer för vanliga projektyper. Välj den
+närmaste startern och kopiera den oförändrad; projektspecifika anpassningar hör hemma i
+`CLAUDE.md`. Starterna är arbetssätt, inte produktarkitektur.
 
 ---
 
 ## Vad är AGENTS.md?
 
-`AGENTS.md` är en instruktionsfil som placeras i roten av ett projekt och berättar för AI-agenter (Claude, Codex m.fl.) **hur** de ska arbeta i just det projektet. Den kompletterar Clarity Frameworks övriga dokumentation:
+`AGENTS.md` är en instruktionsfil som placeras i roten av ett projekt och berättar för AI-agenter
+**hur** de ska arbeta i just det projektet. Codex läser den direkt. Claude Code läser projektets
+`CLAUDE.md`, som därför ska börja med `@AGENTS.md` och importera samma regler. Den kompletterar
+Clarity Frameworks övriga dokumentation:
 
 | Dokument | Svarar på |
 | --- | --- |
@@ -23,6 +28,7 @@ Tillsammans ger de en AI-agent tillräcklig kontext för att fatta lokala beslut
 
 | Fil | Passar när... |
 | --- | --- |
+| `generic.md` | Projektet matchar ingen specialiserad starter ännu; ger en neutral, stackoberoende baslinje |
 | `java-application.md` | Projektet är en Java-applikation, med eller utan Spring Boot |
 | `ios-springboot.md` | Projektet har en Spring Boot-backend och en native iOS/iPadOS-app i Swift |
 | `r-shiny.md` | Projektet är en R/Shiny-app, med eller utan plumber-API |
@@ -36,7 +42,9 @@ Tillsammans ger de en AI-agent tillräcklig kontext för att fatta lokala beslut
 ## Hur du använder en starter
 
 1. Kopiera relevant fil till projektets rot och döp om den till `AGENTS.md`
-2. Committa filen som vilken annan dokumentationsfil som helst
+2. Skapa `CLAUDE.md` med första raden `@AGENTS.md`, eller lägg importen först i en befintlig fil
+   utan att ta bort projektspecifika regler
+3. Committa båda filerna som vilken annan dokumentation som helst
 
 Det är hela proceduren. **Redigera inte den kopierade filen.**
 
@@ -46,8 +54,9 @@ profiler som gäller, och en profil för något projektet inte använder kostar 
 den i förväg tillför inget och gör filen omöjlig att uppdatera maskinellt.
 
 `AGENTS.md` ägs därmed av ramverket och ersätts i sin helhet när projektet uppdateras till en ny
-ramverksversion. Det som är projektspecifikt hör hemma i projektets `CLAUDE.md`, som ramverket
-aldrig rör – och som enligt prioritetsordningen nedan ändå tar över.
+ramverksversion. Det som är projektspecifikt hör hemma i projektets `CLAUDE.md`, som ramverket inte
+skriver över. Codex instrueras av startern att läsa filen; Claude Code läser den direkt och laddar
+den importerade startern före de projektspecifika raderna.
 
 ---
 
@@ -55,14 +64,15 @@ aldrig rör – och som enligt prioritetsordningen nedan ändå tar över.
 
 Alla starters refererar till Clarity Frameworks standardsökvägar (`docs/00-ai-context.md`, `docs/03-sad.md` osv.). De sökvägarna är standard – ett projekt som avviker från dem noterar avvikelsen i sin `CLAUDE.md` istället för att redigera `AGENTS.md`.
 
-Prioritetsordning när en agent läser instruktioner:
+Prioritetsordning inom projektets egna instruktioner, efter klientens system- och användarregler:
 
 ```text
-Lokalt CLAUDE.md / AGENTS.md i projektroten
+Projektspecifika regler i CLAUDE.md efter @AGENTS.md
   ↓ tar alltid över
+Stack-specifika regler (från denna starter)
+  ↓ styr arbetssätt
 Clarity Framework-dokument i docs/
   ↓ ger arkitektur- och kravkontext
-Stack-specifika regler (från denna starter)
 ```
 
 ---

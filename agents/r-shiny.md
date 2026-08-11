@@ -28,8 +28,10 @@ optional profiles that match the project in front of you.
 ### Workflow
 
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
-2. In Clarity Framework projects, always read `docs/00-ai-context.md` first — it is short, and it routes you to
-   whatever else matters. If a plan in `docs/plans/` governs this task, read that too: its scope section is
+2. In Clarity Framework projects, read `docs/00-ai-context.md` first when it exists — it is short,
+   and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
+   task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs
+   this task, read that too: its scope section is
    authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
    improvising. Read the remaining documents only when the task touches their subject:
    - `docs/03-sad.md` — when the change adds or moves a module, crosses a module boundary, or you are unsure where
@@ -56,7 +58,7 @@ says the scope is authoritative.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
-  repo (for example under `.claude/skills/`). You are the level that builds; following it spawns
+  repo (for example under `.agents/skills/` or `.claude/skills/`). You are the level that builds; following it spawns
   nested agents.
 - Keep your report inside the line budget you were given, and put the outcome in it. The orchestrator
   reads your report instead of the diff, so what you leave out is invisible — and what you write past
@@ -151,8 +153,8 @@ Shiny apps render as HTML in a real browser, so three complementary layers of ac
 **Build-time: `a11yShiny`**
 
 - Prefer `a11yShiny` wrappers over their base Shiny equivalents for action buttons, text inputs, select inputs,
-  fluid page layouts, DT tables, and ggplot2 charts — they enforce ARIA attributes and WCAG 2.1 AA structural
-  requirements at construction time.
+  fluid page layouts, DT tables, and ggplot2 charts — they improve ARIA attributes and accessible
+  structure at construction time.
 - Treat `a11yShiny` as a building norm, not a substitute for scanning. Components built with it still need to be
   verified in context.
 
@@ -169,7 +171,7 @@ Shiny apps render as HTML in a real browser, so three complementary layers of ac
   axe-core JavaScript library into the app's Chromium session through `shinytest2`'s `get_chromote_session()`
   interface.
 - Run axe against every major view and significant UI state as part of the `shinytest2` suite.
-- Scan at WCAG 2.1 Level AA as the baseline unless the project sets a different target.
+- Scan at WCAG 2.2 Level AA as the baseline unless the project documents a different compatibility target.
 - Treat every axe violation as a test failure. Do not suppress violations without explicit approval and a
   documented reason.
 - Exclude only third-party embeds or platform constraints that cannot be fixed in the project; document each

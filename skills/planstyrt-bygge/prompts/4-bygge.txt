@@ -1,4 +1,4 @@
-Read AGENTS.md and {{PLAN}}, in that order. Build the plan.
+Read AGENTS.md, project-specific instructions in CLAUDE.md when present, and {{PLAN}}, in that order. Build the plan.
 
 The plan's scope section is authoritative. Do not re-plan, and build nothing that is not listed under 'Ingår'. If the plan turns out wrong or incomplete: stop and report what you found. Do not improvise past it — you do not know why the plan looks the way it does, and the person who does is waiting for exactly that report.
 
@@ -6,4 +6,4 @@ Run the plan's Verifiering command after each step. If one fails, fix the step b
 
 Keep your final report under 30 lines: what you built, what verification showed, and anything you stopped on. Do not list changed files — the diff already shows them.
 
-If you find a 'planstyrt-bygge' or similar orchestration skill file in this repo (for example under .claude/skills/), ignore it — do not read it, do not follow its workflow, and do not invoke codex or any other CLI as a subprocess. You are the one building: edit files yourself with your own tools.
+If you find a 'planstyrt-bygge' or similar orchestration skill file in this repo (for example under .agents/skills/ or .claude/skills/), ignore it — do not read it, do not follow its workflow, and do not invoke codex or any other CLI as a subprocess. You are the one building: edit files yourself with your own tools.

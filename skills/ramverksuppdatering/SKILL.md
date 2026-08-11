@@ -10,7 +10,9 @@ a word of what is already written.
 
 The target state is concrete: the project should end up looking the way it would have looked if the
 framework had been applied at today's version from the start — same files, in the same places, with
-the same structure — except that every filled-in passage is the one that was already there.
+the same structure — except that every filled-in passage is the one that was already there. When a
+Clarity skill is installed, identical copies exist under `.agents/skills/` for Codex and
+`.claude/skills/` for Claude Code.
 
 This skill has nothing to do with the plan-driven build workflow. Do not dispatch anything and do
 not involve other agents or accounts. You do this yourself, in this session.
@@ -20,7 +22,8 @@ not involve other agents or accounts. You do this yourself, in this session.
 Every path has exactly one owner, and that decides what happens to it:
 
 - **Framework-owned** files are replaced wholesale. They are never edited in a project, so there is
-  nothing in them worth preserving. Do not diff them, do not merge them — overwrite.
+  nothing in them worth preserving. Do not diff them, do not merge them — replace the approved
+  managed path so files removed upstream are removed locally too.
 - **Project-owned** files hold the user's work. Their *content* is preserved and their *structure*
   is lifted to the new template.
 - Everything else is untouched.
@@ -29,9 +32,15 @@ Do not carry a copy of the mapping in this file. Read it from the release you fe
 `README.md` under **Projektstruktur** and **Vem äger vad** — that section is normative and is what
 this skill follows. If it disagrees with anything below, it wins.
 
-Three rules hold throughout: **never delete**, **never touch source code**, and **never edit
-`CLAUDE.md`** — it is where the project records its own deviations, and it is the reason
-framework-owned files can be replaced safely.
+Three rules hold throughout: **never delete project-owned content**, **never touch source code**,
+and **never overwrite `CLAUDE.md`**. The only permitted `CLAUDE.md` change is adding the exact
+`@AGENTS.md` import after the user approves it; preserve every project-specific line already there.
+
+Skill ownership is name-scoped, not wildcard-scoped. Only names listed under `skills:` in
+`docs/.clarity-version` are managed by Clarity. Skills with any other name are project- or
+third-party-owned and must remain untouched. Treat the literal marker value `inga` as an empty set,
+not as a skill name. If the marker predates that field, infer candidates only when the same name
+exists in the fetched release and ask the user to confirm them in step 4.
 
 ## Preconditions
 
@@ -44,7 +53,10 @@ framework-owned files can be replaced safely.
 ```bash
 TMP=$(mktemp -d)
 git clone --quiet --filter=blob:none https://github.com/HansJoakimPersson/clarity-framework "$TMP/cf"
-NEW=$(git -C "$TMP/cf" tag -l 'v*' | sort -V | tail -1)
+NEW=$(git -C "$TMP/cf" tag -l --sort=-v:refname 'v*' \
+  | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+[ -n "$NEW" ] || { printf '%s\n' 'No stable Clarity Framework release tag found' >&2; exit 2; }
+NEW_VERSION=${NEW#v}
 git -C "$TMP/cf" show "$NEW:README.md"          # placement and ownership
 git -C "$TMP/cf" show "$NEW:templates/03-sad.md" # read any file at any version like this
 ```
@@ -61,7 +73,10 @@ Look in this order and use the first that answers:
 4. Nothing found — say so, and treat every document as needing a structure check against `$NEW`.
    You do not need the old version to do the work; it only tells you how much to expect.
 
-If the project is already on `$NEW`, say so and stop.
+Normalize a leading `v` before comparing. If the project version equals `$NEW_VERSION`, also verify
+that every managed skill exists and is identical in both runtime locations before saying it is up
+to date. In a Git project, also verify neither copy is ignored. A matching version with a missing,
+divergent, or ignored runtime copy still needs repair.
 
 ## Step 3 — Decide what happens to each file
 
@@ -70,11 +85,19 @@ If the project is already on `$NEW`, say so and stop.
 | File | How to place it |
 | --- | --- |
 | `AGENTS.md` | Copy the matching starter from `$NEW:agents/`. Identify which one from `docs/.clarity-version`, or from the project file's own title line — every starter begins `# AGENTS.md - <Stack> vX.Y`. If the project has none, ask which stack rather than guessing |
-| `.claude/skills/<name>/` | Copy the whole directory from `$NEW:skills/<name>/`, including files the project does not have yet |
+| `.agents/skills/<managed-name>/` | Replace the whole directory from `$NEW:skills/<managed-name>/`, including removal of files no longer shipped |
+| `.claude/skills/<managed-name>/` | Create an identical copy of the same release directory for Claude Code |
+| `docs/.clarity-version` | Rewrite after the approved update with normalized version and managed skill names |
 
 If a framework-owned file in the project differs from the new release, that is expected — it is an
 older version. Replace it. Do not report the difference as a conflict and do not try to preserve
-anything from it.
+anything from it. Deleting stale files is allowed only inside one of the approved managed skill
+directories, immediately before replacing that directory. Never use a wildcard over all skills.
+
+**Cross-client instructions:** `CLAUDE.md` should begin with `@AGENTS.md`. If it is missing, propose
+creating that one-line file. If it exists without the import, report the compatibility gap and
+propose inserting the import while preserving the rest. This is project-owned and therefore needs
+explicit scope approval; never replace the file.
 
 **Project-owned — merge, one document at a time:**
 
@@ -83,6 +106,10 @@ template and work out what structurally differs — added sections, renamed head
 parts. You do not need the project's old template version for this: a template section is
 recognisable by its placeholder text and its heading, and the user's prose is recognisable by being
 prose. Trust that judgment; it is more reliable than inferring a baseline.
+
+**New framework skills** that exist at `$NEW:skills/` but are not listed in the project's marker:
+offer them individually. Do not install them automatically and do not adopt a same-named third-party
+skill as framework-owned.
 
 **New templates** the project should have but does not: report them. Copying an unfilled template
 into `docs/` is a decision about scope, so let the user choose per file rather than adding all of
@@ -97,17 +124,27 @@ orphan; it may have been renamed.
 Present, in this order:
 
 - Detected version → `$NEW`, and how the version was determined.
-- Framework-owned files to be replaced or added — a count and the list, no diffs. Nothing here needs
-  the user's judgment.
+- Framework-owned files to be replaced or added — a count and the exact managed paths, no diffs.
+- Any stale files that will be removed inside those managed paths, plus the proposed
+  `CLAUDE.md` import change if needed.
 - Project-owned documents needing a merge, each with one line on what structurally changed.
-- New templates available, and orphans.
+- New framework skills available, new templates available, and orphans.
 
 **Stop and wait for approval.** Nothing is written before this point. The user is approving a scope,
 not a diff — keep it short enough to actually read.
 
 ## Step 5 — Apply
 
-**Framework-owned:** copy verbatim. No edits, no adaptation, no merging.
+**Framework-owned:** replace verbatim. For each approved managed skill name, remove only the two
+exact target directories, recreate them from `$NEW:skills/<name>/`, then verify the copies with
+`diff -qr`. No edits, adaptation, merging, unresolved globs, or deletion outside those exact paths.
+
+For `CLAUDE.md`, perform only the import change approved in step 4. The resulting first active line
+must be `@AGENTS.md`; preserve all existing project instructions below it.
+
+If `.gitignore` excludes either managed runtime path, narrow the ignore rule as approved so both
+copies are versioned. Preserve ignores for local settings, caches, credentials, and machine-only
+state; never unignore those as a side effect.
 
 **Project-owned:** one document at a time, and never mechanically.
 
@@ -132,7 +169,8 @@ Write `docs/.clarity-version`:
 version: X.Y.Z
 uppdaterad: ÅÅÅÅ-MM-DD
 agents-starter: <filename from agents/, without .md>
-skills: <comma-separated directories in .claude/skills/, or "inga">
+skills: <comma-separated Clarity-managed skill names installed in both runtime paths, or "inga">
+skill-paths: .agents/skills, .claude/skills
 ```
 
 Then update the version markers already present in the project's files — the **Ramverksversion**
@@ -145,7 +183,8 @@ Tell the user, in this order:
 
 1. **What needs them now** — new empty sections in merged documents, content you had to park at the
    end of a file, and new templates they may want to adopt.
-2. What was replaced verbatim, as a count.
+2. What was replaced verbatim, as a count, and that both runtime copies passed `diff -qr` and are
+   not excluded by `.gitignore`.
 3. Orphans, with a recommendation for each.
 
 Then propose a commit and wait. Keep the framework update in its own commit — mixing it with project

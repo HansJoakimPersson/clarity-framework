@@ -114,7 +114,12 @@ fi
 if [ "$BACKGROUND" -eq 1 ]; then
   exit_file="$(printf '%s' "$LOG" | sed 's/\.log$//').exit"
   rm -f "$exit_file"
-  ( codex exec -s "$MODE" -a never "$PROMPT"; echo $? > "$exit_file" ) > "$LOG" 2>&1 &
+  (
+    status=0
+    codex -a never exec -s "$MODE" "$PROMPT" || status=$?
+    printf '%s\n' "$status" > "$exit_file"
+    exit "$status"
+  ) > "$LOG" 2>&1 &
   printf 'DISPATCH started  profile=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
     "$used" "$MODE" "$!" "$LOG" "$exit_file"
   [ -n "$note" ] && printf '%s\n' "$note"
@@ -122,7 +127,7 @@ if [ "$BACKGROUND" -eq 1 ]; then
 fi
 
 status=0
-codex exec -s "$MODE" -a never -o "$OUT" "$PROMPT" >/dev/null 2>&1 || status=$?
+codex -a never exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 || status=$?
 
 lines=0
 [ -f "$OUT" ] && lines=$(wc -l < "$OUT" | tr -d ' ')

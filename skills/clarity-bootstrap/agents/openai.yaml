@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clarity Bootstrap"
+  short_description: "Set up Clarity for a new project"
+  default_prompt: "Use $clarity-bootstrap to set up Clarity Framework for this project."

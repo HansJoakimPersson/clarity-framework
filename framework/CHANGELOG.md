@@ -8,7 +8,53 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ---
 
-## [1.4.0] – ej släppt
+## [1.5.0] – ej släppt
+
+### Tillagt
+
+- `skills/clarity-bootstrap/` – behovsstyrd initiering av ett nytt eller ännu inte
+  Clarity-hanterat projekt. Skillen väljer minsta sammanhängande dokumentuppsättning och rätt
+  stack-starter från produktens UI-, API-, data-, drift-, team- och AI-behov, visar omfattningen
+  före skrivning och installerar valda skills för både Codex och Claude Code
+- `agents/generic.md` – stackoberoende fallback som gör att bootstrap alltid kan skapa ett giltigt
+  `AGENTS.md` även när ingen specialiserad starter matchar
+- `skills/planstyrt-bygge/tests/dispatch-test.sh` – regressionstest för Codex CLI-flaggornas ordning
+  och för att bakgrundskörningar alltid skriver sentinel även när Codex misslyckas
+
+### Ändrat
+
+- Gemensamma instruktioner ligger nu i `AGENTS.md`; `CLAUDE.md` importerar dem med `@AGENTS.md`.
+  Projektskills installeras som identiska kopior under `.agents/skills/` för Codex och
+  `.claude/skills/` för Claude Code. Codex custom prompts är borttagna: båda klienterna använder
+  samma `SKILL.md`, med `$skill-name` respektive `/skill-name` som anrop
+- `planstyrt-bygge`: rätt global placering av `codex -a never exec`, felsäker sentinel,
+  deterministisk planmallsökväg, read-only-granskning som inte försöker köra skrivande byggkommandon,
+  verifiering mot byggloggen och explicit tillståndsövergång mellan mergegrind och avslut
+- `ramverksuppdatering`: ägarskap av skills är begränsat till namnen i
+  `docs/.clarity-version`; båda runtimekopiorna synkas, tredjepartsskills lämnas orörda och filer
+  som tagits bort upstream rensas endast inne i ett uttryckligen godkänt hanterat skillnamn. Tagg- och
+  versionsjämförelse normaliserar `v` och väljer endast stabila SemVer-taggar
+- Dokumentnamn är konsekvent `docs/NN-typ.md`. En versionshanterad OpenAPI-fil är kanoniskt
+  API-kontrakt, medan `04-datamodell-api.md` förklarar beslut och hänvisar till filen
+- Grafisk profil är konsekvent obligatorisk för projekt med visuellt UI; AI Context är fortsatt
+  valfri och agents hanterar att filen saknas. Tillgänglighetsbaslinjen är WCAG 2.2 AA
+- Lombok-reglerna är en valfri profil som endast gäller när Lombok redan finns eller uttryckligen
+  har godkänts; starterna tvingar inte längre in en ny dependency
+- Releasekontroller använder `git grep` över spårade filer och releasecommitten är `[chore]`, så
+  ignorerad historik inte ger falska versionsfynd och releasen inte implicerar en ny patchhöjning
+- DTCG-exemplet följer den stabila Community Group-specifikationen 2025.10 med typkorrekta färger,
+  dimensioner, fontvikter, durationer, easingkurvor och skuggor
+
+### Säkerhet
+
+- Runbookens backup använder fail-fast, `pipefail`, temporär fil och integritetskontroll.
+  Återställning verifierar både källbackup och säkerhetskopia innan databasen återskapas och har en
+  uttrycklig rollbackväg. Underhålls- och integritetssteg kör granskade skript i stället för
+  godtyckliga `bash -c`-strängar. Breda Docker prune-kommandon är borttagna
+- Den publika health-endpointen visar endast sammanvägd status; beroendedetaljer ligger bakom
+  autentisering eller nätverksbegränsning
+
+## [1.4.0] – aldrig släppt; ersatt av 1.5.0
 
 ### Tillagt
 
@@ -136,15 +182,6 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
   Tidigare ordning satte statusen före stoppunkten för godkännande, vilket lät fältet påstå ett
   beslut som ännu inte fattats
 
-### Tillagt
-
-- `framework/ai-usage-guide.md` § 5: ny sektion om kostnadsfördelning – varför Reasoning och
-  Implementation måste köras under ett annat CLI/konto än orchestratorn för att faktiskt spara
-  tokens på den interaktiva sessionen, inte bara isolera kontext
-- `skills/planstyrt-bygge/` steg 2: explicit notering att kritikpasset är en självgranskning inom
-  samma nivå, inte en korsgranskning mellan olika agenter som tidigare – en medveten avvägning värd
-  att känna till, inte en dold försämring
-
 ## [1.3.0] – 2026-08-10
 
 ### Ändrat
@@ -246,7 +283,7 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 - Development Run Model-sektion i `agents/java-application.md` (Web Frontend-profil): skiljer på Embedded och Standalone, kräver att körmodellen är dokumenterad, beskriver Spring Boot DevTools och hot reload via proxy
 - Körmodellsvarning i `agents/vanilla-web-spa.md` Workflow: agenten ska verifiera hur projektet körs innan en separat frontend-server startas
 - Accessibility Testing-sektion i `agents/r-shiny.md` med tre nivåer: `a11yShiny` (byggnorm), `shinya11y` (dev-inspektion) och axe-core via `shinytest2` (automatiserad skanning)
-- Automated Accessibility Testing-sektion i `agents/vanilla-web-spa.md` med `@axe-core/playwright`, WCAG 2.1 AA-baslinje och riktlinjer för undantag
+- Automated Accessibility Testing-sektion i `agents/vanilla-web-spa.md` med `@axe-core/playwright`, WCAG 2.2 AA-baslinje och riktlinjer för undantag
 - Accessibility Testing-sektion i `agents/java-application.md` (Web Frontend-profil) med motsvarande axe-core/Playwright-riktlinjer
 - Uppdaterade Testing-sektioner i `vanilla-web-spa.md` och `java-application.md` med riktlinjer för Playwright-lokaliserare (`getByRole`, `getByLabel`, `getByText`)
 

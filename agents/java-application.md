@@ -35,8 +35,10 @@ optional profiles that match the project in front of you.
 ### Workflow
 
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
-2. In Clarity Framework projects, always read `docs/00-ai-context.md` first — it is short, and it routes you to
-   whatever else matters. If a plan in `docs/plans/` governs this task, read that too: its scope section is
+2. In Clarity Framework projects, read `docs/00-ai-context.md` first when it exists — it is short,
+   and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
+   task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs
+   this task, read that too: its scope section is
    authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
    improvising. Read the remaining documents only when the task touches their subject:
    - `docs/03-sad.md` — when the change adds or moves a component, crosses a module boundary, or you are unsure
@@ -63,7 +65,7 @@ says the scope is authoritative.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
-  repo (for example under `.claude/skills/`). You are the level that builds; following it spawns
+  repo (for example under `.agents/skills/` or `.claude/skills/`). You are the level that builds; following it spawns
   nested agents.
 - Keep your report inside the line budget you were given, and put the outcome in it. The orchestrator
   reads your report instead of the diff, so what you leave out is invisible — and what you write past
@@ -249,9 +251,11 @@ Run only commands that exist in the project. Use `gradle` directly only when the
   conventions.
 - Do not make the build depend on IDE-only behavior.
 
-## Lombok
+## Optional Profile: Lombok
 
-Lombok is mandatory in all Java projects covered by this guide. Always apply these rules.
+Use this profile only when Lombok is already configured in the project or the task explicitly
+requires and authorizes adding it. Never introduce Lombok solely to satisfy this starter. Without
+Lombok, use explicit constructors and the project's established logging pattern.
 
 - Use `@RequiredArgsConstructor` for constructor injection.
 - Use `@Slf4j` for logging unless the project has a different established logger pattern.
@@ -337,7 +341,8 @@ Use this profile when the project exposes HTTP APIs.
 - Prefer immutable DTOs, records, and value objects.
 - Version or extend contracts carefully when existing clients may depend on them.
 - Preserve pagination, sorting, filtering, and validation behavior unless explicitly changed.
-- Keep OpenAPI or endpoint documentation aligned when contracts change.
+- Treat the repository's versioned OpenAPI file as the canonical API contract when the project has
+  one. Keep prose documentation and runtime-generated schemas aligned with it.
 - Prefer an OpenAPI endpoint for non-trivial REST APIs, especially when frontend clients, external consumers, generated
   clients, or integration tests depend on the contract.
 - Keep OpenAPI descriptions focused on public contracts: request/response schemas, status codes, validation constraints,
@@ -465,7 +470,8 @@ The Java process serves everything — there is no separate frontend server in p
   colours, pixel values, or font names in stylesheets or components when tokens are available.
 - Follow the existing framework, state management, routing, and styling patterns.
 - Keep API access centralized where the project already has a client layer.
-- Treat the API contract as the integration source of truth.
+- Treat the canonical OpenAPI file referenced by `docs/04-datamodell-api.md` as the integration
+  source of truth when the project exposes an API.
 - Validate and handle loading, empty, error, and success states.
 - Avoid hardcoded backend URLs; use existing configuration mechanisms.
 - Do not store secrets in browser storage.
@@ -486,7 +492,7 @@ The Java process serves everything — there is no separate frontend server in p
 
 - Use `@axe-core/playwright` to run axe against every major view and significant UI state as part of the Playwright
   suite.
-- Scan at WCAG 2.1 Level AA as the baseline unless the project sets a different target.
+- Scan at WCAG 2.2 Level AA as the baseline unless the project documents a different compatibility target.
 - Treat every axe violation as a test failure; do not suppress violations without explicit approval and a documented
   reason.
 - Use `exclude()` only for third-party embeds or known platform constraints that cannot be fixed in the project;
@@ -545,8 +551,9 @@ Use this profile when the project is a Spring Boot application or platform.
 - Expose OpenAPI JSON and Swagger UI only where they are useful for development, integration, or approved consumers.
 - Restrict or disable Swagger UI in production when public interactive API exploration is not intended.
 - Keep OpenAPI annotations close to the API boundary; avoid polluting domain models with web documentation concerns.
-- Prefer generated schemas from request/response DTOs, with explicit annotations only where they clarify validation,
-  examples, auth, or edge cases.
+- In a contract-first project, validate generated schemas from request/response DTOs against the
+  canonical OpenAPI file; do not let annotations silently become a second source of truth. Use
+  explicit annotations only where they clarify validation, examples, auth, or edge cases.
 - Keep documented examples safe: no real tokens, secrets, personal data, internal URLs, or production identifiers.
 
 ### Persistence, Search, and Migrations

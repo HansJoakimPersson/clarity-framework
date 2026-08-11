@@ -48,6 +48,7 @@
 | Dokument | Varför |
 | --- | --- |
 | `AGENTS.md` | Gäller i sin helhet – stil, säkerhet, testkrav |
+| `CLAUDE.md` | Projektspecifika avvikelser efter `@AGENTS.md`-importen, om filen finns |
 | `docs/03-sad.md` § [avsnitt] | [Vilket arkitekturbeslut som styr den här ändringen] |
 | `docs/04-datamodell-api.md` | [Om ändringen rör datamodell eller API-kontrakt] |
 | `docs/09-grafisk-profil.md` | [Om ändringen rör något visuellt] |
@@ -100,4 +101,4 @@ Besvaras innan planen raderas. "Inget" är ett giltigt svar – uteblivet svar �
 
 ---
 
-*Clarity Framework v1.4.0 – Planmall*
+*Clarity Framework v1.5.0 – Planmall*

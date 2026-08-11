@@ -1,6 +1,6 @@
 # Den ultimata guiden till mjukvarudokumentation
 
-## Clarity Framework v1.4.0
+## Clarity Framework v1.5.0
 
 ### Kravställning · Utveckling · Drift · Produktion
 
@@ -65,10 +65,10 @@ Clarity Framework skalas med projektet. Använd det som passar – hoppa inte ö
 
 | Projektstorlek | Minsta dokumentationsuppsättning | Valfritt |
 | --- | --- | --- |
-| **Personligt projekt / hobby** | Vision & Scope, README | AI Context, övriga dokument vid behov |
-| **Sidoprojekt med lansering** | + Kravdokumentation, SAD (förenklad) | Deployment View, Runbook |
-| **Litet team (2–5 pers)** | Alla 8 kärnmallar | AI Usage Guide |
-| **Större team (5–20 pers)** | Alla 8 kärnmallar + striktare DoD | Formell releaseprocess |
+| **Personligt projekt / hobby** | Vision & Scope, README; grafisk profil före visuellt UI-arbete | AI Context om AI används, övriga vid behov |
+| **Sidoprojekt med lansering** | + krav, SAD och testdokumentation; datamodell/API, deployment, runbook och grafisk profil när respektive yta finns | AI Context om AI används, ändringshantering vid behov |
+| **Litet team (2–5 pers)** | 01, 02, 03, 06, 08; 04 vid data/API, 05 vid deployment, 07 vid drift, 09 vid UI | AI Context om AI används |
+| **Större team (5–20 pers)** | 01, 02, 03, 06, 08; 04 vid data/API, 05 vid deployment, 07 vid drift, 09 vid UI; striktare DoD | AI Context om AI används, formell releaseprocess vid behov |
 
 ### Dokumentens karaktär
 
@@ -86,7 +86,9 @@ Clarity Framework skalas med projektet. Använd det som passar – hoppa inte ö
 ### Förvaring och versionshantering
 
 - Alla dokument versioneras i samma Git-repo som koden, under `/docs`
-- Dokumentnamn följer mönstret `[typ]-[produktnamn].md`, t.ex. `sad-investezy.md`
+- Dokumentnamn följer ramverkets fasta mönster `NN-typ.md`, t.ex. `03-sad.md`. Om ett projekt
+  avviker måste den faktiska sökvägen dokumenteras i `CLAUDE.md`, eftersom agents och skills annars
+  inte kan hitta dokumentet deterministiskt.
 - Bilder och diagram lagras i `/docs/assets`
 - Använd Pull Requests för att granska dokumentändringar på samma sätt som kodändringar
 
@@ -414,9 +416,9 @@ Dokumenteras antingen som:
 
 **Migrationsstrategi:** Beskriv hur schemaförändringar hanteras (t.ex. Flyway, Liquibase, manuella script).
 
-#### 5.3 API-kontrakt
+#### 5.3 API-kontrakt och läsbar översikt
 
-Alla externa och interna API:er dokumenteras med:
+Den kanoniska OpenAPI-filen ska för alla externa och interna HTTP-API:er definiera:
 
 - **Endpoint:** `GET /api/v1/recipes/{id}`
 - **Beskrivning:** Hämtar ett recept med givet ID
@@ -426,7 +428,14 @@ Alla externa och interna API:er dokumenteras med:
 - **Response:** HTTP-statuskoder med body-exempel för varje fall (200, 400, 401, 404, 500)
 - **Sidoeffekter:** Vad förändras i systemet?
 
-**Verktyg:** OpenAPI/Swagger (genereras helst från kod med annotationer). Swagger UI ger automatisk interaktiv dokumentation.
+I `docs/04-datamodell-api.md` dokumenteras kontraktsfilens sökväg, versionsstrategi,
+kompatibilitetsbeslut och de flöden som behöver en mänskligt läsbar förklaring. Kopiera inte hela
+schema- eller endpointdefinitionen till Markdown.
+
+**Kanoniskt kontrakt:** En versionshanterad OpenAPI-fil, till exempel `design/openapi.yaml`, är
+källan till sanning för endpoints, scheman, statuskoder och autentisering. Det här dokumentet anger
+sökvägen och förklarar domänmodell, beslut och exempel utan att skapa ett parallellt fullständigt
+kontrakt. Swagger UI kan rendera den kanoniska filen interaktivt.
 
 **API-versionshantering:** Dokumentera strategin – URL-versionshantering (`/v1/`, `/v2/`) eller header-baserad.
 
@@ -441,8 +450,9 @@ Alla externa och interna API:er dokumenteras med:
 
 1. Börja med domänmodellen direkt från kravarbetet – entiteterna framgår av user stories
 2. Förfina till fysisk datamodell under design-fasen
-3. Definiera API-kontrakt *innan* implementation (contract-first approach)
-4. Generera Swagger/OpenAPI från koden och validera mot det definierade kontraktet
+3. Skriv eller uppdatera den versionshanterade OpenAPI-filen *innan* implementation
+4. Validera implementationen och eventuell runtime-genererad OpenAPI mot den kanoniska filen;
+   generera gärna serverstubbar eller klienter från kontraktet
 5. Uppdatera vid varje schema- eller API-förändring
 
 ---
@@ -766,7 +776,8 @@ Den grafiska profilen dokumenterar det visuella språket: färger, typografi, sp
 Den är ett **ingångsvärde** – ska vara godkänd innan UI-kodning påbörjas – inte en efterhandsbeskrivning av vad
 som råkade hamna i koden.
 
-Design tokens i DTCG-format (W3C Design Token Community Group) gör profilen maskinläsbar. Det innebär att
+Design tokens i DTCG-format från W3C Design Tokens Community Group gör profilen maskinläsbar. DTCG är en
+stabil Community Group-specifikation, inte en W3C Recommendation. Det innebär att
 token-filen kan transformeras automatiskt till CSS custom properties, Swift-extensions, Kotlin-resurser och andra
 målformat via verktyg som Style Dictionary.
 
@@ -784,11 +795,11 @@ Logotyp med varianter och frizon, färgpalett med semantiska roller, typografisy
 bildspråk och ikonografistil.
 
 **WCAG-kontrastkrav**
-Alla kritiska färgkombinationer dokumenteras med uppmätta kontraskvoter mot WCAG 2.1 AA (4,5:1 för normal text,
+Alla kritiska färgkombinationer dokumenteras med uppmätta kontraskvoter mot WCAG 2.2 AA (4,5:1 för normal text,
 3:1 för stor text och UI-komponenter).
 
 **Design tokens (DTCG-format)**
-En JSON-fil i W3C DTCG-format som definierar alla visuella värden: färg, typografi, spacing, radier, skuggor och
+En JSON-fil i DTCG 2025.10-format som definierar alla visuella värden: färg, typografi, spacing, radier, skuggor och
 animationstider. Filen är källan till sanning och versioneras i Git. Genererade plattformsfiler redigeras aldrig
 manuellt.
 
@@ -801,7 +812,7 @@ Vem äger profilen, hur förändras tokens, och vad räknas som en breaking chan
 
 ### Kvalitetskriterier
 
-- Alla färgkombinationer som används i UI uppfyller WCAG 2.1 AA
+- Alla färgkombinationer som används i UI uppfyller WCAG 2.2 AA
 - Token-filen är giltig DTCG-JSON och transformationspipelinen körs utan fel
 - Inga visuella hårdkodade värden (hex, px-värden, fontnamn) förekommer i kod när tokens finns dokumenterade
 - Genererade token-filer redigeras aldrig manuellt
@@ -943,4 +954,4 @@ I praktiken drivs de flesta projekt som använder Clarity Framework idag tillsam
 
 ---
 
-*Clarity Framework v1.4.0 | Uppdaterad: 2026-08*
+*Clarity Framework v1.5.0 | Uppdaterad: 2026-08*

@@ -107,11 +107,16 @@ erDiagram
 
 ---
 
-## 3. API-kontrakt
+## 3. API-översikt och kontraktsbeslut
 
-> Alla endpoints dokumenteras här. OpenAPI/Swagger-spec genereras från koden och valideras mot detta dokument.  
+> **Kanoniskt API-kontrakt:** `[design/openapi.yaml]` – skrivs eller uppdateras före implementation
+> och valideras mot koden i CI. Endpointavsnitten nedan är läshjälp och beslutsförklaring; de ska
+> inte duplicera hela specifikationen. Vid avvikelse gäller den versionshanterade OpenAPI-filen.
 > **Bas-URL:** `https://[host]/api/v1`  
 > **Autentisering:** Bearer token i Authorization-header (om ej annat anges)
+
+Ta bara med kritiska eller representativa flöden nedan. Fälttyper, required/nullability,
+statuskoder och fullständiga scheman hör hemma i OpenAPI-filen.
 
 ---
 

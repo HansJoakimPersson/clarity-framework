@@ -58,6 +58,8 @@ A profile never removes the merge gate. You never approve on the user's behalf.
 Check, and if anything is missing: report it and stop.
 
 - `command -v codex` and `AGENTS.md` in the project root.
+- This skill exists at `.agents/skills/planstyrt-bygge/` or `.claude/skills/planstyrt-bygge/`.
+  Install it in both locations when both Codex and Claude Code are used. The copies must be identical.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
   into the working tree; if it is dirty you can no longer tell its changes from what was there.
   Report what is uncommitted and let the user decide — never commit, stash or reset for them.
@@ -74,7 +76,14 @@ Set the identifiers once and reuse them:
 
 ```bash
 ID=YYYY-MM-DD-short-name
-SKILLDIR=.claude/skills/planstyrt-bygge
+if [ -f .agents/skills/planstyrt-bygge/SKILL.md ]; then
+  SKILLDIR=.agents/skills/planstyrt-bygge
+elif [ -f .claude/skills/planstyrt-bygge/SKILL.md ]; then
+  SKILLDIR=.claude/skills/planstyrt-bygge
+else
+  printf '%s\n' 'planstyrt-bygge is not installed for Codex or Claude Code' >&2
+  exit 2
+fi
 PLAN=docs/plans/$ID.md
 JOURNAL=docs/plans/$ID.run.md
 RUN=docs/plans/.runs/$ID
@@ -107,6 +116,7 @@ read what it needs — that is the context you are not paying for twice.
 "$SKILLDIR/dispatch.sh" --profile reasoning --mode read-only \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<one or two sentences: what should be true when this is done>" \
+  --var PLAN_TEMPLATE="$SKILLDIR/plan-mall.md" \
   --var DATE="$(date +%F)" \
   --out "$PLAN" --max-lines 200
 ```
@@ -182,6 +192,7 @@ Do not read the diff yourself.
 "$SKILLDIR/dispatch.sh" --profile reasoning --mode read-only \
   --prompt-file "$SKILLDIR/prompts/5-verifiering.txt" \
   --var PLAN="$PLAN" --var SHA="<approval SHA from the journal>" \
+  --var BUILD_LOG="$RUN/bygge.log" \
   --out "$RUN/verifiering.md"
 ```
 
@@ -209,10 +220,16 @@ This gate holds in every profile. Never approve on the user's behalf.
 
 If the gate fails, the plan stays and the flow returns to step 4 with what remains.
 
+If the gate passes, the merge is a separate, explicit transition: the user performs it through the
+project's normal workflow, or explicitly authorizes an agent to do it. Record the merge commit in
+the journal and verify that it contains the build commit. For a direct-to-main workflow, record that
+no merge was required. Do not enter step 8 until one of those states is recorded.
+
 ## Step 8 — Close out
 
-After merge, go through the plan's **Vid avslut** section with the user. The answers drive real
-changes: if an architectural decision belongs in `docs/03-sad.md`, write it there now. "Nothing" is
+After the merge transition recorded in step 7, go through the plan's **Vid avslut** section with
+the user. The answers drive real changes: if an architectural decision belongs in
+`docs/03-sad.md`, write it there now. "Nothing" is
 a valid answer to every question, but do not skip a question because the answer seems obvious —
 this is the last point where the lesson still exists.
 
@@ -236,6 +253,7 @@ step the journal records as done, and do not reconstruct context by reading code
 - The rationale behind all of this — why cost separation and not just context isolation, why the
   gates sit where they do — is in the framework's `ai-usage-guide.md` § 5. It is not needed to run
   the workflow, which is why it is not here.
-- This file is the procedure for whoever holds the orchestrator role, not for Claude Code
-  specifically. `codex-orchestrator.md` is a thin frontend that points another CLI at this same
-  file, which is how a run continues when the first orchestrator hits a usage limit.
+- This file is the shared procedure for both orchestrators. Claude Code discovers the copy under
+  `.claude/skills/` and invokes `/planstyrt-bygge`; Codex discovers the copy under `.agents/skills/`
+  and invokes `$planstyrt-bygge` or selects it through `/skills`. No separate custom-prompt frontend
+  is needed. The journal is how a run continues when the first orchestrator hits a usage limit.

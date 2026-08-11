@@ -5,9 +5,30 @@ filen under körning.
 
 > **Verifiera flaggor och konfignycklar mot din installerade version** innan du litar på dem i ett
 > obevakat flöde. Både Codex och Claude Code har ändrat namn på flaggor och settings-nycklar mellan
-> versioner. Kör `codex exec --help` och testa en kort dispatch först. Ramverket ska inte påstå
+> versioner. Kör `codex --help`, `codex exec --help` och testa en kort dispatch först. Ramverket ska inte påstå
 > något det inte har provat – och en felaktig approval-flagga upptäcks som en hängd körning mitt i
 > ett bygge.
+
+---
+
+## 0. Installera samma skill för båda verktygen
+
+Codex och Claude Code följer samma Agent Skills-format men söker projektskills på olika platser.
+Kopiera därför samma katalog till båda sökvägarna:
+
+```bash
+mkdir -p .agents/skills .claude/skills
+cp -R /sökväg/till/clarity-framework/skills/planstyrt-bygge .agents/skills/
+cp -R /sökväg/till/clarity-framework/skills/planstyrt-bygge .claude/skills/
+diff -qr .agents/skills/planstyrt-bygge .claude/skills/planstyrt-bygge
+```
+
+- Claude Code: anropa `/planstyrt-bygge`.
+- Codex: anropa `$planstyrt-bygge` eller välj skillen genom `/skills`.
+
+Codex custom prompts under `~/.codex/prompts/` är utfasade och används inte. Filerna under
+skillens egen `prompts/` är interna instruktioner till dispatchade processer och ska ligga kvar;
+de är inte custom prompts för någon av klienterna.
 
 ---
 
@@ -54,8 +75,8 @@ frågar mitt i en obevakad körning.
 
 | Nivå | Flaggor |
 | --- | --- |
-| Reasoning, granskning | `-s read-only -a never` |
-| Implementation | `-s workspace-write -a never` |
+| Reasoning, granskning | `codex -a never exec -s read-only …` |
+| Implementation | `codex -a never exec -s workspace-write …` |
 
 `--full-auto` är en genväg för `workspace-write` plus en mildare approval-policy – dugligt, men sätt
 hellre båda flaggorna explicit så att det syns i kommandot vad som gäller.
@@ -84,19 +105,12 @@ betalar. De utesluter inte varandra.
 standardläge – hela poängen med att låta implementation köra utan att fråga är att sandboxen står
 kvar.
 
-Installera frontenden som gör Codex till orchestrator:
-
-```bash
-cp codex-orchestrator.md ~/.codex/prompts/planstyrt-bygge.md
-```
-
-Sedan `/planstyrt-bygge` i Codex. Filen duplicerar inte flödet – den pekar på samma `SKILL.md` och
-beskriver bara det som skiljer när Codex håller rollen. Verifiera att din Codex-version läser
-`~/.codex/prompts/`; gör den inte det fungerar filen lika bra inklistrad som första meddelande.
+Codex läser den delade skillen från `.agents/skills/planstyrt-bygge/SKILL.md`. Starta
+orchestratorprofilen och välj `$planstyrt-bygge`; ingen separat promptinstallation behövs.
 
 Den vanligaste anledningen att byta orchestrator mitt i är att den första tog slut. Då är det
-körjournalen som bär över flödet, inte den här filen – frontenden säger bara åt Codex att läsa den
-och fortsätta från rätt steg.
+körjournalen som bär över flödet; den nya klienten anropar sin kopia av samma skill och fortsätter
+från journalens nästa steg.
 
 ### Claude Code som orchestrator
 
@@ -147,7 +161,7 @@ ser bara det som är pushat.
 
 ```bash
 aimux profile list
-CODEX_HOME="$HOME/.aimux/profiles/reasoning" codex exec -s read-only -a never \
+CODEX_HOME="$HOME/.aimux/profiles/reasoning" codex -a never exec -s read-only \
   "Answer with one word: ok"
 ```
 

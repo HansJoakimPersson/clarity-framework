@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Senast uppdaterad** | ÅÅÅÅ-MM-DD |
-| **Ramverksversion** | Clarity Framework v1.4.0 |
+| **Ramverksversion** | Clarity Framework v1.5.0 |
 | **Projektfas** | Initiering / Krav / Design / Implementation / Drift |
 
 ---
@@ -93,13 +93,18 @@ finns – en skill eller ett skript ska kunna bytas ut utan att flödet definier
 
 | Nivå | Agent / profil | Sandbox + approval | Ansvar |
 | --- | --- | --- | --- |
-| Orchestrator | [t.ex. Claude Code] | [t.ex. allowlist i `.claude/settings.json`] | Sekvenserar, äger grindarna, för körjournal. Läser inte kodbas eller diff själv. |
+| Orchestrator | [t.ex. Claude Code eller Codex] | [t.ex. allowlist i `.claude/settings.json` eller Codex orchestratorprofil] | Sekvenserar, äger grindarna, för körjournal. Läser inte kodbas eller diff själv. |
 | Reasoning | [t.ex. Codex, profil `reasoning`] | `read-only` + approval `never` | Skriver plan till `docs/plans/`, granskar diff mot plan. Bygger inte, godkänner inte sitt eget arbete. Annat CLI/konto än Orchestrator. |
 | Granskning *(valfri)* | [t.ex. Codex, profil `granskning`] | `read-only` + approval `never` | Granskar planen kallt mot koden. Annat konto än Reasoning – annars granskar en nivå sig själv. |
 | Implementation | [t.ex. Codex, profil `implementation`] | `workspace-write` + approval `never` | Bygger enligt planen. Planerar inte om – stannar vid blockerande fråga. |
 
 > Sandbox och approval är två oberoende inställningar. Sätts bara sandbox ligger approval kvar på
 > default, och då stannar en obevakad körning och frågar. Sätt alltid båda.
+
+**Skill-sökvägar:** Clarity-skills som används av båda klienterna installeras som identiska kopior
+under `.agents/skills/<namn>/` för Codex och `.claude/skills/<namn>/` för Claude Code. Claude
+anropar `/namn`; Codex anropar `$namn` eller väljer skillen via `/skills`. Interna `prompts/` i en
+skill är resurser för skillens skript, inte klienternas custom-promptkataloger.
 
 **Planer:** `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md` (mall: ramverkets `templates/plan.md`). Planen måste vara committad och pushad för att en molnagent ska kunna läsa den. Raderas när ändringen är mergad.
 
@@ -127,4 +132,4 @@ finns – en skill eller ett skript ska kunna bytas ut utan att flödet definier
 
 ---
 
-*Clarity Framework v1.4.0 – AI Context Document*
+*Clarity Framework v1.5.0 – AI Context Document*

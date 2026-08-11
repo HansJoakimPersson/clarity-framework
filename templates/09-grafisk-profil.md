@@ -56,7 +56,7 @@ Alla färger definieras som design tokens (se avsnitt 3). Dokumentera semantisk 
 | Fel | `color.semantic.error` | `#[hex]` | Felmeddelanden, destruktiva åtgärder |
 | Info | `color.semantic.info` | `#[hex]` | Informationsrutor |
 
-**Tillgänglighet:** Alla text–bakgrundskombinationer ska uppfylla WCAG 2.1 AA-kontrastkrav (4,5:1 för normal
+**Tillgänglighet:** Alla text–bakgrundskombinationer ska uppfylla WCAG 2.2 AA-kontrastkrav (4,5:1 för normal
 text, 3:1 för stor text och UI-komponenter). Dokumentera kontrastkvoter för kritiska kombinationer nedan.
 
 | Kombination | Kvot | WCAG AA |
@@ -146,7 +146,8 @@ avsevärt när användaren begärt reducerad rörelse.
 ## 3. Design Tokens – DTCG-format
 
 > Tokens lagras i `design/tokens.json` (eller den sökväg projektet använder) enligt
-> [W3C Design Token Community Group (DTCG) specification](https://tr.designtokens.org/format/).
+> [DTCG Format Module 2025.10](https://www.designtokens.org/TR/2025.10/format/), en stabil
+> W3C Community Group-specifikation (inte en W3C Recommendation).
 > Filen är källan till sanning för alla visuella värden och ska versioneras i Git.
 
 ### Filstruktur
@@ -173,106 +174,106 @@ Grupper bildas genom nästlade objekt. Alias-referenser skrivs med klammernotati
     "brand": {
       "primary": {
         "500": {
-          "$value": "#[hex]",
+          "$value": { "colorSpace": "srgb", "components": [0.12, 0.31, 0.78] },
           "$type": "color",
           "$description": "Primär varumärkesfärg – används för knappar, länkar och aktiva tillstånd"
         },
         "600": {
-          "$value": "#[hex]",
+          "$value": { "colorSpace": "srgb", "components": [0.08, 0.24, 0.64] },
           "$type": "color",
           "$description": "Hover- och aktivt tillstånd för primärfärgen"
         }
       }
     },
     "neutral": {
-      "0":   { "$value": "#ffffff", "$type": "color" },
-      "100": { "$value": "#[hex]",  "$type": "color" },
-      "200": { "$value": "#[hex]",  "$type": "color" },
-      "500": { "$value": "#[hex]",  "$type": "color" },
-      "900": { "$value": "#[hex]",  "$type": "color" }
+      "0":   { "$value": { "colorSpace": "srgb", "components": [1, 1, 1] }, "$type": "color" },
+      "100": { "$value": { "colorSpace": "srgb", "components": [0.94, 0.95, 0.97] }, "$type": "color" },
+      "200": { "$value": { "colorSpace": "srgb", "components": [0.86, 0.88, 0.91] }, "$type": "color" },
+      "500": { "$value": { "colorSpace": "srgb", "components": [0.42, 0.45, 0.5] }, "$type": "color" },
+      "900": { "$value": { "colorSpace": "srgb", "components": [0.08, 0.1, 0.14] }, "$type": "color" }
     },
     "semantic": {
-      "success": { "$value": "{color.green.500}", "$type": "color" },
-      "warning": { "$value": "{color.yellow.500}", "$type": "color" },
-      "error":   { "$value": "{color.red.500}", "$type": "color" },
-      "info":    { "$value": "{color.blue.500}", "$type": "color" }
+      "success": { "$value": { "colorSpace": "srgb", "components": [0.08, 0.55, 0.3] }, "$type": "color" },
+      "warning": { "$value": { "colorSpace": "srgb", "components": [0.9, 0.55, 0.05] }, "$type": "color" },
+      "error":   { "$value": { "colorSpace": "srgb", "components": [0.78, 0.12, 0.16] }, "$type": "color" },
+      "info":    { "$value": "{color.brand.primary.500}", "$type": "color" }
     }
   },
   "font": {
     "family": {
-      "sans": { "$value": "[Teckensnitt], system-ui, sans-serif", "$type": "fontFamily" },
-      "mono": { "$value": "[Monospace], monospace", "$type": "fontFamily" }
+      "sans": { "$value": ["Inter", "system-ui", "sans-serif"], "$type": "fontFamily" },
+      "mono": { "$value": ["SFMono-Regular", "Consolas", "monospace"], "$type": "fontFamily" }
     },
     "size": {
-      "sm":  { "$value": "14px", "$type": "dimension" },
-      "md":  { "$value": "16px", "$type": "dimension" },
-      "lg":  { "$value": "18px", "$type": "dimension" },
-      "xl":  { "$value": "24px", "$type": "dimension" },
-      "2xl": { "$value": "30px", "$type": "dimension" },
-      "3xl": { "$value": "36px", "$type": "dimension" }
+      "sm":  { "$value": { "value": 14, "unit": "px" }, "$type": "dimension" },
+      "md":  { "$value": { "value": 16, "unit": "px" }, "$type": "dimension" },
+      "lg":  { "$value": { "value": 18, "unit": "px" }, "$type": "dimension" },
+      "xl":  { "$value": { "value": 24, "unit": "px" }, "$type": "dimension" },
+      "2xl": { "$value": { "value": 30, "unit": "px" }, "$type": "dimension" },
+      "3xl": { "$value": { "value": 36, "unit": "px" }, "$type": "dimension" }
     },
     "weight": {
-      "regular":  { "$value": "400", "$type": "fontWeight" },
-      "medium":   { "$value": "500", "$type": "fontWeight" },
-      "semibold": { "$value": "600", "$type": "fontWeight" },
-      "bold":     { "$value": "700", "$type": "fontWeight" }
+      "regular":  { "$value": 400, "$type": "fontWeight" },
+      "medium":   { "$value": 500, "$type": "fontWeight" },
+      "semibold": { "$value": 600, "$type": "fontWeight" },
+      "bold":     { "$value": 700, "$type": "fontWeight" }
     }
   },
   "line": {
     "height": {
-      "tight":  { "$value": "1.25", "$type": "number" },
-      "normal": { "$value": "1.5",  "$type": "number" },
-      "loose":  { "$value": "1.75", "$type": "number" }
+      "tight":  { "$value": 1.25, "$type": "number" },
+      "normal": { "$value": 1.5,  "$type": "number" },
+      "loose":  { "$value": 1.75, "$type": "number" }
     }
   },
   "spacing": {
-    "1":  { "$value": "4px",  "$type": "dimension" },
-    "2":  { "$value": "8px",  "$type": "dimension" },
-    "3":  { "$value": "12px", "$type": "dimension" },
-    "4":  { "$value": "16px", "$type": "dimension" },
-    "6":  { "$value": "24px", "$type": "dimension" },
-    "8":  { "$value": "32px", "$type": "dimension" },
-    "12": { "$value": "48px", "$type": "dimension" },
-    "16": { "$value": "64px", "$type": "dimension" }
+    "1":  { "$value": { "value": 4, "unit": "px" },  "$type": "dimension" },
+    "2":  { "$value": { "value": 8, "unit": "px" },  "$type": "dimension" },
+    "3":  { "$value": { "value": 12, "unit": "px" }, "$type": "dimension" },
+    "4":  { "$value": { "value": 16, "unit": "px" }, "$type": "dimension" },
+    "6":  { "$value": { "value": 24, "unit": "px" }, "$type": "dimension" },
+    "8":  { "$value": { "value": 32, "unit": "px" }, "$type": "dimension" },
+    "12": { "$value": { "value": 48, "unit": "px" }, "$type": "dimension" },
+    "16": { "$value": { "value": 64, "unit": "px" }, "$type": "dimension" }
   },
   "radius": {
-    "sm":   { "$value": "[X]px",   "$type": "dimension" },
-    "md":   { "$value": "[X]px",   "$type": "dimension" },
-    "lg":   { "$value": "[X]px",   "$type": "dimension" },
-    "full": { "$value": "9999px",  "$type": "dimension" }
+    "sm":   { "$value": { "value": 4, "unit": "px" }, "$type": "dimension" },
+    "md":   { "$value": { "value": 8, "unit": "px" }, "$type": "dimension" },
+    "lg":   { "$value": { "value": 12, "unit": "px" }, "$type": "dimension" },
+    "full": { "$value": { "value": 9999, "unit": "px" }, "$type": "dimension" }
   },
   "shadow": {
     "sm": {
       "$value": {
         "color":    "{color.neutral.900}",
-        "offsetX":  "0px",
-        "offsetY":  "1px",
-        "blur":     "2px",
-        "spread":   "0px"
+        "offsetX":  { "value": 0, "unit": "px" },
+        "offsetY":  { "value": 1, "unit": "px" },
+        "blur":     { "value": 2, "unit": "px" },
+        "spread":   { "value": 0, "unit": "px" }
       },
       "$type": "shadow"
     },
     "md": {
       "$value": {
         "color":    "{color.neutral.900}",
-        "offsetX":  "0px",
-        "offsetY":  "4px",
-        "blur":     "6px",
-        "spread":   "-1px"
+        "offsetX":  { "value": 0, "unit": "px" },
+        "offsetY":  { "value": 4, "unit": "px" },
+        "blur":     { "value": 6, "unit": "px" },
+        "spread":   { "value": -1, "unit": "px" }
       },
       "$type": "shadow"
     }
   },
   "motion": {
     "duration": {
-      "fast":   { "$value": "100ms", "$type": "duration" },
-      "normal": { "$value": "200ms", "$type": "duration" },
-      "slow":   { "$value": "400ms", "$type": "duration" }
+      "fast":   { "$value": { "value": 100, "unit": "ms" }, "$type": "duration" },
+      "normal": { "$value": { "value": 200, "unit": "ms" }, "$type": "duration" },
+      "slow":   { "$value": { "value": 400, "unit": "ms" }, "$type": "duration" }
     },
     "easing": {
-      "default": { "$value": "ease-in-out", "$type": "cubicBezier" },
-      "enter":   { "$value": "ease-out",    "$type": "cubicBezier" },
-      "exit":    { "$value": "ease-in",     "$type": "cubicBezier" }
+      "default": { "$value": [0.42, 0, 0.58, 1], "$type": "cubicBezier" },
+      "enter":   { "$value": [0, 0, 0.58, 1],    "$type": "cubicBezier" },
+      "exit":    { "$value": [0.42, 0, 1, 1],    "$type": "cubicBezier" }
     }
   }
 }
@@ -324,4 +325,4 @@ Breaking changes dokumenteras som ADR i `docs/03-sad.md` och kommuniceras explic
 
 ---
 
-*Clarity Framework v1.4.0 – Grafisk profil & Design Tokens*
+*Clarity Framework v1.5.0 – Grafisk profil & Design Tokens*

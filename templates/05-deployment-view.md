@@ -319,13 +319,14 @@ curl -f https://[domän]/health
 
 ```json
 {
-  "status": "UP",
-  "components": {
-    "database": { "status": "UP" },
-    "cache": { "status": "UP" }
-  }
+  "status": "UP"
 }
 ```
+
+Den publika endpointen visar bara sammanvägd status. Detaljer per databas, cache eller annat
+beroende exponeras separat bakom autentisering och/eller nätverksbegränsning, till exempel på
+`GET /internal/health`, och får inte innehålla anslutningssträngar, credentials eller intern
+infrastrukturinformation.
 
 ### Alerting
 

@@ -4,7 +4,7 @@
 > Fungerar för alla skalor – från ett personligt sidoprojekt till ett team på 20 personer.  
 > AI-assistans är ett valfritt accelerationslager, inte en förutsättning.
 
-**Version:** 1.4.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 1.5.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ---
 
@@ -41,7 +41,8 @@ clarity-framework/
 │   └── plan.md                         # Arbetsorder vid planstyrt AI-arbetsflöde
 │
 ├── agents/                             # AGENTS.md-starters per stack
-│   ├── README.md                       # Välj och anpassa rätt starter
+│   ├── README.md                       # Välj rätt starter och lägg avvikelser i CLAUDE.md
+│   ├── generic.md                      # Neutral fallback när ingen stack-starter matchar
 │   ├── java-application.md
 │   ├── ios-springboot.md
 │   ├── electron-desktop.md
@@ -50,15 +51,18 @@ clarity-framework/
 │   ├── vanilla-web-spa.md
 │   └── shell-dotfiles.md
 │
-├── skills/                             # Skills att kopiera till .claude/skills/
+├── skills/                             # Skills att kopiera till .agents/skills/ och .claude/skills/
 │   ├── README.md                       # Vad en skill är och hur den används
+│   ├── clarity-bootstrap/              # Behovsstyrd uppsättning av ett nytt projekt
+│   │   ├── SKILL.md
+│   │   └── agents/openai.yaml          # Valfri Codex-UI-metadata; krävs inte av Claude
 │   ├── ramverksuppdatering/            # Lyfter ett projekt till senaste releasen
 │   │   └── SKILL.md
-│   └── planstyrt-bygge/                # Claude orkestrerar, Codex planerar och bygger
+│   └── planstyrt-bygge/                # Claude eller Codex orkestrerar externa Codex-körningar
 │       ├── SKILL.md                    # Proceduren – det enda orchestratorn läser
-│       ├── codex-orchestrator.md       # Frontend: Codex tar orchestratorrollen
 │       ├── prompts/                    # Dispatch-prompter, utanför orchestratorns kontext
 │       ├── dispatch.sh                 # Enda vägen till en dispatch: sandbox, approval, budget
+│       ├── tests/dispatch-test.sh       # Regressionstest för CLI-ordning och sentinel
 │       ├── plan-mall.md                # Kopia av templates/plan.md – följer med skillen
 │       ├── journal-mall.md             # Körjournal – flödets tillstånd mellan sessioner
 │       ├── uppsattning.md              # Engångsuppsättning: profiler och permissions
@@ -83,13 +87,13 @@ mitt-projekt/
 │   ├── 01-vision-scope.md         # … till och med 09, de projektet valt
 │   └── plans/                     # Transienta arbetsordrar, om planstyrt flöde används
 │
+├── .agents/
+│   └── skills/                    # Codex: kopior av valda ramverksskills
 ├── .claude/
-│   └── skills/                    # Kopior av ramverkets /skills/
-│       ├── ramverksuppdatering/
-│       └── planstyrt-bygge/
+│   └── skills/                    # Claude Code: identiska kopior av samma skills
 │
 ├── AGENTS.md                      # Kopia av vald /agents/-starter, oredigerad
-├── CLAUDE.md                      # Projektspecifika regler – ägs av projektet
+├── CLAUDE.md                      # `@AGENTS.md` + projektspecifika regler
 └── …                              # Projektets egen kod
 ```
 
@@ -98,20 +102,29 @@ mitt-projekt/
 | Sökväg | Ägare | Vid uppdatering |
 | --- | --- | --- |
 | `AGENTS.md` | Ramverket | **Ersätts helt.** Redigeras aldrig i projektet |
-| `.claude/skills/*/` | Ramverket | **Ersätts helt.** Redigeras aldrig i projektet |
+| `.agents/skills/<clarity-skill>/` | Ramverket | **Ersätts helt.** Bara namn listade i `docs/.clarity-version`; andra skills rörs aldrig |
+| `.claude/skills/<clarity-skill>/` | Ramverket | **Ersätts helt.** Identisk Claude-kopia av samma listade skills |
 | `docs/NN-*.md` | Projektet | Innehållet behålls, strukturen lyfts till nya mallen |
 | `docs/.clarity-version` | Ramverket | Skrivs om vid varje uppdatering |
-| `CLAUDE.md`, kod, allt annat | Projektet | **Rörs aldrig** |
+| `CLAUDE.md`, övriga skills, kod, allt annat | Projektet | **Skrivs aldrig över** |
 
 Regeln är att en fil har en ägare, inte två. Det som är projektspecifikt hör hemma i `CLAUDE.md` –
-aldrig som en lokal redigering i en ramverksägd fil, eftersom en sådan redigering går förlorad vid
-nästa uppdatering och inte går att skilja från en föråldrad version.
+aldrig som en lokal redigering i en ramverksägd fil. För dubbel kompatibilitet börjar filen med
+`@AGENTS.md`: Claude Code importerar då startern automatiskt, medan Codex läser `AGENTS.md` direkt
+och instrueras där att även läsa den projektspecifika delen av `CLAUDE.md`.
 
 ---
 
 ## Kom igång
 
 ### Nytt projekt
+
+Rekommenderat: kopiera `skills/clarity-bootstrap/` till både `.agents/skills/` och
+`.claude/skills/`. Anropa `$clarity-bootstrap` i Codex eller `/clarity-bootstrap` i Claude Code.
+Skillen utgår från vad som ska byggas, föreslår minsta sammanhängande dokumentuppsättning och
+stannar för godkännande innan den skriver.
+
+Manuell uppsättning:
 
 1. Skapa en `/docs`-mapp i ditt projektrepo
 2. Kopiera relevanta mallar från `/templates/` till `/docs/`
@@ -120,14 +133,16 @@ nästa uppdatering och inte går att skilja från en föråldrad version.
 
 | Projektstorlek | Obligatoriskt | Valfritt |
 | --- | --- | --- |
-| Personligt / hobby | 01, README | Övriga vid behov |
-| Sidoprojekt med lansering | 01, 02, 03, README | 04, 05, 07 |
-| Litet team (2–5 pers) | Alla 01–08 | 00, 09 |
-| Större team (5–20 pers) | Alla 00–08 | 09 |
+| Personligt / hobby | 01, README; 09 före visuellt UI-arbete | 00 om AI används; övriga vid behov |
+| Sidoprojekt med lansering | 01, 02, 03, 06, README; 04 vid data/API, 05 vid deployment, 07 vid drift, 09 vid UI | 00 om AI används, 08 vid ändringsspårning |
+| Litet team (2–5 pers) | 01, 02, 03, 06, 08; 04 vid data/API, 05 vid deployment, 07 vid drift, 09 vid UI | 00 om AI används |
+| Större team (5–20 pers) | 01, 02, 03, 06, 08; 04 vid data/API, 05 vid deployment, 07 vid drift, 09 vid UI; striktare DoD | 00 om AI används; formell releaseprocess vid behov |
 
 ### Befintligt projekt på en äldre version
 
-Kopiera `skills/ramverksuppdatering/` till projektets `.claude/skills/` och anropa den. Den hämtar
+Kopiera `skills/ramverksuppdatering/` till både projektets `.agents/skills/` och
+`.claude/skills/`, och anropa den som `$ramverksuppdatering` i Codex eller
+`/ramverksuppdatering` i Claude Code. Den hämtar
 senaste releasen, jämför projektets filer mot den version de kopierades från, och lyfter projektet
 till nuvarande struktur utan att skriva över något du fyllt i. Nya mallar och avsnitt kommer in
 tomma – rapporten säger vilka som behöver fyllas.
@@ -158,4 +173,4 @@ körningen – skillen säger uttryckligen till när den härleder istället fö
 
 ---
 
-*Clarity Framework v1.4.0*
+*Clarity Framework v1.5.0*

@@ -202,11 +202,19 @@ Nivådelningen tvingar fram disciplinen. Du får merparten av värdet även med 
 
 ### Automatisera flödet
 
-`skills/planstyrt-bygge/` är en färdig skill för Claude Code som kör hela kedjan: dispatchar planen och den efterföljande diffgranskningen till en reasoning-nivå (ett annat CLI eller konto, read-only), stannar för ditt godkännande av omfattningen, och dispatchar sedan bygget till en implementation-nivå. Kopiera den till projektets `.claude/skills/` när flödet behövs.
+`skills/planstyrt-bygge/` är en gemensam Agent Skill för Claude Code och Codex som kör hela kedjan:
+dispatchar planen och den efterföljande diffgranskningen till en reasoning-nivå (ett annat CLI eller
+konto, read-only), stannar för ditt godkännande av omfattningen, och dispatchar sedan bygget till en
+implementation-nivå. Kopiera samma katalog till projektets `.agents/skills/` och `.claude/skills/`
+när flödet behövs.
 
 Skillen är byggd enligt principerna ovan snarare än att bara beskriva dem: dispatch-prompterna ligger i separata filer så att de aldrig hamnar i orchestratorns kontext, all dispatch går genom ett skript som sätter sandbox och approval tillsammans och mäter rapporternas storlek mot budgeten, och tillståndet skrivs till körjournalen efter varje steg. En medföljande `settings.exempel.json` gör budgeten till permissionsregler.
 
-Proceduren i `SKILL.md` är skriven för orchestratorrollen, inte för ett visst verktyg. `codex-orchestrator.md` är en tunn frontend som pekar Codex på samma fil och bara beskriver det som skiljer – det är så en påbörjad körning kan fortsätta under ett annat CLI när det första abonnemanget tar slut. Notera att den enforcement som `deny`-reglerna ger i Claude Code saknar motsvarighet där; budgeten vilar då på instruktion, vilket är svagare och värt att veta om.
+Proceduren i `SKILL.md` är skriven för orchestratorrollen, inte för ett visst verktyg. Claude Code
+anropar `/planstyrt-bygge`; Codex väljer `$planstyrt-bygge` eller använder `/skills`. En påbörjad
+körning kan fortsätta under ett annat CLI eftersom körjournalen, inte klientens promptkatalog, bär
+tillståndet. Notera att den enforcement som `deny`-reglerna ger i Claude Code saknar direkt
+motsvarighet i Codex; budgeten vilar då på instruktion, vilket är svagare och värt att veta om.
 
 Stoppunkten före bygget är inte en artighet – den är hela poängen. En automatisering som hoppar över den ger dig ett bygge du inte har godkänt omfattningen på.
 
@@ -233,5 +241,5 @@ Långkörande automatiserade flöden ska inte kräva kompletterande verktyg, men
 
 ---
 
-*Detta dokument är en del av Clarity Framework v1.4.0*
+*Detta dokument är en del av Clarity Framework v1.5.0*
 *Nästa steg: Skapa `00-ai-context.md` för ditt specifika projekt*

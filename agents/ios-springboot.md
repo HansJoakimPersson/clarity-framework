@@ -38,8 +38,10 @@ boundary.
 ### Workflow
 
 1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
-2. In Clarity Framework projects, always read `docs/00-ai-context.md` first — it is short, and it routes you to
-   whatever else matters. If a plan in `docs/plans/` governs this task, read that too: its scope section is
+2. In Clarity Framework projects, read `docs/00-ai-context.md` first when it exists — it is short,
+   and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
+   task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs
+   this task, read that too: its scope section is
    authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
    improvising. Read the remaining documents only when the task touches their subject:
    - `docs/04-datamodell-api.md` — before any task that touches network behavior: API contracts, authentication
@@ -73,7 +75,7 @@ says the scope is authoritative.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
-  repo (for example under `.claude/skills/`). You are the level that builds; following it spawns
+  repo (for example under `.agents/skills/` or `.claude/skills/`). You are the level that builds; following it spawns
   nested agents.
 - Keep your report inside the line budget you were given, and put the outcome in it. The orchestrator
   reads your report instead of the diff, so what you leave out is invisible — and what you write past
@@ -113,8 +115,9 @@ or API versioning. This is the highest-risk surface in the project.
 
 ### The API Is a Shared Interface
 
-- `docs/04-datamodell-api.md` is the source of truth for the API contract. Keep it current; if the code and the
-  doc disagree, fix both.
+- The versioned OpenAPI file referenced by `docs/04-datamodell-api.md` is the source of truth for
+  the API contract. Keep the spec, explanatory document, server, and client aligned; if they
+  disagree, resolve the mismatch against the approved spec.
 - Every field name, type, nullability, and HTTP status code is part of the contract. Changes to any of these are
   breaking changes for the iOS client.
 - Additive changes (new optional fields, new endpoints) are safe. Removals, renames, and type changes are
@@ -176,7 +179,8 @@ Prefer Maven Wrapper when present:
 
 ### Lombok
 
-Lombok is mandatory on the Spring Boot side.
+Apply these rules only when Lombok is already configured or the task explicitly requires and
+authorizes it. Never add Lombok merely to satisfy this starter.
 
 - Use `@RequiredArgsConstructor` for constructor injection.
 - Use `@Slf4j` for logging.
@@ -187,7 +191,8 @@ Lombok is mandatory on the Spring Boot side.
 
 ### Spring Boot Style
 
-- Use constructor injection via `@RequiredArgsConstructor` (Lombok).
+- Use constructor injection. Prefer `@RequiredArgsConstructor` when Lombok is already configured;
+  otherwise write the constructor explicitly.
 - Use `@ConfigurationProperties` for structured configuration.
 - Keep transaction boundaries in service or use-case classes, not in controllers.
 - Use Flyway for schema migrations when the project has a relational database.
@@ -204,8 +209,9 @@ Lombok is mandatory on the Spring Boot side.
 - Return structured JSON for both success and error responses; never return plain strings as API responses.
 - Validate and sanitize all input. Return `400` or `422` with a structured error body for invalid input; do not
   let validation errors produce `500` responses.
-- Keep OpenAPI documentation current when endpoints change. Prefer `springdoc-openapi` unless the project uses
-  another established tool.
+- Keep the canonical OpenAPI file current when endpoints change. Runtime output from
+  `springdoc-openapi` or another established tool must be validated against that file rather than
+  replacing it as the source of truth.
 
 ### Backend Testing
 

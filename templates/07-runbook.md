@@ -222,11 +222,16 @@ logging:
     max-file: "5"
 ```
 
-Manuell rensning om diskutrymme är kritiskt:
+Diagnos om diskutrymme är kritiskt:
 
 ```bash
-docker system prune --volumes  # OBS: tar bort oanvända volumes
+docker system df -v
+docker ps -a --size
 ```
+
+Rensa inte volumes eller alla images direkt från runbooken. Identifiera först exakt resurs, bekräfta
+att den inte används, dokumentera återställningsvägen och kör den avgränsade borttagningen genom
+projektets godkända change-process.
 
 ### Köra databasmigration manuellt
 
@@ -257,33 +262,90 @@ docker compose -f docker-compose.prod.yml up -d --scale app=X
 ### Manuell backup
 
 ```bash
-# Databasdump
-DATUM=$(date +%Y%m%d_%H%M%S)
-docker exec db pg_dump -U [DB_USER] [DB_NAME] | \
-  gzip > /backup/[produktnamn]/db/manual_${DATUM}.sql.gz
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Verifiera att filen skapades
-ls -lh /backup/[produktnamn]/db/manual_${DATUM}.sql.gz
+: "${DB_USER:?Sätt DB_USER}"
+: "${DB_NAME:?Sätt DB_NAME}"
+: "${PRODUKTNAMN:?Sätt PRODUKTNAMN}"
+
+datum=$(date +%Y%m%d_%H%M%S)
+backup_katalog="/backup/${PRODUKTNAMN}/db"
+test -d "$backup_katalog"
+backup_fil="${backup_katalog}/manual_${datum}.sql.gz"
+temporar_fil="${backup_fil}.partial"
+trap 'rm -f "$temporar_fil"' EXIT HUP INT TERM
+
+docker exec db pg_dump --no-owner --no-privileges -U "$DB_USER" "$DB_NAME" \
+  | gzip -c > "$temporar_fil"
+test -s "$temporar_fil"
+gzip -t "$temporar_fil"
+mv "$temporar_fil" "$backup_fil"
+trap - EXIT HUP INT TERM
+
+printf 'Verifierad backup: %s\n' "$backup_fil"
 ```
+
+En backup räknas inte som verifierad förrän ett återställningstest har körts i en isolerad miljö
+och dokumenterats med datum, resultat och ansvarig.
 
 ### Återställning från backup
 
 ```bash
-# 1. Stoppa applikationen (ej databasen)
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${DB_USER:?Sätt DB_USER}"
+: "${DB_NAME:?Sätt DB_NAME}"
+: "${PRODUKTNAMN:?Sätt PRODUKTNAMN}"
+: "${BACKUP_FIL:?Sätt BACKUP_FIL till arkivet som ska återställas}"
+: "${UNDERHALL_PA_SCRIPT:?Sätt UNDERHALL_PA_SCRIPT till ett granskat körbart skript}"
+: "${INTEGRITETSKONTROLL_SCRIPT:?Sätt INTEGRITETSKONTROLL_SCRIPT till ett granskat körbart skript}"
+: "${UNDERHALL_AV_SCRIPT:?Sätt UNDERHALL_AV_SCRIPT till ett granskat körbart skript}"
+: "${DOMAN:?Sätt DOMAN till tjänstens hostname}"
+
+BACKUP_KATALOG="/backup/${PRODUKTNAMN}/db"
+test -d "$BACKUP_KATALOG"
+test -x "$UNDERHALL_PA_SCRIPT"
+test -x "$INTEGRITETSKONTROLL_SCRIPT"
+test -x "$UNDERHALL_AV_SCRIPT"
+
+SAKERHETSKOPIA="${BACKUP_KATALOG}/pre_restore_$(date +%Y%m%d_%H%M%S).sql.gz"
+SAKERHETSKOPIA_PARTIAL="${SAKERHETSKOPIA}.partial"
+
+# 1. Kontrollera källan innan tjänsten stoppas
+test -r "$BACKUP_FIL"
+test -s "$BACKUP_FIL"
+gzip -t "$BACKUP_FIL"
+
+# 2. Ta en verifierad säkerhetskopia av nuvarande databas
+trap 'rm -f "$SAKERHETSKOPIA_PARTIAL"' EXIT HUP INT TERM
+docker exec db pg_dump --no-owner --no-privileges -U "$DB_USER" "$DB_NAME" \
+  | gzip -c > "$SAKERHETSKOPIA_PARTIAL"
+test -s "$SAKERHETSKOPIA_PARTIAL"
+gzip -t "$SAKERHETSKOPIA_PARTIAL"
+mv "$SAKERHETSKOPIA_PARTIAL" "$SAKERHETSKOPIA"
+trap - EXIT HUP INT TERM
+
+# 3. Aktivera dokumenterat underhållsläge och stoppa applikationen (ej databasen)
+"$UNDERHALL_PA_SCRIPT"
 docker compose -f docker-compose.prod.yml stop app
 
-# 2. Återställ från backup
-BACKUP_FIL=/backup/[produktnamn]/db/[filnamn].sql.gz
-docker exec -i db psql -U [DB_USER] -c "DROP DATABASE [DB_NAME];"
-docker exec -i db psql -U [DB_USER] -c "CREATE DATABASE [DB_NAME];"
-zcat ${BACKUP_FIL} | docker exec -i db psql -U [DB_USER] [DB_NAME]
+# 4. Återskapa databasen först efter att båda arkiven verifierats
+docker exec db dropdb --if-exists --force -U "$DB_USER" "$DB_NAME"
+docker exec db createdb -U "$DB_USER" "$DB_NAME"
+gzip -dc "$BACKUP_FIL" | docker exec -i db psql -v ON_ERROR_STOP=1 -U "$DB_USER" "$DB_NAME"
 
-# 3. Starta applikationen igen
+# 5. Starta och verifiera innan underhållsläget tas bort
 docker compose -f docker-compose.prod.yml start app
-
-# 4. Verifiera
-curl -f https://[domän]/health
+curl -f "https://${DOMAN}/health"
+"$INTEGRITETSKONTROLL_SCRIPT"
+"$UNDERHALL_AV_SCRIPT"
 ```
+
+**Rollback:** Om återställningen eller integritetskontrollen misslyckas, håll underhållsläget aktivt
+och upprepa samma procedur med `SAKERHETSKOPIA`. Starta inte normal trafik förrän kontrollen går
+igenom. Testa hela sekvensen i staging innan den används i produktion.
 
 ---
 
@@ -312,7 +374,8 @@ docker stats --no-stream app
 
 # 4. Diskutrymme fullt?
 df -h
-# Om > 90%: rensa gamla Docker-images: docker image prune -a
+docker system df -v
+# Om > 90%: identifiera exakt oanvänd resurs och följ den godkända, avgränsade rensningsproceduren.
 ```
 
 ---
