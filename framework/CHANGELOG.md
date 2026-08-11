@@ -8,17 +8,21 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ---
 
-## [Unreleased]
+## [1.4.0] – ej släppt
 
 ### Tillagt
 
-- `skills/ramverksuppdatering/` – ny skill som lyfter ett projekt till senaste releasen. Hämtar
-  ramverket från GitHub och klassar varje fil genom en **trevägsjämförelse**: filen vid projektets
-  baseline-version, filen vid den nya versionen, och filen i projektet. Det gör skillnaden mellan
-  "orörd sedan den kopierades" (säker att ersätta) och "ifylld eller anpassad" (rörs aldrig) exakt
-  istället för gissad. Ifyllt innehåll flyttas in i den nya strukturen ordagrant; innehåll som inte
-  har någon plats i den nya strukturen behålls och flaggas hellre än raderas. Skillen dispatchar
-  ingenting och har ingen koppling till `planstyrt-bygge` – den kör i din egen session
+- `skills/ramverksuppdatering/` – ny skill som lyfter ett projekt till senaste releasen. Bygger på
+  ägarskapsregeln i `README.md`: ramverksägda filer (`AGENTS.md`, `.claude/skills/`) ersätts i sin
+  helhet utan jämförelse, projektägda dokument (`docs/NN-*.md`) behåller sitt innehåll medan
+  strukturen lyfts till den nya mallen. Innehåll som inte har någon plats i den nya strukturen
+  behålls och flaggas hellre än raderas. Skillen dispatchar ingenting och har ingen koppling till
+  `planstyrt-bygge` – den kör i din egen session
+- `README.md`: avsnitten *Projektstruktur* och *Vem äger vad* – normerande beskrivning av hur ett
+  projekt som använder ramverket ser ut, och vilken sida som äger vilken fil. Placeringen fanns
+  tidigare utspridd i tre README-filer och beskrev bara ramverkets egen katalogstruktur, aldrig
+  målprojektets. `ramverksuppdatering` läser avsnittet istället för att bära en egen kopia av
+  mappningen
 - `docs/.clarity-version` – ny projektartefakt som `ramverksuppdatering` skriver: version, datum,
   vald `agents/`-starter och installerade skills. Versionen gick tidigare bara att läsa ur
   `00-ai-context.md`, som är valfri för mindre projekt – ett projekt kunde alltså sakna varje spår
@@ -69,6 +73,18 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ### Ändrat
 
+- `agents/README.md`: en kopierad starter ska inte längre redigeras. Stegen "ta bort profiler och
+  sektioner som inte gäller ditt projekt" och "justera dokumentreferenserna" är borttagna –
+  starterna villkorar redan sina egna avsnitt vid läsning (`java-application.md` säger "Add
+  **Maven** when the project uses Maven" i sin *How To Use*), så raderingen tillförde ingenting men
+  gjorde `AGENTS.md` omöjlig att uppdatera maskinellt. `AGENTS.md` ägs nu av ramverket och ersätts i
+  sin helhet vid uppdatering; projektspecifika regler hör hemma i projektets `CLAUDE.md`
+- `skills/README.md`: samma ägarskapsregel för kopierade skills – de redigeras inte i projektet
+- `CLAUDE.md`: versionen räknas nu upp i den commit som orsakar förändringen, inte vid release.
+  `main` blir därmed alltid självkonsistent, och versionsmarkören i ett projekt pekar alltid på ett
+  verkligt tillstånd – vilket är vad `ramverksuppdatering` litar på. Releasesteget "uppdatera
+  versionsnummer i fyra filer" ersatt av ett `grep`-kommando: tio filer bär versionssträng, och
+  checklistan nämnde fyra av dem
 - `skills/planstyrt-bygge/` steg 2 körs nu under en egen `granskning`-profil med `--fallback
   reasoning`. Kritikpasset var tidigare en självgranskning inom samma nivå, med den bedömnings-
   blindfläck det innebär. Med ett tredje konto blir det en korsgranskning utan extra kostnad på

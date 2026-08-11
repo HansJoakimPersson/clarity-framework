@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Senast uppdaterad** | ÅÅÅÅ-MM-DD |
-| **Ramverksversion** | Clarity Framework v1.3.0 |
+| **Ramverksversion** | Clarity Framework v1.4.0 |
 | **Projektfas** | Initiering / Krav / Design / Implementation / Drift |
 
 ---
@@ -127,4 +127,4 @@ finns – en skill eller ett skript ska kunna bytas ut utan att flödet definier
 
 ---
 
-*Clarity Framework v1.3.0 – AI Context Document*
+*Clarity Framework v1.4.0 – AI Context Document*

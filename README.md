@@ -4,7 +4,7 @@
 > Fungerar för alla skalor – från ett personligt sidoprojekt till ett team på 20 personer.  
 > AI-assistans är ett valfritt accelerationslager, inte en förutsättning.
 
-**Version:** 1.3.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 1.4.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ---
 
@@ -69,6 +69,46 @@ clarity-framework/
 
 ---
 
+## Projektstruktur
+
+Så här ser ett projekt ut som använder ramverket. Det här avsnittet är **normerande** – det avgör var
+filer hamnar, och `skills/ramverksuppdatering/` läser det för att veta vart den ska lägga saker.
+
+```text
+mitt-projekt/
+│
+├── docs/                          # Ramverkets dokument, ifyllda för projektet
+│   ├── .clarity-version           # Vilken ramverksversion projektet ligger på
+│   ├── 00-ai-context.md
+│   ├── 01-vision-scope.md         # … till och med 09, de projektet valt
+│   └── plans/                     # Transienta arbetsordrar, om planstyrt flöde används
+│
+├── .claude/
+│   └── skills/                    # Kopior av ramverkets /skills/
+│       ├── ramverksuppdatering/
+│       └── planstyrt-bygge/
+│
+├── AGENTS.md                      # Kopia av vald /agents/-starter, oredigerad
+├── CLAUDE.md                      # Projektspecifika regler – ägs av projektet
+└── …                              # Projektets egen kod
+```
+
+### Vem äger vad
+
+| Sökväg | Ägare | Vid uppdatering |
+| --- | --- | --- |
+| `AGENTS.md` | Ramverket | **Ersätts helt.** Redigeras aldrig i projektet |
+| `.claude/skills/*/` | Ramverket | **Ersätts helt.** Redigeras aldrig i projektet |
+| `docs/NN-*.md` | Projektet | Innehållet behålls, strukturen lyfts till nya mallen |
+| `docs/.clarity-version` | Ramverket | Skrivs om vid varje uppdatering |
+| `CLAUDE.md`, kod, allt annat | Projektet | **Rörs aldrig** |
+
+Regeln är att en fil har en ägare, inte två. Det som är projektspecifikt hör hemma i `CLAUDE.md` –
+aldrig som en lokal redigering i en ramverksägd fil, eftersom en sådan redigering går förlorad vid
+nästa uppdatering och inte går att skilja från en föråldrad version.
+
+---
+
 ## Kom igång
 
 ### Nytt projekt
@@ -118,4 +158,4 @@ körningen – skillen säger uttryckligen till när den härleder istället fö
 
 ---
 
-*Clarity Framework v1.3.0*
+*Clarity Framework v1.4.0*

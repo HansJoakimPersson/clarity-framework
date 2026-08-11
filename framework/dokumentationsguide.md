@@ -1,6 +1,6 @@
 # Den ultimata guiden till mjukvarudokumentation
 
-## Clarity Framework v1.3.0
+## Clarity Framework v1.4.0
 
 ### Kravställning · Utveckling · Drift · Produktion
 
@@ -943,4 +943,4 @@ I praktiken drivs de flesta projekt som använder Clarity Framework idag tillsam
 
 ---
 
-*Clarity Framework v1.3.0 | Uppdaterad: 2026-08*
+*Clarity Framework v1.4.0 | Uppdaterad: 2026-08*

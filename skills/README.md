@@ -1,7 +1,11 @@
 # Skills – återanvändbara arbetsflöden för Claude Code
 
-Den här katalogen innehåller färdiga skills att kopiera in i ett projekt när flödet behövs. De är
-startpunkter att anpassa – inte normerande standarder.
+Den här katalogen innehåller färdiga skills att kopiera in i ett projekt när flödet behövs.
+
+En kopierad skill **ägs av ramverket och redigeras inte i projektet** – den ersätts i sin helhet när
+projektet uppdateras till en ny ramverksversion. Behöver flödet bete sig annorlunda i just ditt
+projekt hör det hemma i projektets `CLAUDE.md`, som ramverket aldrig rör. Se ägarskapstabellen i
+ramverkets `README.md`.
 
 ---
 
@@ -43,8 +47,11 @@ orkestrering att göra – den kör i din session och rör bara `docs/`, `AGENTS
 
 2. Gå igenom `uppsattning.md` – profiler, sandbox- och approval-inställningar, permissionslista.
    Det är en engångsuppsättning per maskin och den som avgör om flödet kan köra obevakat.
-3. Anpassa `SKILL.md` och `prompts/` efter projektet – kommandon, verktyg och sökvägar skiljer sig åt.
-4. Anropa den i Claude Code med `/planstyrt-bygge`.
+3. Anropa den i Claude Code med `/planstyrt-bygge`.
+
+Steg 2 rör din maskin, inte de kopierade filerna. Behöver projektet avvika från flödet skriver du
+det i projektets `CLAUDE.md` – de kopierade filerna lämnas orörda så att de kan ersättas vid nästa
+ramverksuppdatering.
 
 ### Vad filerna i `planstyrt-bygge/` gör
 
@@ -76,4 +83,4 @@ En skill som motsäger projektets `AGENTS.md` ska anpassas, inte följas.
 
 ---
 
-*Clarity Framework v1.3.0*
+*Clarity Framework v1.4.0*

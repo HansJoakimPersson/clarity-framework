@@ -233,5 +233,5 @@ Långkörande automatiserade flöden ska inte kräva kompletterande verktyg, men
 
 ---
 
-*Detta dokument är en del av Clarity Framework v1.3.0*
+*Detta dokument är en del av Clarity Framework v1.4.0*
 *Nästa steg: Skapa `00-ai-context.md` för ditt specifika projekt*
