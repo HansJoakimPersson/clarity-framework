@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Senast uppdaterad** | ÅÅÅÅ-MM-DD |
-| **Ramverksversion** | Clarity Framework v1.3.0 |
+| **Ramverksversion** | Clarity Framework v1.4.0 |
 | **Projektfas** | Initiering / Krav / Design / Implementation / Drift |
 
 ---
@@ -87,15 +87,27 @@
 
 [Utelämna hela avsnittet om projektet inte delar upp arbetet mellan flera agenter.]
 
-| Nivå | Agent | Ansvar |
-| --- | --- | --- |
-| Orchestrator | [t.ex. Claude Code] | Sekvenserar flödet, äger godkännande-grindarna. Läser inte hela kodbasen/diffen själv. |
-| Reasoning | [t.ex. Codex, planeringsprofil] | Skriver plan till `docs/plans/` och granskar diff mot plan. Bygger inte, godkänner inte sitt eget arbete. Ska köras under ett annat CLI/konto än Orchestrator. |
-| Implementation | [t.ex. Codex, byggprofil] | Bygger enligt planen. Planerar inte om – stannar vid blockerande fråga. |
+Det här avsnittet är projektets **runtime-kontrakt**: det säger vilken agent som fyller vilken nivå
+och under vilket konto och vilka rättigheter den körs. Det är den enda platsen den informationen
+finns – en skill eller ett skript ska kunna bytas ut utan att flödet definieras om.
+
+| Nivå | Agent / profil | Sandbox + approval | Ansvar |
+| --- | --- | --- | --- |
+| Orchestrator | [t.ex. Claude Code] | [t.ex. allowlist i `.claude/settings.json`] | Sekvenserar, äger grindarna, för körjournal. Läser inte kodbas eller diff själv. |
+| Reasoning | [t.ex. Codex, profil `reasoning`] | `read-only` + approval `never` | Skriver plan till `docs/plans/`, granskar diff mot plan. Bygger inte, godkänner inte sitt eget arbete. Annat CLI/konto än Orchestrator. |
+| Granskning *(valfri)* | [t.ex. Codex, profil `granskning`] | `read-only` + approval `never` | Granskar planen kallt mot koden. Annat konto än Reasoning – annars granskar en nivå sig själv. |
+| Implementation | [t.ex. Codex, profil `implementation`] | `workspace-write` + approval `never` | Bygger enligt planen. Planerar inte om – stannar vid blockerande fråga. |
+
+> Sandbox och approval är två oberoende inställningar. Sätts bara sandbox ligger approval kvar på
+> default, och då stannar en obevakad körning och frågar. Sätt alltid båda.
 
 **Planer:** `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md` (mall: ramverkets `templates/plan.md`). Planen måste vara committad och pushad för att en molnagent ska kunna läsa den. Raderas när ändringen är mergad.
 
-**Kräver alltid människa:** [t.ex. godkännande av plan, merge, releasebeslut]
+**Körjournal:** `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.run.md` – flödets tillstånd utanför orchestratorns kontext: vilket steg som är klart, vad som väntar, var rapporterna ligger. Committas med planen. Det är den som gör att en avbruten körning kan tas över av en annan session eller ett annat CLI. Råutdata i `docs/plans/.runs/` är lokalt och gitignorerat.
+
+**Orchestratorbudget:** [Vad orchestratorn får läsa per runda – t.ex. "plan + kritik ≤ 40 rader + verifiering ≤ DoD + 10 rader". Läser den kodbasen eller diffen är kostnadsfördelningen skenbar.]
+
+**Kräver alltid människa:** [t.ex. godkännande av omfattning, merge, releasebeslut, radering av plan]
 
 ---
 
@@ -115,4 +127,4 @@
 
 ---
 
-*Clarity Framework v1.3.0 – AI Context Document*
+*Clarity Framework v1.4.0 – AI Context Document*

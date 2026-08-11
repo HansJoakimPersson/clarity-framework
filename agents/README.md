@@ -36,15 +36,24 @@ Tillsammans ger de en AI-agent tillräcklig kontext för att fatta lokala beslut
 ## Hur du använder en starter
 
 1. Kopiera relevant fil till projektets rot och döp om den till `AGENTS.md`
-2. Ta bort profiler och sektioner som inte gäller ditt projekt
-3. Justera dokumentreferenserna om ditt projekt använder andra sökvägar
-4. Committa filen som vilken annan dokumentationsfil som helst
+2. Committa filen som vilken annan dokumentationsfil som helst
+
+Det är hela proceduren. **Redigera inte den kopierade filen.**
+
+Varje starter villkorar sina egna avsnitt vid läsning – `java-application.md` säger till exempel
+"Add **Maven** when the project uses Maven" i sin *How To Use*. Agenten avgör alltså själv vilka
+profiler som gäller, och en profil för något projektet inte använder kostar ingenting. Att radera
+den i förväg tillför inget och gör filen omöjlig att uppdatera maskinellt.
+
+`AGENTS.md` ägs därmed av ramverket och ersätts i sin helhet när projektet uppdateras till en ny
+ramverksversion. Det som är projektspecifikt hör hemma i projektets `CLAUDE.md`, som ramverket
+aldrig rör – och som enligt prioritetsordningen nedan ändå tar över.
 
 ---
 
 ## Integrering med Clarity Framework
 
-Alla starters refererar till Clarity Frameworks standardsökvägar (`docs/00-ai-context.md`, `docs/03-sad.md` osv.). Om ditt projekt placerar dokumentation på andra sökvägar, uppdatera referenserna i den kopierade `AGENTS.md`.
+Alla starters refererar till Clarity Frameworks standardsökvägar (`docs/00-ai-context.md`, `docs/03-sad.md` osv.). De sökvägarna är standard – ett projekt som avviker från dem noterar avvikelsen i sin `CLAUDE.md` istället för att redigera `AGENTS.md`.
 
 Prioritetsordning när en agent läser instruktioner:
 
@@ -65,8 +74,10 @@ Om du lägger till en ny stack:
 1. Namnge filen `[stack].md` med gemener och bindestreck
 2. Följ samma struktur: *How To Use*, *Core Rules*, valfria profiler, *Definition of Done*
 3. Referera till Clarity Framework-dokument i Workflow-steget
-4. Lägg till en rad i tabellen ovan
-5. Lägg till en entry i `framework/CHANGELOG.md`
+4. Ta med sektionen *When You Are a Dispatched Agent* – den gäller oavsett stack och är det som
+   håller en agent inom planens omfattning när den anropas av en orchestrator istället för av dig
+5. Lägg till en rad i tabellen ovan
+6. Lägg till en entry i `framework/CHANGELOG.md`
 
 ---
 

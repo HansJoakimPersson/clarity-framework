@@ -8,9 +8,104 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ---
 
-## [Unreleased]
+## [1.4.0] – ej släppt
+
+### Tillagt
+
+- `skills/ramverksuppdatering/` – ny skill som lyfter ett projekt till senaste releasen. Bygger på
+  ägarskapsregeln i `README.md`: ramverksägda filer (`AGENTS.md`, `.claude/skills/`) ersätts i sin
+  helhet utan jämförelse, projektägda dokument (`docs/NN-*.md`) behåller sitt innehåll medan
+  strukturen lyfts till den nya mallen. Innehåll som inte har någon plats i den nya strukturen
+  behålls och flaggas hellre än raderas. Skillen dispatchar ingenting och har ingen koppling till
+  `planstyrt-bygge` – den kör i din egen session
+- `README.md`: avsnitten *Projektstruktur* och *Vem äger vad* – normerande beskrivning av hur ett
+  projekt som använder ramverket ser ut, och vilken sida som äger vilken fil. Placeringen fanns
+  tidigare utspridd i tre README-filer och beskrev bara ramverkets egen katalogstruktur, aldrig
+  målprojektets. `ramverksuppdatering` läser avsnittet istället för att bära en egen kopia av
+  mappningen
+- `docs/.clarity-version` – ny projektartefakt som `ramverksuppdatering` skriver: version, datum,
+  vald `agents/`-starter och installerade skills. Versionen gick tidigare bara att läsa ur
+  `00-ai-context.md`, som är valfri för mindre projekt – ett projekt kunde alltså sakna varje spår
+  av vilken version det byggdes på
+- `skills/planstyrt-bygge/prompts/` – dispatch-prompterna flyttade från `SKILL.md` till fyra
+  separata filer (`1-plan`, `2-kritik`, `4-bygge`, `5-verifiering`). Motivet är rent
+  kostnadsmässigt: prompterna utgjorde omkring 500 av `SKILL.md`:s 2 287 ord, och lästes in i
+  orchestratorns kontext vid varje anrop trots att orchestratorn aldrig behöver dem. Utflyttade
+  kunde de dessutom göras mer explicita (nu 682 ord) utan att det kostar orchestratorn något.
+  Orchestratorn fyller platshållare (`{{PLAN}}`, `{{TASK}}`, `{{DATE}}`, `{{SHA}}`) och ser
+  aldrig innehållet
+- `skills/planstyrt-bygge/dispatch.sh` – enda vägen till en dispatch. Renderar promptfilen, sätter
+  sandbox **och** approval-policy tillsammans, upptäcker saknad `aimux`-profil och rapporterar det
+  som en explicit `FALLBACK:`-rad istället för att tyst landa på inloggat konto, och skriver ut
+  rapportens radantal mätt mot budgeten. Bakgrundsläge skriver exitkoden till en sentinelfil.
+  Ett skript med stabil sökväg är dessutom det enda en permissionsregel kan matcha pålitligt –
+  ett env-prefixat, bakgrundskört sammansatt kommando är det inte
+- `skills/planstyrt-bygge/journal-mall.md` – körjournal (`docs/plans/*.run.md`). Flödets tillstånd
+  levde tidigare enbart i orchestratorns kontextfönster, vilket gjorde orchestratorn oersättlig:
+  en tokengräns mitt i ett bygge tappade hela flödet och "byt CLI" var inte en möjlig manöver.
+  Journalen uppdateras efter varje steg och committas med planen
+- `skills/planstyrt-bygge/codex-orchestrator.md` – frontend som låter Codex hålla orchestrator-
+  rollen, kopieras till `~/.codex/prompts/planstyrt-bygge.md`. Flödet låg tidigare inbakat i ett
+  Claude-skillformat, så "byt orchestrator när ett abonnemang tar slut" var i praktiken en
+  omskrivning av flödet, inte ett byte. Filen duplicerar inte proceduren – den pekar på samma
+  `SKILL.md` och beskriver bara de fem delta som gäller när Codex håller rollen, bland annat att
+  budgeten där saknar `deny`-regler och alltså vilar på instruktion
+- `skills/planstyrt-bygge/uppsattning.md` – engångsuppsättning per maskin: aimux-profiler,
+  Codex-profil med `network_access` för orchestratorrollen, installation av Codex-frontenden,
+  permissionslista, gitignore
+- `skills/planstyrt-bygge/settings.exempel.json` – permissionslista för Claude Code. `deny`-halvan
+  (`git diff`, `git show`, läsning av `prompts/`) gör läsbudgeten till en regel istället för en
+  uppmaning
+- `skills/planstyrt-bygge/SKILL.md`: avsnitt om grindprofiler, orchestratorbudget och
+  återupptagande av avbruten körning
+- `framework/ai-usage-guide.md` § 5: fyra nya avsnitt – *Orchestratorbudget*, *Tillståndet ligger i
+  filer, inte i orchestratorn*, *Permissionsmodellen* och *Grindprofiler*. Nivåtabellen utökad med
+  en valfri Granskning-nivå
+- `agents/*.md` (samtliga sju starters): sektionen *When You Are a Dispatched Agent*. Reglerna för
+  en dispatchad agent – planens omfattning är auktoritativ, stanna vid fel plan, spawna inga
+  subprocesser, håll rapportbudgeten, committa inte – låg tidigare bara som upprepade textrader i
+  dispatch-prompterna och försvann om någon redigerade en prompt
+- `templates/plan.md` och `skills/planstyrt-bygge/plan-mall.md`: fälten `Grindprofil`,
+  `Rapportbudget` och `Körjournal`, samt krav på att Definition of Done-villkor ska gå att belägga
+  med filväg, symbolnamn eller kommandoutfall
+- `templates/00-ai-context.md`: avsnittet *AI-arbetsflöde* omgjort till ett runtime-kontrakt med
+  kolumner för profil och sandbox/approval per nivå, plus fälten körjournal och orchestratorbudget
 
 ### Ändrat
+
+- `agents/README.md`: en kopierad starter ska inte längre redigeras. Stegen "ta bort profiler och
+  sektioner som inte gäller ditt projekt" och "justera dokumentreferenserna" är borttagna –
+  starterna villkorar redan sina egna avsnitt vid läsning (`java-application.md` säger "Add
+  **Maven** when the project uses Maven" i sin *How To Use*), så raderingen tillförde ingenting men
+  gjorde `AGENTS.md` omöjlig att uppdatera maskinellt. `AGENTS.md` ägs nu av ramverket och ersätts i
+  sin helhet vid uppdatering; projektspecifika regler hör hemma i projektets `CLAUDE.md`
+- `skills/README.md`: samma ägarskapsregel för kopierade skills – de redigeras inte i projektet
+- `CLAUDE.md`: versionen räknas nu upp i den commit som orsakar förändringen, inte vid release.
+  `main` blir därmed alltid självkonsistent, och versionsmarkören i ett projekt pekar alltid på ett
+  verkligt tillstånd – vilket är vad `ramverksuppdatering` litar på. Releasesteget "uppdatera
+  versionsnummer i fyra filer" ersatt av ett `grep`-kommando: tio filer bär versionssträng, och
+  checklistan nämnde fyra av dem
+- `skills/planstyrt-bygge/` steg 2 körs nu under en egen `granskning`-profil med `--fallback
+  reasoning`. Kritikpasset var tidigare en självgranskning inom samma nivå, med den bedömnings-
+  blindfläck det innebär. Med ett tredje konto blir det en korsgranskning utan extra kostnad på
+  orchestratorn; saknas profilen faller det tillbaka och `dispatch.sh` säger till
+- `skills/planstyrt-bygge/` steg 4: bygget körs inte längre som ett `nohup`-kommando vars enda spår
+  är en PID i orchestratorns kontext. `dispatch.sh --background` skriver exitkoden till en
+  sentinelfil, så färdigstatus kan konstateras med en filkontroll istället för genom att följa
+  byggloggen – och ett bygge överlever den session som startade det
+- `skills/planstyrt-bygge/` samtliga dispatcher sätter nu approval-policy explicit (`-a never`)
+  vid sidan av sandbox. Tidigare sattes bara sandbox, vilket lämnade approval på sitt default –
+  den vanligaste orsaken till att en obevakad körning stannar och frågar mitt i ett bygge
+- `skills/planstyrt-bygge/` dispatch-artefakter flyttade från `/tmp` till `docs/plans/.runs/`.
+  Ramverkets egen regel säger att en agent bara ser det som ligger i repot, och samma sak gäller
+  vid överlämning mellan CLI:er – `/tmp` motsade den regeln
+- `skills/planstyrt-bygge/plan-mall.md` är nu en exakt kopia av `templates/plan.md`. Filerna
+  skilde sig på två rader, vilket gjorde dubblettkontrollen till en bedömningsfråga; nu är den
+  `diff templates/plan.md skills/planstyrt-bygge/plan-mall.md`
+- `framework/dokumentationsguide.md` § 12: avsnittet *Flera agenter* utökat med budget, körjournal
+  och principen att grindar ska ligga på beslut, inte på verktygsanrop
+- `CLAUDE.md`: språkundantaget för `skills/planstyrt-bygge/` explicitgjort, och commit-regeln för
+  planmallen skärpt till ett verifierbart `diff`-kommando
 
 - `skills/planstyrt-bygge/` dispatch-kommandon (steg 1, 2, 4, 5) prefixade med `CODEX_HOME="$HOME/.aimux/profiles/<profil>"`.
   Kommandona körde tidigare bara `codex exec` rakt av, vilket observerades i skarpt bruk – de landade

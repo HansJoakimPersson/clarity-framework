@@ -1,6 +1,6 @@
 # Den ultimata guiden till mjukvarudokumentation
 
-## Clarity Framework v1.3.0
+## Clarity Framework v1.4.0
 
 ### Kravställning · Utveckling · Drift · Produktion
 
@@ -931,7 +931,9 @@ Intressentdialoger, prioriteringsbeslut, formellt godkännande och användarvali
 
 ### Flera agenter
 
-Om arbetet delas upp mellan flera AI-agenter – en orchestrator som sekvenserar, en reasoning-nivå som planerar och granskar, en implementation-nivå som bygger – måste överlämningen ske via en fil. Agenter delar ingen kontext, och allt som inte är skrivet går förlorat vid överlämningen. Planen läggs som en transient arbetsorder i `docs/plans/` med `templates/plan.md` som mall, och raderas när ändringen är mergad. Reasoning och implementation ska köras under ett annat CLI eller konto än orchestratorn – annars fördelas ingen kostnad, bara kontext. Nivåerna definieras per projekt i `00-ai-context.md`. Se `ai-usage-guide.md` § 5.
+Om arbetet delas upp mellan flera AI-agenter – en orchestrator som sekvenserar, en reasoning-nivå som planerar och granskar, en implementation-nivå som bygger – måste överlämningen ske via en fil. Agenter delar ingen kontext, och allt som inte är skrivet går förlorat vid överlämningen. Planen läggs som en transient arbetsorder i `docs/plans/` med `templates/plan.md` som mall, och raderas när ändringen är mergad. Reasoning och implementation ska köras under ett annat CLI eller konto än orchestratorn – annars fördelas ingen kostnad, bara kontext.
+
+Tre regler avgör om upplägget håller i praktiken: orchestratorn har en **budget** för vad den får läsa per runda och läser aldrig diffen själv; flödets **tillstånd ligger i en körjournal** (`docs/plans/*.run.md`) så att en avbruten körning kan tas över av en annan session eller ett annat CLI; och **grindarna ligger på beslut, inte på verktygsanrop** – omfattning, merge, release och radering av plan är mänskliga, resten går igenom utan att fråga. Nivåerna, rättigheterna och budgeten definieras per projekt i `00-ai-context.md`. Se `ai-usage-guide.md` § 5.
 
 ### AI Context Document
 
@@ -941,4 +943,4 @@ I praktiken drivs de flesta projekt som använder Clarity Framework idag tillsam
 
 ---
 
-*Clarity Framework v1.3.0 | Uppdaterad: 2026-08*
+*Clarity Framework v1.4.0 | Uppdaterad: 2026-08*

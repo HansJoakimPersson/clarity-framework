@@ -13,7 +13,7 @@ Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutv
 
 **Tre kärnprinciper:** Just enough documentation · Dokumentation som kod · Klarhet framför fullständighet
 
-**Nuvarande version:** 1.3.0
+**Nuvarande version:** 1.4.0
 
 **Repo-struktur:**
 
@@ -23,6 +23,11 @@ Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutv
 /agents/       – AGENTS.md-starters per stack
 /skills/       – Skills att kopiera till ett projekts .claude/skills
 ```
+
+**Språkundantag i `skills/planstyrt-bygge/`:** `SKILL.md`, `codex-orchestrator.md` och
+`prompts/*.txt` är engelska (läses av agenter), medan `plan-mall.md`, `journal-mall.md` och
+`uppsattning.md` är svenska (fylls i, godkänns eller följs av dig). Samma regel som annars – primär
+läsare avgör, inte katalogen.
 
 ---
 
@@ -57,13 +62,33 @@ Solo direkt på `main`. En commit = en meningsfull, komplett enhet av förändri
 
 - CHANGELOG saknar entry för förändringen
 - Berörda mallar och guide inte är konsekvent uppdaterade
+- Versionsnumret inte är uppräknat (se nedan)
+
+**Varje förändring räknar upp versionen.** Versionen är inte något som bestäms vid release – den
+bestäms av förändringen, i samma commit som förändringen. Commit-typen avgör steget: `patch` höjer
+patch-siffran, `minor` höjer minor, `major` höjer major. `docs` och `chore` rör inte versionen.
+
+Det betyder att `main` alltid är självkonsistent och släppbar, och att versionsmarkören i ett
+projekt alltid pekar på ett verkligt tillstånd. Ett projekt som uppdaterar sig mot ramverket litar
+på den markören – står det fel version är uppdateringen fel.
+
+Räkna upp versionen i **alla** filer som bär den, inte några av dem:
+
+```bash
+grep -rln 'Clarity Framework v[0-9]\|Nuvarande version:\|\*\*Version:\*\*' --include="*.md" . \
+  | grep -v CHANGELOG
+```
+
+Kör kommandot, uppdatera träffarna. Listan är tio filer i skrivande stund och den växer – därför ett
+kommando och inte en uppräkning.
 
 **Vad som alltid committas tillsammans:**
 
 | Förändring | Måste inkludera |
 | --- | --- |
 | Mallförändring | Mall + eventuell guidejustering |
-| `templates/plan.md` | Även `skills/planstyrt-bygge/plan-mall.md` – skillen bär en egen kopia eftersom den kopieras ut ensam |
+| `templates/plan.md` | Även `skills/planstyrt-bygge/plan-mall.md` – skillen bär en egen kopia eftersom den kopieras ut ensam. Filerna ska vara **identiska**; verifiera med `diff templates/plan.md skills/planstyrt-bygge/plan-mall.md` |
+| `skills/planstyrt-bygge/prompts/*` | Även `SKILL.md` om platshållarna (`{{VAR}}`) ändras – `dispatch.sh` avbryter på en ofylld platshållare |
 | Ny mall | Ny fil + README + CHANGELOG-entry |
 | Riktlinjeändring i guiden | Guiden + berörda mallar |
 | Release | CHANGELOG + versionsnummer i alla berörda filer + Git-tagg |
@@ -83,15 +108,22 @@ MAJOR.MINOR.PATCH
   └────────────── Breaking changes (kräver migrering av ifyllda dokument)
 ```
 
+Versionsnumret är redan uppräknat när releasen sker – det gjordes i den commit som orsakade
+förändringen. En release är därför inte "sätt version", utan "släpp den version som redan finns".
+
 **När användaren triggar en release:**
 
 1. Verifiera `git status` är rent
-2. Uppdatera `framework/CHANGELOG.md` med ny entry
-3. Uppdatera versionsnummer i: `README.md`, `CLAUDE.md`, `framework/dokumentationsguide.md`, `templates/00-ai-context.md`
-4. `git add . && git commit -m "[minor|major|patch]: Release vX.Y.Z"`
+2. Verifiera att versionsnumret är konsekvent i alla filer som bär det:
+   `grep -rho 'Clarity Framework v[0-9][0-9.]*[0-9]' --include="*.md" . | sort -u` ska ge exakt en rad
+3. Sätt datum på den väntande versionsrubriken i `framework/CHANGELOG.md`
+4. `git add . && git commit -m "[patch] Release vX.Y.Z"`
 5. `git tag -a vX.Y.Z -m "Clarity Framework vX.Y.Z – beskrivning"`
 6. `git push origin main --tags`
 
+Taggen är det enda `skills/ramverksuppdatering/` läser. Ett projekt uppdaterar sig aldrig mot
+otaggad `main` – därför spelar det ingen roll att versionen hunnit räknas upp innan taggen finns.
+
 ---
 
-*Clarity Framework v1.3.0*
+*Clarity Framework v1.4.0*
