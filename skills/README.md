@@ -41,6 +41,10 @@ dispatchar ingenting och har inget med
 orkestrering att göra – den kör i din session och rör bara godkända ramverksfiler under `docs/`,
 `AGENTS.md`, `.agents/skills/` och `.claude/skills/`.
 
+Orelaterade ändringar i projektets kod, byggfiler, tester eller applikationskonfiguration behöver
+inte först committas. `ramverksuppdatering` skyddar i stället sin egen skrivyta och använder en
+explicit pathlista när den föreslår sin separata commit.
+
 ---
 
 ## Så använder du en
@@ -103,4 +107,4 @@ och importerar `AGENTS.md` via första raden.
 
 ---
 
-*Clarity Framework v1.5.0*
+*Clarity Framework v1.5.1*

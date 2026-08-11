@@ -325,4 +325,4 @@ Breaking changes dokumenteras som ADR i `docs/03-sad.md` och kommuniceras explic
 
 ---
 
-*Clarity Framework v1.5.0 – Grafisk profil & Design Tokens*
+*Clarity Framework v1.5.1 – Grafisk profil & Design Tokens*

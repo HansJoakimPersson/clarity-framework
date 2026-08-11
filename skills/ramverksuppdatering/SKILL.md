@@ -44,9 +44,13 @@ exists in the fetched release and ask the user to confirm them in step 4.
 
 ## Preconditions
 
-- `git status --porcelain` is empty. A sync into a dirty tree cannot be told apart from what was
-  already uncommitted. If it is dirty, report what is uncommitted and stop.
 - `git` is available and github.com is reachable.
+- Run from the project root of a Git repository. Existing source, dependency, test and application
+  configuration changes may remain dirty; this skill must neither stage nor modify them.
+- A dirty path is a blocker only when it is in the **update surface**: `AGENTS.md`, `CLAUDE.md`,
+  `.gitignore`, `docs/.clarity-version`, `docs/NN-*.md`, or a runtime copy of a skill shipped by
+  the fetched release. A newly copied, untracked `ramverksuppdatering` directory under either
+  runtime root is a bootstrap artifact and is allowed.
 
 ## Step 1 — Fetch the framework and read the rules
 
@@ -59,9 +63,23 @@ NEW=$(git -C "$TMP/cf" tag -l --sort=-v:refname 'v*' \
 NEW_VERSION=${NEW#v}
 git -C "$TMP/cf" show "$NEW:README.md"          # placement and ownership
 git -C "$TMP/cf" show "$NEW:templates/03-sad.md" # read any file at any version like this
+
+if [ -f .agents/skills/ramverksuppdatering/scripts/check-update-scope.sh ]; then
+  UPDATE_SKILLDIR=.agents/skills/ramverksuppdatering
+elif [ -f .claude/skills/ramverksuppdatering/scripts/check-update-scope.sh ]; then
+  UPDATE_SKILLDIR=.claude/skills/ramverksuppdatering
+else
+  printf '%s\n' 'Installed ramverksuppdatering is missing check-update-scope.sh; install this release first' >&2
+  exit 2
+fi
+FRAMEWORK_SKILLS=$(git -C "$TMP/cf" ls-tree -d --name-only "$NEW:skills" | tr '\n' ',' | sed 's/,$//')
+bash "$UPDATE_SKILLDIR/scripts/check-update-scope.sh" --framework-skills "$FRAMEWORK_SKILLS"
 ```
 
 Read `README.md` at `$NEW` first. Clean up `$TMP` when you are done, whatever the outcome.
+The checker prints the pre-existing source paths it will leave untouched. If it reports a conflict,
+stop before inspecting or modifying the affected update-surface file. Do not ask the user to clean
+unrelated `src/`, build, dependency, test or application-configuration changes.
 
 ## Step 2 — Establish the project's current version
 
@@ -129,6 +147,8 @@ Present, in this order:
   `CLAUDE.md` import change if needed.
 - Project-owned documents needing a merge, each with one line on what structurally changed.
 - New framework skills available, new templates available, and orphans.
+- Existing unrelated dirty paths that were accepted by the scope checker, explicitly saying they
+  will remain unstaged and untouched.
 
 **Stop and wait for approval.** Nothing is written before this point. The user is approving a scope,
 not a diff — keep it short enough to actually read.
@@ -161,6 +181,16 @@ state; never unignore those as a side effect.
 
 Report each document as you finish it.
 
+**Staging and committing:** Keep an exact `UPDATE_PATHS` list containing only approved files and
+directories this run changed: framework-owned paths, merged `docs/NN-*.md`,
+`docs/.clarity-version`, and approved `CLAUDE.md` or `.gitignore` changes. Stage only those paths
+with `git add -- <UPDATE_PATHS>`. Never use `git add .`, `git add -A`, or a broad `git add docs/`.
+Pre-existing staged source changes may remain in the index; when the user approves the update
+commit, use `git commit --only -m "[minor] Uppdatera Clarity Framework till vX.Y.Z" --
+<UPDATE_PATHS>` so they cannot be included. If `git diff --cached --name-only` reveals an
+update-surface path that was already staged before this run, stop instead of trying to repair the
+user's index.
+
 ## Step 6 — Stamp the version
 
 Write `docs/.clarity-version`:
@@ -187,8 +217,9 @@ Tell the user, in this order:
    not excluded by `.gitignore`.
 3. Orphans, with a recommendation for each.
 
-Then propose a commit and wait. Keep the framework update in its own commit — mixing it with project
-work makes it impossible to undo cleanly, and this is a change that occasionally needs undoing.
+Then propose the exact `git commit --only` command and wait. Keep the framework update in its own
+commit — mixing it with project work makes it impossible to undo cleanly, and this is a change that
+occasionally needs undoing.
 
 ## Notes
 

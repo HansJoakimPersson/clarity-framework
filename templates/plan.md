@@ -101,4 +101,4 @@ Besvaras innan planen raderas. "Inget" är ett giltigt svar – uteblivet svar �
 
 ---
 
-*Clarity Framework v1.5.0 – Planmall*
+*Clarity Framework v1.5.1 – Planmall*

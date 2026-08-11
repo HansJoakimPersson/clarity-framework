@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Senast uppdaterad** | ÅÅÅÅ-MM-DD |
-| **Ramverksversion** | Clarity Framework v1.5.0 |
+| **Ramverksversion** | Clarity Framework v1.5.1 |
 | **Projektfas** | Initiering / Krav / Design / Implementation / Drift |
 
 ---
@@ -132,4 +132,4 @@ skill är resurser för skillens skript, inte klienternas custom-promptkataloger
 
 ---
 
-*Clarity Framework v1.5.0 – AI Context Document*
+*Clarity Framework v1.5.1 – AI Context Document*

@@ -8,6 +8,16 @@ Versionshantering följer [Semantic Versioning](https://semver.org/lang/sv/).
 
 ---
 
+## [1.5.1] – ej släppt
+
+### Åtgärdat
+
+- `ramverksuppdatering` tillåter nu orelaterade pågående ändringar i kod, byggfiler, tester och
+  applikationskonfiguration. En path-baserad kontroll stoppar enbart ändringar i updaterns egen
+  skrivyta och tillåter en nyospårad updater-skill som bootstrapartefakt. Uppdateringscommitten
+  använder en explicit pathlista med `git commit --only`, så redan staged produktarbete inte följer
+  med
+
 ## [1.5.0] – 2026-08-11
 
 ### Tillagt

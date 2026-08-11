@@ -4,7 +4,7 @@
 > Fungerar för alla skalor – från ett personligt sidoprojekt till ett team på 20 personer.  
 > AI-assistans är ett valfritt accelerationslager, inte en förutsättning.
 
-**Version:** 1.5.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 1.5.1 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ---
 
@@ -147,6 +147,11 @@ senaste releasen, jämför projektets filer mot den version de kopierades från,
 till nuvarande struktur utan att skriva över något du fyllt i. Nya mallar och avsnitt kommer in
 tomma – rapporten säger vilka som behöver fyllas.
 
+Pågående ändringar i kod, byggfiler, tester och applikationskonfiguration får ligga kvar i
+arbetsytan. Skillen blockerar bara ändringar i sin egen uppdateringsyta (ramverksdokument,
+`AGENTS.md`, `CLAUDE.md`, `.gitignore` och hanterade skills) och föreslår sedan en explicit
+`git commit --only` för enbart ramverksfilerna.
+
 Den skriver också `docs/.clarity-version`, vilket gör nästa uppgradering exakt istället för härledd.
 Ett projekt som satts upp innan skillen fanns saknar den filen och får versionen härledd vid första
 körningen – skillen säger uttryckligen till när den härleder istället för att läsa.
@@ -173,4 +178,4 @@ körningen – skillen säger uttryckligen till när den härleder istället fö
 
 ---
 
-*Clarity Framework v1.5.0*
+*Clarity Framework v1.5.1*
