@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Classify existing worktree changes before ramverksuppdatering writes anything. Source and other
+# Classify existing worktree changes before framework-update writes anything. Source and other
 # project-owned paths may remain dirty; only paths the framework might update are conflicts.
 
 set -euo pipefail
@@ -42,7 +42,7 @@ is_untracked_updater_bootstrap() {
   local status=$1 path=$2 root
   [[ "$status" == '??' ]] || return 1
   for root in .agents/skills .claude/skills; do
-    [[ "$path" == "$root/ramverksuppdatering" || "$path" == "$root/ramverksuppdatering/"* ]] && return 0
+    [[ "$path" == "$root/framework-update" || "$path" == "$root/framework-update/"* ]] && return 0
   done
   return 1
 }
@@ -55,7 +55,7 @@ classify() {
     CONFLICTS+=("$status $path")
   else
     case "$path" in
-      AGENTS.md|CLAUDE.md|.gitignore|docs/.clarity-version|docs/[0-9][0-9]-*.md)
+      AGENTS.md|CLAUDE.md|.gitignore|docs/[0-9][0-9]-*.md)
         CONFLICTS+=("$status $path") ;;
       *)
         ALLOWED+=("$status $path") ;;

@@ -1,93 +1,76 @@
-# Agents – AI-beteendeinstruktioner per stack
+# Agents – AI behavior instructions by stack
 
-Den här katalogen innehåller fördefinierade `AGENTS.md`-filer för vanliga projektyper. Välj den
-närmaste startern och kopiera den oförändrad; projektspecifika anpassningar hör hemma i
-`CLAUDE.md`. Starterna är arbetssätt, inte produktarkitektur.
+This directory contains predefined `AGENTS.md` starters for common project types. Choose the
+closest starter and copy it unchanged; project-specific adjustments belong in `CLAUDE.md`. Starters
+describe ways of working, not product architecture.
 
----
+## What is AGENTS.md?
 
-## Vad är AGENTS.md?
+`AGENTS.md` is an instruction file placed at a project's root. It tells AI agents **how** to work
+in that project. Codex reads it directly. Claude Code reads the project's `CLAUDE.md`, which should
+begin with `@AGENTS.md` and import the same rules.
 
-`AGENTS.md` är en instruktionsfil som placeras i roten av ett projekt och berättar för AI-agenter
-**hur** de ska arbeta i just det projektet. Codex läser den direkt. Claude Code läser projektets
-`CLAUDE.md`, som därför ska börja med `@AGENTS.md` och importera samma regler. Den kompletterar
-Clarity Frameworks övriga dokumentation:
-
-| Dokument | Svarar på |
+| Document | Answers |
 | --- | --- |
-| `docs/00-ai-context.md` | Vad är projektet? |
-| `docs/01-vision-scope.md` | Varför byggs det? |
-| `docs/03-sad.md` | Hur är det arkitekturerat? |
-| `AGENTS.md` | Hur ska agenten arbeta här? |
+| `docs/00-ai-context.md` | What is the project? |
+| `docs/01-vision-scope.md` | Why is it being built? |
+| `docs/03-sad.md` | How is it architected? |
+| `AGENTS.md` | How should the agent work here? |
 
-Tillsammans ger de en AI-agent tillräcklig kontext för att fatta lokala beslut utan att gissa.
+Together they give an agent enough context to make local decisions without guessing.
 
----
+## Available starters
 
-## Tillgängliga starters
-
-| Fil | Passar när... |
+| File | Use when… |
 | --- | --- |
-| `generic.md` | Projektet matchar ingen specialiserad starter ännu; ger en neutral, stackoberoende baslinje |
-| `java-application.md` | Projektet är en Java-applikation, med eller utan Spring Boot |
-| `ios-springboot.md` | Projektet har en Spring Boot-backend och en native iOS/iPadOS-app i Swift |
-| `r-shiny.md` | Projektet är en R/Shiny-app, med eller utan plumber-API |
-| `vanilla-web-spa.md` | Projektet är en byggsstegssfri webbapp i ren HTML/CSS/JS |
-| `shell-dotfiles.md` | Du arbetar med shellskript, aliases eller dotfiles |
-| `macos-swift.md` | Projektet är en macOS-app i Swift |
-| `electron-desktop.md` | Projektet är en Electron-baserad desktop-app som ska kännas native |
+| `generic.md` | No specialized starter matches; provides a neutral stack-independent baseline |
+| `java-application.md` | The project is a Java application, with or without Spring Boot |
+| `ios-springboot.md` | The project has a Spring Boot backend and a native Swift iOS/iPadOS app |
+| `r-shiny.md` | The project is an R/Shiny app, with or without a plumber API |
+| `vanilla-web-spa.md` | The project is a build-step-free HTML/CSS/JS web app |
+| `shell-dotfiles.md` | You work with shell scripts, aliases, or dotfiles |
+| `macos-swift.md` | The project is a Swift macOS app |
+| `electron-desktop.md` | The project is an Electron desktop app intended to feel native |
 
----
+## How to use a starter
 
-## Hur du använder en starter
+1. Copy the relevant file to the project root and rename it `AGENTS.md`.
+2. Create `CLAUDE.md` with `@AGENTS.md` as its first line, or add that import first in an existing
+   file without removing project-specific rules.
+3. Commit both files like any other documentation.
 
-1. Kopiera relevant fil till projektets rot och döp om den till `AGENTS.md`
-2. Skapa `CLAUDE.md` med första raden `@AGENTS.md`, eller lägg importen först i en befintlig fil
-   utan att ta bort projektspecifika regler
-3. Committa båda filerna som vilken annan dokumentation som helst
+That is the entire procedure. **Do not edit the copied starter.**
 
-Det är hela proceduren. **Redigera inte den kopierade filen.**
+Each starter conditionally applies its own sections. The agent decides which profiles are relevant;
+a profile for a technology the project does not use costs nothing. Deleting it in advance only makes
+the file impossible to update mechanically.
 
-Varje starter villkorar sina egna avsnitt vid läsning – `java-application.md` säger till exempel
-"Add **Maven** when the project uses Maven" i sin *How To Use*. Agenten avgör alltså själv vilka
-profiler som gäller, och en profil för något projektet inte använder kostar ingenting. Att radera
-den i förväg tillför inget och gör filen omöjlig att uppdatera maskinellt.
+`AGENTS.md` is framework-owned and replaced wholesale when the project updates to a new framework
+release. Project-specific material belongs in `CLAUDE.md`, which the framework does not overwrite.
 
-`AGENTS.md` ägs därmed av ramverket och ersätts i sin helhet när projektet uppdateras till en ny
-ramverksversion. Det som är projektspecifikt hör hemma i projektets `CLAUDE.md`, som ramverket inte
-skriver över. Codex instrueras av startern att läsa filen; Claude Code läser den direkt och laddar
-den importerade startern före de projektspecifika raderna.
+## Integration with Clarity Framework
 
----
-
-## Integrering med Clarity Framework
-
-Alla starters refererar till Clarity Frameworks standardsökvägar (`docs/00-ai-context.md`, `docs/03-sad.md` osv.). De sökvägarna är standard – ett projekt som avviker från dem noterar avvikelsen i sin `CLAUDE.md` istället för att redigera `AGENTS.md`.
-
-Prioritetsordning inom projektets egna instruktioner, efter klientens system- och användarregler:
+All starters refer to Clarity Framework's standard paths, such as `docs/00-ai-context.md` and
+`docs/03-sad.md`. A project that deviates from those paths records the deviation in `CLAUDE.md`
+instead of editing `AGENTS.md`.
 
 ```text
-Projektspecifika regler i CLAUDE.md efter @AGENTS.md
-  ↓ tar alltid över
-Stack-specifika regler (från denna starter)
-  ↓ styr arbetssätt
-Clarity Framework-dokument i docs/
-  ↓ ger arkitektur- och kravkontext
+Project-specific rules in CLAUDE.md after @AGENTS.md
+  ↓ always take precedence
+Stack-specific rules from this starter
+  ↓ govern the way of working
+Clarity Framework documents in docs/
+  ↓ provide architecture and requirements context
 ```
 
----
+## Adding a new starter
 
-## Lägga till en ny starter
-
-Om du lägger till en ny stack:
-
-1. Namnge filen `[stack].md` med gemener och bindestreck
-2. Följ samma struktur: *How To Use*, *Core Rules*, valfria profiler, *Definition of Done*
-3. Referera till Clarity Framework-dokument i Workflow-steget
-4. Ta med sektionen *When You Are a Dispatched Agent* – den gäller oavsett stack och är det som
-   håller en agent inom planens omfattning när den anropas av en orchestrator istället för av dig
-5. Lägg till en rad i tabellen ovan
-6. Lägg till en entry i `framework/CHANGELOG.md`
+1. Name the file `[stack].md` using lowercase letters and hyphens.
+2. Follow the same structure: *How To Use*, *Core Rules*, optional profiles, and *Definition of Done*.
+3. Refer to Clarity Framework documents in the Workflow section.
+4. Include *When You Are a Dispatched Agent*; it keeps an agent within the approved plan's scope.
+5. Add a row to the table above.
+6. Add an entry to `framework/CHANGELOG.md`.
 
 ---
 

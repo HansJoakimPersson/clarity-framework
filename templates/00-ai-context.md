@@ -1,28 +1,28 @@
 # AI Context Document
 
-## [Produktnamn]
+## [Product name]
 
-> **Syfte:** Komprimerad projektöversikt för ny AI-session eller ny teammedlem.  
-> **Längd:** Max 1 sida. Korthet är en kvalitet, inte en brist.  
-> **Uppdateras:** Vid fasändring, nytt ADR, ändrad NFR eller förändrad teknisk skuld.
+> **Purpose:** A compact project overview for a new AI session or team member.
+> **Length:** One page maximum. Brevity is a quality, not a deficiency.
+> **Update when:** The phase changes, an ADR is added, an NFR changes, or technical debt changes.
 
 | | |
 | --- | --- |
-| **Senast uppdaterad** | ÅÅÅÅ-MM-DD |
-| **Ramverksversion** | Clarity Framework v1.5.1 |
-| **Projektfas** | Initiering / Krav / Design / Implementation / Drift |
+| **Last updated** | YYYY-MM-DD |
+| **Framework version** | Clarity Framework v2.0.5 |
+| **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
 
-## Vad är detta?
+## What is this?
 
-[2–3 meningar. Vad produkten gör, vilket problem den löser och för vem. Ska kunna läsas av en AI och ge omedelbar förståelse utan ytterligare kontext.]
+[2–3 sentences: what the product does, which problem it solves, and for whom. An AI should gain immediate understanding without additional context.]
 
 ---
 
-## Teknisk stack
+## Technical stack
 
-| Komponent | Teknologi | Version |
+| Component | Technology | Version |
 | --- | --- | --- |
 | Backend | [t.ex. Spring Boot] | [X.X] |
 | Frontend | [t.ex. React] | [X.X] |
@@ -32,104 +32,109 @@
 
 ---
 
-## Arkitektur i korthet
+## Architecture at a glance
 
-[3–5 meningar om arkitekturmönster och de viktigaste komponenterna och deras ansvar. Tillräckligt för att en AI ska kunna fatta lokala designbeslut i linje med helheten.]
+[3–5 sentences about the architecture pattern, key components, and their responsibilities. Enough for an AI to make local design decisions consistent with the whole.]
 
 ---
 
-## Viktigaste NFR
+## Key NFRs
 
-| NFR | Krav |
+| NFR | Requirement |
 | --- | --- |
 | Prestanda | [t.ex. Svarstid < 300 ms, p95] |
-| Tillgänglighet | [t.ex. 99.5% uptime] |
-| Skalbarhet | [t.ex. Ska hantera 10x datatillväxt utan omdesign] |
-| [Övrig kritisk NFR] | [Konkret krav] |
+| Availability | [e.g. 99.5% uptime] |
+| Scalability | [e.g. Handle 10x data growth without redesign] |
+| [Other critical NFR] | [Concrete requirement] |
 
 ---
 
-## Aktuell status
+## Current status
 
-**Pågående arbete:** [Vad som är aktivt just nu – t.ex. "Implementerar FR-005 till FR-009"]  
-**Senaste release:** [Version och datum, eller "Ej releasad"]  
-**Nästa milstolpe:** [t.ex. "MVP-release v0.1 – target ÅÅÅÅ-MM-DD"]
-
----
-
-## Öppna frågor och beslut
-
-[Lista med arkitekturella eller produktmässiga frågor som ännu inte är avgjorda. Hjälper AI:n att förstå var osäkerhet finns och undvika att ta dessa beslut implicit.]
-
-- [ ] [Öppen fråga 1]
-- [ ] [Öppen fråga 2]
+**Work in progress:** [What is active now, e.g. “Implementing FR-005 through FR-009”]
+**Latest release:** [Version and date, or “Not released”]
+**Next milestone:** [e.g. “MVP release v0.1 – target YYYY-MM-DD”]
 
 ---
 
-## Känd teknisk skuld
+## Open questions and decisions
 
-| ID | Beskrivning | Påverkan |
+[List unresolved architectural or product questions. This helps the AI understand uncertainty and avoid making implicit decisions.]
+
+- [ ] [Open question 1]
+- [ ] [Open question 2]
+
+---
+
+## Known technical debt
+
+| ID | Description | Impact |
 | --- | --- | --- |
-| TD-001 | [Kort beskrivning] | Hög / Medel / Låg |
+| TD-001 | [Short description] | High / Medium / Low |
 
 ---
 
-## Viktiga avgränsningar
+## Important boundaries
 
-[Vad som medvetet exkluderats från produkten. Förhindrar att AI föreslår lösningar utanför scope.]
+[What has deliberately been excluded from the product. Prevents the AI from suggesting solutions outside scope.]
 
 - [Out-of-scope 1]
 - [Out-of-scope 2]
 
 ---
 
-## AI-arbetsflöde
+## AI workflow
 
-[Utelämna hela avsnittet om projektet inte delar upp arbetet mellan flera agenter.]
+[Omit this entire section if the project does not divide work among multiple agents.]
 
-Det här avsnittet är projektets **runtime-kontrakt**: det säger vilken agent som fyller vilken nivå
-och under vilket konto och vilka rättigheter den körs. Det är den enda platsen den informationen
-finns – en skill eller ett skript ska kunna bytas ut utan att flödet definieras om.
+This section is the project's **runtime contract**: it states which agent fills each level, under
+which account, and with which permissions. It is the single source for this information; a skill or
+script can be replaced without redefining the workflow.
 
-| Nivå | Agent / profil | Sandbox + approval | Ansvar |
+| Level | Agent / account | Sandbox + approval | Responsibility |
 | --- | --- | --- | --- |
-| Orchestrator | [t.ex. Claude Code eller Codex] | [t.ex. allowlist i `.claude/settings.json` eller Codex orchestratorprofil] | Sekvenserar, äger grindarna, för körjournal. Läser inte kodbas eller diff själv. |
-| Reasoning | [t.ex. Codex, profil `reasoning`] | `read-only` + approval `never` | Skriver plan till `docs/plans/`, granskar diff mot plan. Bygger inte, godkänner inte sitt eget arbete. Annat CLI/konto än Orchestrator. |
-| Granskning *(valfri)* | [t.ex. Codex, profil `granskning`] | `read-only` + approval `never` | Granskar planen kallt mot koden. Annat konto än Reasoning – annars granskar en nivå sig själv. |
-| Implementation | [t.ex. Codex, profil `implementation`] | `workspace-write` + approval `never` | Bygger enligt planen. Planerar inte om – stannar vid blockerande fråga. |
+| Orchestrator | [e.g. Claude Code or Codex] | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, owns gates, and maintains the run journal. Does not read the codebase or diff itself. |
+| Reasoning | [e.g. Codex, account `reasoning`] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different account from the Orchestrator. |
+| Review *(optional)* | [e.g. Codex, account `review`] | `read-only` + approval `never` | Reviews the plan cold against the code. Uses a different account from Reasoning. |
+| Implementation | [e.g. Codex, account `implementation`] | `workspace-write` + approval `never` | Builds the approved plan. Does not re-plan; stops on a blocking question. |
 
-> Sandbox och approval är två oberoende inställningar. Sätts bara sandbox ligger approval kvar på
-> default, och då stannar en obevakad körning och frågar. Sätt alltid båda.
+> Sandbox and approval are independent settings. If only the sandbox is set, approval remains at its
+> default and an unattended run may stop to ask. Always set both.
 
-**Skill-sökvägar:** Clarity-skills som används av båda klienterna installeras som identiska kopior
-under `.agents/skills/<namn>/` för Codex och `.claude/skills/<namn>/` för Claude Code. Claude
-anropar `/namn`; Codex anropar `$namn` eller väljer skillen via `/skills`. Interna `prompts/` i en
-skill är resurser för skillens skript, inte klienternas custom-promptkataloger.
+**Skill paths:** Clarity skills used by both clients are installed as identical copies under
+`.agents/skills/<name>/` for Codex and `.claude/skills/<name>/` for Claude Code. Claude invokes
+`/<name>`; Codex invokes `$<name>` or selects the skill through `/skills`. Internal `prompts/`
+directories are resources for the skill's scripts, not client custom-prompt directories.
 
-**Planer:** `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.md` (mall: ramverkets `templates/plan.md`). Planen måste vara committad och pushad för att en molnagent ska kunna läsa den. Raderas när ändringen är mergad.
+**Plans:** `docs/plans/YYYY-MM-DD-short-name.md` (template: framework `templates/plan.md`). The plan
+must be committed and pushed for a cloud agent to read it. Delete it when the change is merged.
 
-**Körjournal:** `docs/plans/ÅÅÅÅ-MM-DD-kort-namn.run.md` – flödets tillstånd utanför orchestratorns kontext: vilket steg som är klart, vad som väntar, var rapporterna ligger. Committas med planen. Det är den som gör att en avbruten körning kan tas över av en annan session eller ett annat CLI. Råutdata i `docs/plans/.runs/` är lokalt och gitignorerat.
+**Run journal:** `docs/plans/YYYY-MM-DD-short-name.run.md` – workflow state outside the orchestrator's
+context: completed step, next action, and report locations. Commit it with the plan. It enables
+another session or CLI to take over an interrupted run. Raw output in `docs/plans/.runs/` is local
+and gitignored.
 
-**Orchestratorbudget:** [Vad orchestratorn får läsa per runda – t.ex. "plan + kritik ≤ 40 rader + verifiering ≤ DoD + 10 rader". Läser den kodbasen eller diffen är kostnadsfördelningen skenbar.]
+**Orchestrator budget:** [What the orchestrator may read per round, e.g. “plan + review ≤ 40 lines +
+verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separation is illusory.]
 
-**Kräver alltid människa:** [t.ex. godkännande av omfattning, merge, releasebeslut, radering av plan]
+**Always requires a human:** [e.g. scope approval, merge, release decision, plan deletion]
 
 ---
 
-## Var finns mer kontext?
+## Where is more context?
 
-| Fråga | Dokument |
+| Question | Document |
 | --- | --- |
-| Varför byggs det? | `docs/01-vision-scope.md` |
-| Vad ska byggas? | `docs/02-kravdokumentation.md` |
-| Hur ska det se ut? (om UI) | `docs/09-grafisk-profil.md` |
-| Hur är det byggt? | `docs/03-sad.md` |
-| Datastruktur & API? | `docs/04-datamodell-api.md` |
-| Hur driftsätts det? | `docs/05-deployment-view.md` |
-| Hur testas det? | `docs/06-testdokumentation.md` |
-| Hur driftas det? | `docs/07-runbook.md` |
-| Vad byggs just nu, konkret? | `docs/plans/` (om planstyrt arbetsflöde används) |
+| Why is it being built? | `docs/01-vision-scope.md` |
+| What is being built? | `docs/02-requirements.md` |
+| What should it look like? (if UI) | `docs/09-visual-profile.md` |
+| How is it built? | `docs/03-sad.md` |
+| Data model and API? | `docs/04-data-model-api.md` |
+| How is it deployed? | `docs/05-deployment-view.md` |
+| How is it tested? | `docs/06-test-documentation.md` |
+| How is it operated? | `docs/07-runbook.md` |
+| What is being built now? | `docs/plans/` (when the plan-driven workflow is used) |
 
 ---
 
-*Clarity Framework v1.5.1 – AI Context Document*
+*Clarity Framework v2.0.5 – AI Context Document*

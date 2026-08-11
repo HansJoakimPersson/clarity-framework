@@ -1,130 +1,99 @@
-# AGENTS.md
+# AGENTS.md – Clarity Framework repository instructions
 
-## Clarity Framework – AI-instruktioner för detta repo
+> Read automatically by Codex and imported by Claude Code through `CLAUDE.md`.
+> These instructions govern the framework repository itself, not projects that use it.
 
-> Läses automatiskt av Codex och importeras av Claude Code via `CLAUDE.md`.
-> Gäller förvaltning av ramverket självt – inte för projekt som använder det.
+## What this repository is
 
----
+Clarity Framework is a methodology-agnostic documentation framework for software development. It
+scales from a personal side project to a team of 20. AI agents are a first-class execution layer
+governed by documented decisions, verification gates, and human accountability.
 
-## Vad detta repo är
+**Three core principles:** Just enough documentation · Documentation as code · Clarity over completeness
 
-Clarity Framework är ett metodagnostiskt dokumentationsramverk för mjukvaruutveckling. Fungerar för alla skalor – från ett personligt sidoprojekt till ett team på 20 personer. AI-assistans är ett valfritt lager, inte en förutsättning.
+**Current version:** 2.0.5
 
-**Tre kärnprinciper:** Just enough documentation · Dokumentation som kod · Klarhet framför fullständighet
-
-**Nuvarande version:** 1.5.1
-
-**Repo-struktur:**
+**Repository structure:**
 
 ```text
-/framework/    – Ramverkets egna dokument (guide, CHANGELOG, instruktioner)
-/templates/    – Mallar att kopiera till ett projekts /docs
-/agents/       – AGENTS.md-starters per stack
-/skills/       – Skills att kopiera till ett projekts .agents/skills och .claude/skills
+/framework/    – Framework guides, CHANGELOG, and project instructions
+/templates/    – Templates to copy into a project's /docs
+/agents/       – AGENTS.md starters by stack
+/skills/       – Skills to copy into .agents/skills and .claude/skills
 ```
 
-**Språkundantag i `skills/planstyrt-bygge/`:** `SKILL.md` och `prompts/*.txt` är engelska
-(läses av agenter), medan `plan-mall.md`, `journal-mall.md` och
-`uppsattning.md` är svenska (fylls i, godkänns eller följs av dig). Samma regel som annars – primär
-läsare avgör, inte katalogen.
+All framework content is English. Keep file names, headings, placeholders, paths, commands, and
+examples in English as well.
 
----
+## Commit discipline
 
-## Språkkonvention
+Work directly on `main`. One commit is one meaningful, complete unit of change.
 
-Regeln avgörs av vem som är primär läsare, inte av filtyp:
+**Format:** `[type] Short imperative description`
 
-| Innehåll | Språk | Varför |
-| --- | --- | --- |
-| `agents/*.md`, `skills/*/SKILL.md` | Engelska | Läses primärt av en AI-agent som exekverar instruktionerna, inte av dig löpande. Engelska ger mindre tvetydighet för modellen och matchar hur skill-beskrivningar tolkas av agentkörtider. |
-| `templates/*.md`, ramverkets egna guider (`framework/`, `README.md`, `AGENTS.md`, `CLAUDE.md`) | Svenska | Läses och godkänns av dig eller andra människor – planen i `templates/plan.md` visas t.ex. explicit för användaren innan bygge startar. |
-
-En skill eller starter som byter primär läsare (blir ett dokument du själv fyller i och godkänner) byter språk med den. Filnamnet `SKILL.md`/`AGENTS.md` avgör inte språket – syftet gör.
-
----
-
-## Commit-disciplin
-
-Solo direkt på `main`. En commit = en meningsfull, komplett enhet av förändring.
-
-**Format:** `[typ] Kort beskrivning i imperativ form`
-
-| Typ | När |
+| Type | When |
 | --- | --- |
-| `patch` | Korrigeringar, stavfel, förtydliganden |
-| `minor` | Ny sektion, ny mall, nytt dokument |
-| `major` | Breaking change – befintliga ifyllda dokument påverkas |
-| `docs` | Ändringar i `/framework` som inte är mallar |
-| `chore` | Repo-underhåll, skriptjusteringar |
+| `patch` | Corrections, typos, and clarifications |
+| `minor` | New sections, templates, or documents |
+| `major` | Breaking changes affecting completed documents |
+| `docs` | Changes in `/framework` that are not templates |
+| `chore` | Repository maintenance and script changes |
 
-**En commit är inte klar om:**
+A commit is incomplete when it has no CHANGELOG entry, affected guides and templates are inconsistent,
+or the version markers were not updated. Every change increments the version in the same commit;
+`docs` and `chore` changes do not increment it.
 
-- CHANGELOG saknar entry för förändringen
-- Berörda mallar och guide inte är konsekvent uppdaterade
-- Versionsnumret inte är uppräknat (se nedan)
-
-**Varje förändring räknar upp versionen.** Versionen är inte något som bestäms vid release – den
-bestäms av förändringen, i samma commit som förändringen. Commit-typen avgör steget: `patch` höjer
-patch-siffran, `minor` höjer minor, `major` höjer major. `docs` och `chore` rör inte versionen.
-
-Det betyder att `main` alltid är självkonsistent och släppbar, och att versionsmarkören i ett
-projekt alltid pekar på ett verkligt tillstånd. Ett projekt som uppdaterar sig mot ramverket litar
-på den markören – står det fel version är uppdateringen fel.
-
-Räkna upp versionen i **alla** filer som bär den, inte några av dem:
+Update all files carrying a framework version:
 
 ```bash
-git grep -lE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+|Nuvarande version:|\*\*Version:\*\*' \
+git grep -lE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+|Current version:|\*\*Version:\*\*' \
   -- '*.md' ':!framework/CHANGELOG.md'
 ```
 
-Kör kommandot och uppdatera samtliga träffar. Antalet kan ändras – därför används ett kommando och
-inte en hårdkodad uppräkning.
+## Files that move together
 
-**Vad som alltid committas tillsammans:**
-
-| Förändring | Måste inkludera |
+| Change | Include |
 | --- | --- |
-| Mallförändring | Mall + eventuell guidejustering |
-| `templates/plan.md` | Även `skills/planstyrt-bygge/plan-mall.md` – skillen bär en egen kopia eftersom den kopieras ut ensam. Filerna ska vara **identiska**; verifiera med `diff templates/plan.md skills/planstyrt-bygge/plan-mall.md` |
-| `skills/planstyrt-bygge/prompts/*` | Även `SKILL.md` om platshållarna (`{{VAR}}`) ändras – `dispatch.sh` avbryter på en ofylld platshållare |
-| Ny mall | Ny fil + README + CHANGELOG-entry |
-| Riktlinjeändring i guiden | Guiden + berörda mallar |
-| Release | CHANGELOG + versionsnummer i alla berörda filer + Git-tagg |
+| Template change | Template and any affected guide |
+| `templates/plan.md` | Identical `skills/plan-driven-build/plan-template.md`; verify with `diff` |
+| Dispatch prompt change | The matching prompt and `SKILL.md` when placeholders change |
+| New template | New file, README, and CHANGELOG entry |
+| Framework guideline change | Guide and affected templates |
+| Release | CHANGELOG, version markers, and annotated Git tag |
 
-**I slutet av varje session:** sammanfatta förändrade filer, gruppera logiskt, föreslå commit-meddelanden – vänta på godkännande innan commit körs.
+At the end of a session, summarize changed files, group them logically, and propose commit messages.
+Wait for approval before committing.
 
----
+## Release strategy
 
-## Releasestrategi
-
-Explicita, manuellt taggade releases – aldrig automatiska.
+Releases are explicit and manually tagged, never automatic.
 
 ```text
 MAJOR.MINOR.PATCH
-  │     │     └── Korrigeringar (bakåtkompatibelt)
-  │     └──────── Nya mallar, sektioner, tillägg (bakåtkompatibelt)
-  └────────────── Breaking changes (kräver migrering av ifyllda dokument)
+  │     │     └── Backward-compatible corrections
+  │     └──────── New templates, sections, and additions (backward-compatible)
+  └────────────── Breaking changes (require migration of completed documents)
 ```
 
-Versionsnumret är redan uppräknat när releasen sker – det gjordes i den commit som orsakade
-förändringen. En release är därför inte "sätt version", utan "släpp den version som redan finns".
+The version number has already been incremented when a release is made; that happened in the commit
+that introduced the change. A release therefore does not “set the version”; it publishes the version
+that already exists.
 
-**När användaren triggar en release:**
+**When the user triggers a release:**
 
-1. Verifiera `git status` är rent
-2. Verifiera att versionsnumret är konsekvent i alla spårade filer som bär det:
+1. Verify that `git status` is clean.
+2. Verify that the version is consistent in every tracked file carrying it:
    `git grep -hoE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+' -- '*.md' ':!framework/CHANGELOG.md' | sort -u`
-   ska ge exakt en rad
-3. Sätt datum på den väntande versionsrubriken i `framework/CHANGELOG.md`
-4. `git add framework/CHANGELOG.md && git commit -m "[chore] Release vX.Y.Z"`
-5. `git tag -a vX.Y.Z -m "Clarity Framework vX.Y.Z – beskrivning"`
-6. `git push origin main --tags`
+   must return exactly one line.
+3. Date the pending version heading in `framework/CHANGELOG.md`.
+4. Run `git add framework/CHANGELOG.md && git commit -m "[chore] Release vX.Y.Z"`.
+5. Create an annotated tag:
+   `git tag -a vX.Y.Z -m "Clarity Framework vX.Y.Z – description"`.
+6. Push the commit and tag with `git push origin main --tags`.
 
-Taggen är det enda `skills/ramverksuppdatering/` läser. Ett projekt uppdaterar sig aldrig mot
-otaggad `main` – därför spelar det ingen roll att versionen hunnit räknas upp innan taggen finns.
+The tag is the only source read by `skills/framework-update/`. A project never updates from untagged
+`main`, so it does not matter that the version was incremented before the tag exists.
 
 ---
 
-*Clarity Framework v1.5.1*
+*Clarity Framework v2.0.5*

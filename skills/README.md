@@ -1,110 +1,93 @@
-# Skills – återanvändbara arbetsflöden för Claude Code och Codex
+# Skills – reusable workflows for Claude Code and Codex
 
-Den här katalogen innehåller färdiga skills att kopiera in i ett projekt när flödet behövs.
+This directory contains ready-made skills to copy into a project when a workflow is needed.
 
-En kopierad skill **ägs av ramverket och redigeras inte i projektet** – den ersätts i sin helhet när
-projektet uppdateras till en ny ramverksversion. Det gäller bara skillnamn som listas i
-`docs/.clarity-version`; andra lokala eller tredjepartsinstallerade skills rörs aldrig. Behöver
-flödet bete sig annorlunda i just ditt projekt hör det hemma i projektets `CLAUDE.md`, som
-ramverket inte skriver över. Se ägarskapstabellen i
-ramverkets `README.md`.
+A copied skill **belongs to the framework and must not be edited in the project**. It is replaced
+wholesale when the project updates to a new framework release. Only Clarity skill names listed in
+`00-ai-context.md` are managed; local and third-party skills are never touched. Project-specific
+workflow differences belong in `CLAUDE.md`. See the ownership table in the framework `README.md`.
 
----
+## What is a skill?
 
-## Vad är en skill?
+A skill is a named workflow in the Agent Skills format that Claude Code and Codex can invoke. It
+answers a different question from the other Clarity documents:
 
-En skill är ett namngivet arbetsflöde enligt Agent Skills-formatet som Claude Code och Codex kan
-anropa. Den skiljer sig från övriga
-Clarity Framework-dokument i vad den svarar på:
-
-| Dokument | Svarar på |
+| Document | Answers |
 | --- | --- |
-| `docs/00-ai-context.md` | Vad är projektet? |
-| `AGENTS.md` | Hur ska agenten arbeta här, alltid? |
-| `.agents/skills/*/SKILL.md` / `.claude/skills/*/SKILL.md` | Hur körs det här specifika flödet, när det körs? |
+| `docs/00-ai-context.md` | What is the project? |
+| `AGENTS.md` | How must the agent always work here? |
+| `.agents/skills/*/SKILL.md` / `.claude/skills/*/SKILL.md` | How is this specific workflow run? |
 
-`AGENTS.md` gäller varje uppgift. En skill gäller bara när den anropas.
+`AGENTS.md` applies to every task. A skill applies only when invoked.
 
----
+## Available skills
 
-## Tillgängliga skills
-
-| Katalog | Passar när... |
+| Directory | Use when… |
 | --- | --- |
-| `clarity-bootstrap/` | Ett nytt eller ännu inte Clarity-hanterat projekt ska få minsta relevanta dokumentuppsättning, rätt stack-starter och skills för båda klienterna utifrån vad som ska byggas |
-| `planstyrt-bygge/` | Uppgiften är stor nog att omfattningen behöver godkännas innan kod skrivs, och du vill att Claude Code eller Codex orchestrerar medan planering, granskning och bygge dispatchas till andra CLI:er/konton |
-| `ramverksuppdatering/` | Projektet ligger på en äldre version av ramverket och ska lyftas till senaste releasen utan att det som redan är ifyllt går förlorat |
+| `clarity-bootstrap/` | A new or unmanaged project needs the smallest relevant document set, stack starter, and skills for both clients |
+| `plan-driven-build/` | The task is large enough to require scope approval before code is written, with planning, review, and implementation dispatched to other CLIs or accounts |
+| `framework-update/` | A project on an older framework version must be upgraded without losing completed work |
 
-De tre är oberoende av varandra. `clarity-bootstrap/` sätter upp ett ännu inte hanterat projekt,
-medan `ramverksuppdatering/` endast arbetar med projekt som redan har en ramverksversion. Den senare
-dispatchar ingenting och har inget med
-orkestrering att göra – den kör i din session och rör bara godkända ramverksfiler under `docs/`,
-`AGENTS.md`, `.agents/skills/` och `.claude/skills/`.
+The three skills are independent. `clarity-bootstrap/` sets up an unmanaged project, while
+`framework-update/` works only with projects that already use Clarity. The latter does not
+dispatch anything; it runs in the current session and touches only approved framework paths under
+`docs/`, `AGENTS.md`, `.agents/skills/`, and `.claude/skills/`.
 
-Orelaterade ändringar i projektets kod, byggfiler, tester eller applikationskonfiguration behöver
-inte först committas. `ramverksuppdatering` skyddar i stället sin egen skrivyta och använder en
-explicit pathlista när den föreslår sin separata commit.
+Unrelated changes in project code, build files, tests, or application configuration do not need to
+be committed first. `framework-update` protects its own write surface and proposes a separate
+commit using an explicit path list.
 
----
+## How to use a skill
 
-## Så använder du en
-
-1. Kopiera samma katalog till båda klienternas projektsökvägar:
+1. Copy the same directory to both client-specific project locations:
 
    ```bash
-   mkdir -p /sökväg/till/projektet/.agents/skills /sökväg/till/projektet/.claude/skills
-   cp -R skills/planstyrt-bygge /sökväg/till/projektet/.agents/skills/
-   cp -R skills/planstyrt-bygge /sökväg/till/projektet/.claude/skills/
-   diff -qr /sökväg/till/projektet/.agents/skills/planstyrt-bygge \
-     /sökväg/till/projektet/.claude/skills/planstyrt-bygge
+   mkdir -p /path/to/project/.agents/skills /path/to/project/.claude/skills
+   cp -R skills/plan-driven-build /path/to/project/.agents/skills/
+   cp -R skills/plan-driven-build /path/to/project/.claude/skills/
+   diff -qr /path/to/project/.agents/skills/plan-driven-build \
+     /path/to/project/.claude/skills/plan-driven-build
    ```
 
-2. Gå igenom `uppsattning.md` – profiler, sandbox- och approval-inställningar, permissionslista.
-   Det är en engångsuppsättning per maskin och den som avgör om flödet kan köra obevakat.
-3. Anropa den i Claude Code med `/planstyrt-bygge`, eller i Codex med `$planstyrt-bygge` eller
-   genom `/skills`.
+2. Review `setup.md` for accounts, sandbox, approval settings, and permissions. This is a
+   one-time setup per machine and determines whether the workflow can run unattended.
+3. Invoke it in Claude Code with `/plan-driven-build`, or in Codex with `$plan-driven-build` or through
+   `/skills`.
 
-Steg 2 rör din maskin, inte de kopierade filerna. Behöver projektet avvika från flödet skriver du
-det i projektets `CLAUDE.md` – de kopierade filerna lämnas orörda så att de kan ersättas vid nästa
-ramverksuppdatering.
+Step 2 concerns the machine, not the copied files. Project deviations belong in `CLAUDE.md`; leave
+the copied files unchanged so they can be replaced at the next framework update.
 
-### Vad filerna i `planstyrt-bygge/` gör
+### What the files in `plan-driven-build/` do
 
-| Fil | Roll |
+| File | Role |
 | --- | --- |
-| `SKILL.md` | Proceduren. Det enda orchestratorn läser vid anrop – skriven för rollen, inte för ett visst CLI |
-| `prompts/*.txt` | Instruktionerna till de dispatchade agenterna. Ligger i filer just för att hållas utanför orchestratorns kontext – orchestratorn fyller platshållare, den läser dem inte |
-| `dispatch.sh` | Enda vägen till en dispatch. Sätter sandbox och approval tillsammans, upptäcker saknad kontoprofil, mäter rapportens storlek mot budgeten |
-| `tests/dispatch-test.sh` | Regressionstest för Codex CLI-flaggornas ordning och sentinel vid misslyckad bakgrundskörning |
-| `plan-mall.md` | Planmallen. Identisk kopia av ramverkets `templates/plan.md` – skillen kopieras ensam och måste bära sin egen |
-| `journal-mall.md` | Körjournalmallen. Flödets tillstånd utanför orchestratorns kontext |
-| `uppsattning.md` | Engångsuppsättning: profiler, permissions, gitignore |
-| `settings.exempel.json` | Permissionslista för Claude Code. `deny`-halvan gör läsbudgeten till en regel istället för en uppmaning |
+| `SKILL.md` | The procedure; the only file the orchestrator reads when invoked |
+| `prompts/*.txt` | Instructions for dispatched agents, kept outside the orchestrator's context |
+| `dispatch.sh` | The only dispatch entry point; sets sandbox and approval together and enforces budgets |
+| `tests/dispatch-test.sh` | Regression test for CLI flag ordering and failure sentinels |
+| `plan-template.md` | The plan template, identical to `templates/plan.md` |
+| `journal-template.md` | The run journal template and handover state |
+| `setup.md` | One-time setup for accounts, permissions, and gitignore |
+| `settings.example.json` | Claude Code permissions example |
 
-Skills versioneras i projektrepot som all annan dokumentation som kod. Kontrollera med
-`git check-ignore` att en bred regel för `.claude/` eller `.agents/` inte råkar utesluta de två
-hanterade kopiorna; lokala settings, credentials och caches ska fortsatt vara ignorerade.
+Skills are versioned in the project repository like all other documentation. Use `git check-ignore`
+to ensure broad `.claude/` or `.agents/` rules do not exclude the managed copies while local
+settings, credentials, and caches remain ignored.
 
-Mapparna `prompts/` i en skill är interna resurser för dess skript. De har ingen koppling till
-Codex utfasade `~/.codex/prompts/` eller Claude Codes äldre `.claude/commands/`; båda klienterna
-använder den delade `SKILL.md`-frontenden.
+The `prompts/` directories are internal resources for their scripts. They are unrelated to Codex's
+deprecated `~/.codex/prompts/` and Claude Code's older `.claude/commands/`; both clients use the
+shared `SKILL.md` frontend.
 
----
+## Precedence
 
-## Vad som gäller före vad
+1. An explicit user instruction in the session
+2. Project-specific rules in `CLAUDE.md` after the `@AGENTS.md` import
+3. The project's framework-owned `AGENTS.md`
+4. The skill's `SKILL.md`
+5. The project's `docs/`
 
-Samma prioritetsordning som för `agents/`:
-
-1. Uttrycklig instruktion från användaren i sessionen
-2. Projektspecifika regler i `CLAUDE.md` efter `@AGENTS.md`-importen
-3. Projektets ramverksägda `AGENTS.md`
-4. Skillens `SKILL.md`
-5. Projektets `docs/`
-
-En skill som motsäger projektets `CLAUDE.md` eller `AGENTS.md` ska anpassas, inte följas. Codex
-läser `CLAUDE.md` därför att alla starters uttryckligen kräver det; Claude Code läser filen direkt
-och importerar `AGENTS.md` via första raden.
+A skill that conflicts with `CLAUDE.md` or `AGENTS.md` must be adapted, not followed blindly.
 
 ---
 
-*Clarity Framework v1.5.1*
+*Clarity Framework v2.0.5*

@@ -1,125 +1,111 @@
 # Vision & Scope
 
-## [Produktnamn]
+## [Product name]
 
 | | |
 | --- | --- |
 | **Version** | 0.1 |
-| **Status** | Utkast / Under granskning / Godkänd |
-| **Datum** | ÅÅÅÅ-MM-DD |
-| **Författare** | [Namn] |
-| **Godkänd av** | [Namn, Datum] |
+| **Status** | Draft / Under review / Approved |
+| **Date** | YYYY-MM-DD |
+| **Author** | [Name] |
+| **Approved by** | [Name, Date] |
 
-### Versionshistorik
+### Version history
 
-| Version | Datum | Förändring | Författare |
+| Version | Date | Change | Author |
 | --- | --- | --- | --- |
-| 0.1 | ÅÅÅÅ-MM-DD | Initial version | [Namn] |
+| 0.1 | YYYY-MM-DD | Initial version | [Name] |
 
 ---
 
-## 1. Produktvision
+## 1. Product vision
 
-> *En mening som beskriver vad produkten är och vilket problem den löser.*
+> *One sentence describing what the product is and which problem it solves.*
 
-**Exempel:** "[Produktnamn] hjälper [målgrupp] att [uppnå mål] genom att [unik lösning]."
+**Example:** “[Product name] helps [target group] [achieve a goal] through [unique solution].”
 
----
+## 2. Problem statement
 
-## 2. Problembeskrivning
+**What problem is being solved?**
+[Describe the concrete problem. Do not mention the solution here.]
 
-**Vilket problem löses?**
-[Beskriv det konkreta problemet. Undvik att nämna lösningen här.]
+**Who has the problem?**
+[Describe the people affected by the problem today.]
 
-**Vem har problemet?**
-[Beskriv de som drabbas av problemet idag.]
+**What happens if the problem remains?**
+[Describe the cost—time, money, frustration, or risk—of not solving it.]
 
-**Vad är konsekvensen av att problemet kvarstår?**
-[Beskriv kostnaden – tid, pengar, frustration, risk – av att inte lösa det.]
+**How is it solved today?**
+[Describe current workarounds or alternatives and why they are insufficient.]
 
-**Hur löses det idag?**
-[Beskriv nuvarande workarounds eller alternativa lösningar och varför de är otillräckliga.]
+## 3. Target groups and stakeholders
 
----
-
-## 3. Målgrupp och intressenter
-
-| Roll | Beskrivning | Primär/Sekundär |
+| Role | Description | Primary/Secondary |
 | --- | --- | --- |
-| [Primär användare] | Den som aktivt använder systemet | Primär |
-| [Berörd part] | Den som påverkas av systemets output | Sekundär |
-| [Teknisk operatör] | Den som driftar och underhåller | Sekundär |
+| [Primary user] | The person who actively uses the system | Primary |
+| [Affected party] | The person affected by the system's output | Secondary |
+| [Technical operator] | The person who operates and maintains the system | Secondary |
 
----
+## 4. Goals and success criteria
 
-## 4. Mål och framgångskriterier
+> Goals must be concrete and measurable. Avoid “the system must be fast”; write quantified targets instead.
 
-> Mål ska vara konkreta och mätbara. Undvik "systemet ska vara snabbt" – skriv istället kvantifierade mål.
-
-| # | Mål | Mätetal | Målvärde |
+| # | Goal | Metric | Target value |
 | --- | --- | --- | --- |
-| M1 | [Affärsmål] | [Hur mäts det?] | [Konkret värde] |
-| M2 | [Tekniskt mål] | [Hur mäts det?] | [Konkret värde] |
+| M1 | [Business goal] | [How is it measured?] | [Concrete value] |
+| M2 | [Technical goal] | [How is it measured?] | [Concrete value] |
 | M3 | | | |
-
----
 
 ## 5. Scope
 
 ### In scope
 
-| # | Funktion / Område |
+| # | Function / area |
 | --- | --- |
-| 1 | [Vad som ingår] |
+| 1 | [What is included] |
 | 2 | |
 
 ### Out of scope
 
-| # | Funktion / Område | Motivering |
+| # | Function / area | Reason |
 | --- | --- | --- |
-| 1 | [Vad som INTE ingår] | [Varför det exkluderas] |
+| 1 | [What is NOT included] | [Why it is excluded] |
 | 2 | | |
 
-> **OBS:** Out-of-scope är lika viktigt som in-scope. Explicit exkludering förhindrar scope creep.
+> **Note:** Out-of-scope is as important as in-scope. Explicit exclusions prevent scope creep.
 
----
+## 6. Assumptions and dependencies
 
-## 6. Antaganden och beroenden
+### Assumptions
 
-### Antaganden
+*What is taken for granted for the product to work as intended?*
 
-*Vad tas för givet för att produkten ska fungera som tänkt?*
+- [ ] [Assumption 1 – e.g. “The user has a stable internet connection”]
+- [ ] [Assumption 2]
 
-- [ ] [Antagande 1 – t.ex. "Användaren har en stabil internetuppkoppling"]
-- [ ] [Antagande 2]
+### External dependencies
 
-### Externa beroenden
+*Which external systems, services, or decisions does the product depend on?*
 
-*Vilka externa system, tjänster eller beslut är produkten beroende av?*
-
-| Beroende | Typ | Ansvarig | Status |
+| Dependency | Type | Owner | Status |
 | --- | --- | --- | --- |
-| [System/API/Beslut] | Tekniskt / Organisatoriskt | [Namn/Team] | Bekräftat / Okänt |
+| [System/API/Decision] | Technical / Organizational | [Name/Team] | Confirmed / Unknown |
 
----
+## 7. Known risks and constraints
 
-## 7. Kända risker och begränsningar
-
-| # | Risk | Sannolikhet | Påverkan | Åtgärd |
+| # | Risk | Likelihood | Impact | Mitigation |
 | --- | --- | --- | --- | --- |
-| R1 | [Beskriv risken] | Hög / Medel / Låg | Hög / Medel / Låg | [Hantering] |
+| R1 | [Describe the risk] | High / Medium / Low | High / Medium / Low | [Mitigation] |
 | R2 | | | | |
 
----
+## 8. Approval
 
-## 8. Godkännande
-
-| Roll | Namn | Datum | Signatur |
+| Role | Name | Date | Signature |
 | --- | --- | --- | --- |
-| Produktägare | | | |
-| Teknisk ansvarig | | | |
-| [Annan intressent] | | | |
+| Product owner | | | |
+| Technical owner | | | |
+| [Other stakeholder] | | | |
 
 ---
 
-*Nästa steg: Påbörja kravdokumentation baserat på detta godkända dokument.*
+*Next step: Start requirements documentation based on this approved document.*

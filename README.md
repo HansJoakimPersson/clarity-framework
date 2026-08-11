@@ -1,181 +1,154 @@
 # Clarity Framework
 
-> Ett metodagnostiskt dokumentationsramverk för mjukvaruutveckling.  
-> Fungerar för alla skalor – från ett personligt sidoprojekt till ett team på 20 personer.  
-> AI-assistans är ett valfritt accelerationslager, inte en förutsättning.
+> A methodology-agnostic documentation framework for software development. It scales from a
+> personal side project to a team of 20. AI agents are a first-class execution layer governed by
+> documented decisions, verification gates, and human accountability.
 
-**Version:** 1.5.1 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 2.0.5 · [CHANGELOG](./framework/CHANGELOG.md)
 
----
+## Three core principles
 
-## Tre kärnprinciper
+- **Just enough documentation** – every document must add value, not bureaucracy.
+- **Documentation as code** – version documents in Git, review them with changes, and keep them near implementation.
+- **Clarity over completeness** – a clear partial document is better than an unclear complete one.
 
-- **Just enough documentation** – varje dokument ska tillföra värde, inte skapa byråkrati
-- **Dokumentation som kod** – versioneras i Git, granskas i PR, lever nära implementationen
-- **Klarhet framför fullständighet** – ett tydligt halvfärdigt dokument är bättre än ett otydligt komplett
-
----
-
-## Repo-struktur
+## Repository structure
 
 ```text
 clarity-framework/
 │
-├── framework/                          # Ramverkets egna dokument
-│   ├── dokumentationsguide.md          # Huvudguiden – riktlinjer för alla dokumenttyper
-│   ├── ai-usage-guide.md               # AI som valfritt accelerationslager
-│   ├── PROJEKTINSTRUKTIONER.md         # Instruktioner för Claude/OpenAI projekt
-│   └── CHANGELOG.md                   # Versionshistorik
+├── framework/
+│   ├── documentation-guide.md       # Main guide for all document types and lifecycle rules
+│   ├── ai-usage-guide.md            # Governed AI-agent workflow, runtime contract, and safeguards
+│   ├── PROJECT-INSTRUCTIONS.md      # Project instruction template for Claude Code and Codex
+│   └── CHANGELOG.md                 # Framework version history and release notes
 │
-├── templates/                          # Mallar – kopiera till ditt projekts /docs
-│   ├── 00-ai-context.md                # Komprimerad projektöversikt för AI-sessioner
-│   ├── 01-vision-scope.md
-│   ├── 02-kravdokumentation.md
-│   ├── 03-sad.md
-│   ├── 04-datamodell-api.md
-│   ├── 05-deployment-view.md
-│   ├── 06-testdokumentation.md
-│   ├── 07-runbook.md
-│   ├── 08-andringshantering.md
-│   ├── 09-grafisk-profil.md            # Varumärke och design tokens (DTCG)
-│   └── plan.md                         # Arbetsorder vid planstyrt AI-arbetsflöde
+├── templates/
+│   ├── 00-ai-context.md             # Compact project context for new AI sessions
+│   ├── 01-vision-scope.md           # Product vision, users, goals, boundaries, and risks
+│   ├── 02-requirements.md           # NFRs, user stories, use cases, and traceability
+│   ├── 03-sad.md                    # System architecture, components, boundaries, and ADRs
+│   ├── 04-data-model-api.md         # Domain model, schema, API, security, and compatibility
+│   ├── 05-deployment-view.md        # Environments, infrastructure, CI/CD, monitoring, and rollback
+│   ├── 06-test-documentation.md     # Test strategy, acceptance evidence, and visual UX verification
+│   ├── 07-runbook.md                # Deployment, operations, recovery, and incident response
+│   ├── 08-change-management.md      # Releases, superseded decisions, incidents, and technical debt
+│   ├── 09-visual-profile.md         # Brand, design tokens, accessibility, and visual verification
+│   └── plan.md                      # Transient work order for plan-driven implementation
 │
-├── agents/                             # AGENTS.md-starters per stack
-│   ├── README.md                       # Välj rätt starter och lägg avvikelser i CLAUDE.md
-│   ├── generic.md                      # Neutral fallback när ingen stack-starter matchar
-│   ├── java-application.md
-│   ├── ios-springboot.md
-│   ├── electron-desktop.md
-│   ├── macos-swift.md
-│   ├── r-shiny.md
-│   ├── vanilla-web-spa.md
-│   └── shell-dotfiles.md
+├── agents/                         # Stack-specific AGENTS.md starters
+│   ├── README.md                   # Starter selection and integration guidance
+│   ├── generic.md                  # Neutral fallback when no stack starter matches
+│   ├── java-application.md         # Java and Spring Boot projects
+│   ├── ios-springboot.md           # Spring Boot backend with native Swift iOS/iPadOS app
+│   ├── electron-desktop.md         # Electron desktop applications
+│   ├── macos-swift.md              # Native Swift macOS applications
+│   ├── r-shiny.md                  # R/Shiny applications and Plumber APIs
+│   ├── vanilla-web-spa.md          # Build-step-free HTML/CSS/JavaScript web applications
+│   └── shell-dotfiles.md           # Shell scripts, aliases, and dotfiles
 │
-├── skills/                             # Skills att kopiera till .agents/skills/ och .claude/skills/
-│   ├── README.md                       # Vad en skill är och hur den används
-│   ├── clarity-bootstrap/              # Behovsstyrd uppsättning av ett nytt projekt
-│   │   ├── SKILL.md
-│   │   └── agents/openai.yaml          # Valfri Codex-UI-metadata; krävs inte av Claude
-│   ├── ramverksuppdatering/            # Lyfter ett projekt till senaste releasen
+├── skills/
+│   ├── README.md                   # Skill catalog, ownership, installation, and precedence
+│   ├── clarity-bootstrap/           # Need-driven setup of a new or unmanaged project
 │   │   └── SKILL.md
-│   └── planstyrt-bygge/                # Claude eller Codex orkestrerar externa Codex-körningar
-│       ├── SKILL.md                    # Proceduren – det enda orchestratorn läser
-│       ├── prompts/                    # Dispatch-prompter, utanför orchestratorns kontext
-│       ├── dispatch.sh                 # Enda vägen till en dispatch: sandbox, approval, budget
-│       ├── tests/dispatch-test.sh       # Regressionstest för CLI-ordning och sentinel
-│       ├── plan-mall.md                # Kopia av templates/plan.md – följer med skillen
-│       ├── journal-mall.md             # Körjournal – flödets tillstånd mellan sessioner
-│       ├── uppsattning.md              # Engångsuppsättning: profiler och permissions
-│       └── settings.exempel.json       # Permissionslista för Claude Code
+│   ├── framework-update/            # Upgrade framework-owned files without losing project content
+│   │   ├── SKILL.md
+│   │   ├── scripts/                 # Update-scope and commit-rendering helpers
+│   │   └── tests/                   # Regression tests for update safety
+│   └── plan-driven-build/           # Approval-gated planning, review, build, and verification
+│       ├── SKILL.md                 # Orchestrator procedure
+│       ├── prompts/                 # Instructions for dispatched agents
+│       ├── dispatch.sh              # Bounded dispatch with sandbox, approval, and account selection
+│       ├── tests/                   # Dispatch regression tests
+│       ├── plan-template.md         # Copy of templates/plan.md
+│       ├── journal-template.md      # Cross-session workflow state
+│       ├── setup.md                 # One-time account, sandbox, and permissions setup
+│       └── settings.example.json    # Claude Code permissions example
 │
-└── README.md                           # Denna fil
+└── README.md                       # This file
 ```
 
----
-
-## Projektstruktur
-
-Så här ser ett projekt ut som använder ramverket. Det här avsnittet är **normerande** – det avgör var
-filer hamnar, och `skills/ramverksuppdatering/` läser det för att veta vart den ska lägga saker.
+## Project structure
 
 ```text
-mitt-projekt/
-│
-├── docs/                          # Ramverkets dokument, ifyllda för projektet
-│   ├── .clarity-version           # Vilken ramverksversion projektet ligger på
+my-project/
+├── docs/
 │   ├── 00-ai-context.md
-│   ├── 01-vision-scope.md         # … till och med 09, de projektet valt
-│   └── plans/                     # Transienta arbetsordrar, om planstyrt flöde används
-│
-├── .agents/
-│   └── skills/                    # Codex: kopior av valda ramverksskills
-├── .claude/
-│   └── skills/                    # Claude Code: identiska kopior av samma skills
-│
-├── AGENTS.md                      # Kopia av vald /agents/-starter, oredigerad
-├── CLAUDE.md                      # `@AGENTS.md` + projektspecifika regler
-└── …                              # Projektets egen kod
+│   ├── 01-vision-scope.md
+│   ├── 02-requirements.md
+│   └── plans/
+├── .agents/skills/                 # Codex copies of selected Clarity skills
+├── .claude/skills/                 # Claude Code copies of selected Clarity skills
+├── AGENTS.md                       # Unedited framework-owned stack starter
+├── CLAUDE.md                       # @AGENTS.md plus project-specific rules
+└── …
 ```
 
-### Vem äger vad
+Framework-owned files are replaced wholesale during updates. Project-owned documents preserve their
+content while their structure is lifted to the current template. Project-specific rules belong in
+`CLAUDE.md`; never edit a copied framework-owned file to add them.
 
-| Sökväg | Ägare | Vid uppdatering |
-| --- | --- | --- |
-| `AGENTS.md` | Ramverket | **Ersätts helt.** Redigeras aldrig i projektet |
-| `.agents/skills/<clarity-skill>/` | Ramverket | **Ersätts helt.** Bara namn listade i `docs/.clarity-version`; andra skills rörs aldrig |
-| `.claude/skills/<clarity-skill>/` | Ramverket | **Ersätts helt.** Identisk Claude-kopia av samma listade skills |
-| `docs/NN-*.md` | Projektet | Innehållet behålls, strukturen lyfts till nya mallen |
-| `docs/.clarity-version` | Ramverket | Skrivs om vid varje uppdatering |
-| `CLAUDE.md`, övriga skills, kod, allt annat | Projektet | **Skrivs aldrig över** |
+There is no required `docs/.clarity-version` file. The update skill reads version markers already
+present in project documents, especially `docs/00-ai-context.md`, and compares them with the stable
+release tag.
 
-Regeln är att en fil har en ägare, inte två. Det som är projektspecifikt hör hemma i `CLAUDE.md` –
-aldrig som en lokal redigering i en ramverksägd fil. För dubbel kompatibilitet börjar filen med
-`@AGENTS.md`: Claude Code importerar då startern automatiskt, medan Codex läser `AGENTS.md` direkt
-och instrueras där att även läsa den projektspecifika delen av `CLAUDE.md`.
+## Getting started
 
----
+### New project
 
-## Kom igång
+Copy `skills/clarity-bootstrap/` to both `.agents/skills/` and `.claude/skills/`. Invoke
+`$clarity-bootstrap` in Codex or `/clarity-bootstrap` in Claude Code. The skill inspects the project,
+proposes the smallest coherent document set, and stops for approval before writing.
 
-### Nytt projekt
+Manual setup:
 
-Rekommenderat: kopiera `skills/clarity-bootstrap/` till både `.agents/skills/` och
-`.claude/skills/`. Anropa `$clarity-bootstrap` i Codex eller `/clarity-bootstrap` i Claude Code.
-Skillen utgår från vad som ska byggas, föreslår minsta sammanhängande dokumentuppsättning och
-stannar för godkännande innan den skriver.
+1. Create `/docs` in the project repository.
+2. Copy the relevant templates from `/templates/` into `/docs/`.
+3. Start with `01-vision-scope.md`.
+4. Add `09-visual-profile.md` before visual UI implementation.
+5. Add `00-ai-context.md` when an AI agent will work on the project.
 
-Manuell uppsättning:
+### Existing project
 
-1. Skapa en `/docs`-mapp i ditt projektrepo
-2. Kopiera relevanta mallar från `/templates/` till `/docs/`
-3. Börja alltid med `01-vision-scope.md`
-4. Välj dokumentationsnivå efter projektstorlek:
+Copy `skills/framework-update/` to both runtime skill roots and invoke `$framework-update` or
+`/framework-update`. It fetches the latest stable release, preserves completed project content,
+updates framework-owned files, reports required document changes, and proposes a dedicated commit.
 
-| Projektstorlek | Obligatoriskt | Valfritt |
-| --- | --- | --- |
-| Personligt / hobby | 01, README; 09 före visuellt UI-arbete | 00 om AI används; övriga vid behov |
-| Sidoprojekt med lansering | 01, 02, 03, 06, README; 04 vid data/API, 05 vid deployment, 07 vid drift, 09 vid UI | 00 om AI används, 08 vid ändringsspårning |
-| Litet team (2–5 pers) | 01, 02, 03, 06, 08; 04 vid data/API, 05 vid deployment, 07 vid drift, 09 vid UI | 00 om AI används |
-| Större team (5–20 pers) | 01, 02, 03, 06, 08; 04 vid data/API, 05 vid deployment, 07 vid drift, 09 vid UI; striktare DoD | 00 om AI används; formell releaseprocess vid behov |
+### Plan-driven work
 
-### Befintligt projekt på en äldre version
+When a task is large enough to need scope approval, install `skills/plan-driven-build/` in both
+runtime roots. It uses the four-level runtime contract, separate accounts or subscriptions where
+available, bounded reports, a committed run journal, and human gates for scope, merge, release, and
+plan deletion.
 
-Kopiera `skills/ramverksuppdatering/` till både projektets `.agents/skills/` och
-`.claude/skills/`, och anropa den som `$ramverksuppdatering` i Codex eller
-`/ramverksuppdatering` i Claude Code. Den hämtar
-senaste releasen, jämför projektets filer mot den version de kopierades från, och lyfter projektet
-till nuvarande struktur utan att skriva över något du fyllt i. Nya mallar och avsnitt kommer in
-tomma – rapporten säger vilka som behöver fyllas.
-
-Pågående ändringar i kod, byggfiler, tester och applikationskonfiguration får ligga kvar i
-arbetsytan. Skillen blockerar bara ändringar i sin egen uppdateringsyta (ramverksdokument,
-`AGENTS.md`, `CLAUDE.md`, `.gitignore` och hanterade skills) och föreslår sedan en explicit
-`git commit --only` för enbart ramverksfilerna.
-
-Den skriver också `docs/.clarity-version`, vilket gör nästa uppgradering exakt istället för härledd.
-Ett projekt som satts upp innan skillen fanns saknar den filen och får versionen härledd vid första
-körningen – skillen säger uttryckligen till när den härleder istället för att läsa.
-
-## Dokumentflöde
+## Documentation flow
 
 ```text
-00-ai-context        ← Uppdateras löpande. Klistras in i ny AI-session.
+00-ai-context          ← Updated continuously; pasted into a new AI session.
       ↕
-01-vision-scope      ← Starta här. Godkänns innan allt annat.
+01-vision-scope        ← Start here; approve before all other documents.
         ↓
-02-kravdokumentation ← NFR definieras innan funktionella krav.
+02-requirements        ← Define NFRs before functional requirements.
         ↓
-03-sad               ← Arkitektur grundad i NFR:erna.
+03-sad                 ← Architecture grounded in the NFRs.
         ↓
-04-datamodell-api    ← Contract-first, innan implementation.
+04-data-model-api      ← Contract-first, before implementation.
         ↓
-05-deployment-view   ← CI/CD och infrastruktur.
+05-deployment-view     ← CI/CD and infrastructure.
         ↓
-06-testdokumentation ← Parallellt med implementation.
-07-runbook           ← Vid första staging-deployment.
-08-andringshantering ← Löpande under hela produktens livstid.
+06-test-documentation  ← In parallel with implementation.
+07-runbook             ← Created for the first staging deployment.
+08-change-management   ← Maintained throughout the product lifecycle.
+09-visual-profile      ← Approved before visual UI implementation when a UI exists.
 ```
+
+## Visual UX verification
+
+Every meaningful UI change must be inspected in the running product at supported viewport sizes and
+interaction states. Record the device/browser, viewport, date, journey, reviewer, and screenshots or
+equivalent rendered evidence. Automated browser tests and accessibility scans support but do not
+replace human visual inspection.
 
 ---
 
-*Clarity Framework v1.5.1*
+*Clarity Framework v2.0.5*

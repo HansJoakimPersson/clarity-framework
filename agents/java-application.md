@@ -43,8 +43,8 @@ optional profiles that match the project in front of you.
    improvising. Read the remaining documents only when the task touches their subject:
    - `docs/03-sad.md` — when the change adds or moves a component, crosses a module boundary, or you are unsure
      where the change belongs
-   - `docs/02-kravdokumentation.md` — when the task touches functional behavior
-   - `docs/04-datamodell-api.md` — when the task touches persistence, data structures, or API contracts
+   - `docs/02-requirements.md` — when the task touches functional behavior
+   - `docs/04-data-model-api.md` — when the task touches persistence, data structures, or API contracts
 
    Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
 3. Read relevant source code before proposing changes — never guess field names or method signatures.
@@ -61,7 +61,7 @@ You are in that situation when a plan under `docs/plans/` governs the task, or w
 says the scope is authoritative.
 
 - The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
-  listed under `Ingår`.
+  listed under `Included`.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
@@ -149,11 +149,11 @@ says the scope is authoritative.
 
 - Update README, usage docs, API docs, or release notes when user-visible behavior changes.
 - In Clarity Framework projects, update the relevant docs when their content changes:
-  - `docs/02-kravdokumentation.md` — when requirements or acceptance criteria are affected
+  - `docs/02-requirements.md` — when requirements or acceptance criteria are affected
   - `docs/03-sad.md` — when architecture, components, or key design decisions change
-  - `docs/04-datamodell-api.md` — when data model or API contracts change
-  - `docs/06-testdokumentation.md` — when testing strategy or coverage targets change
-  - `docs/08-andringshantering.md` — for change tracking and ADRs
+  - `docs/04-data-model-api.md` — when data model or API contracts change
+  - `docs/06-test-documentation.md` — when testing strategy or coverage targets change
+  - `docs/08-change-management.md` — for change tracking and ADRs
   - `docs/00-ai-context.md` — when stack, status, or key context shifts significantly
 - Add Javadoc for all types and all methods — public, protected, and private — that are newly added or materially
   changed.
@@ -463,14 +463,14 @@ The Java process serves everything — there is no separate frontend server in p
   and which port each process uses.
 - Start both processes only when the project documentation instructs it.
 
-- Read `docs/09-grafisk-profil.md` before touching any visual value — colours, typography, spacing, radii,
+- Read `docs/09-visual-profile.md` before touching any visual value — colours, typography, spacing, radii,
   shadows, or animation durations. If this file does not exist, do not hardcode visual values; raise the gap
   instead.
 - Use design tokens (from the project's generated token output) for all visual values. Never hardcode hex
   colours, pixel values, or font names in stylesheets or components when tokens are available.
 - Follow the existing framework, state management, routing, and styling patterns.
 - Keep API access centralized where the project already has a client layer.
-- Treat the canonical OpenAPI file referenced by `docs/04-datamodell-api.md` as the integration
+- Treat the canonical OpenAPI file referenced by `docs/04-data-model-api.md` as the integration
   source of truth when the project exposes an API.
 - Validate and handle loading, empty, error, and success states.
 - Avoid hardcoded backend URLs; use existing configuration mechanisms.

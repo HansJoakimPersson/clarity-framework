@@ -44,18 +44,18 @@ boundary.
    this task, read that too: its scope section is
    authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
    improvising. Read the remaining documents only when the task touches their subject:
-   - `docs/04-datamodell-api.md` — before any task that touches network behavior: API contracts, authentication
+   - `docs/04-data-model-api.md` — before any task that touches network behavior: API contracts, authentication
      flows, and data model
-   - `docs/09-grafisk-profil.md` — before touching any visual value on the iOS side: design tokens, colour palette,
+   - `docs/09-visual-profile.md` — before touching any visual value on the iOS side: design tokens, colour palette,
      typography, and spacing. If this file does not exist, do not hardcode visual values — raise the gap instead.
    - `docs/03-sad.md` — when the change adds or moves a component, crosses a layer boundary, or you are unsure
      where the change belongs
-   - `docs/02-kravdokumentation.md` — when the task touches functional behavior
+   - `docs/02-requirements.md` — when the task touches functional behavior
    - `docs/05-deployment-view.md` — when the task affects builds, deployment, or distribution
 
    Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
 3. Determine which side the task primarily affects — backend, frontend, or both — before writing any code.
-4. If the task crosses the API boundary, read `docs/04-datamodell-api.md` and all affected endpoint definitions
+4. If the task crosses the API boundary, read `docs/04-data-model-api.md` and all affected endpoint definitions
    before proceeding.
 5. Use TDD for non-trivial logic on both sides. Write or update the failing test first, implement the smallest
    change, then refactor while keeping tests green.
@@ -71,7 +71,7 @@ You are in that situation when a plan under `docs/plans/` governs the task, or w
 says the scope is authoritative.
 
 - The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
-  listed under `Ingår`.
+  listed under `Included`.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
@@ -87,7 +87,7 @@ says the scope is authoritative.
 - Behavior is implemented and scoped to the request.
 - The Spring Boot application compiles and all relevant tests pass.
 - The iOS app builds for the simulator and all relevant tests pass.
-- The API contract in `docs/04-datamodell-api.md` is updated if the task changed any endpoint, field, error
+- The API contract in `docs/04-data-model-api.md` is updated if the task changed any endpoint, field, error
   response, or authentication behavior.
 - Authentication, error handling, and loading/empty/error states are coherent across both sides.
 - No secrets, credentials, tokens, or personal data are committed.
@@ -115,7 +115,7 @@ or API versioning. This is the highest-risk surface in the project.
 
 ### The API Is a Shared Interface
 
-- The versioned OpenAPI file referenced by `docs/04-datamodell-api.md` is the source of truth for
+- The versioned OpenAPI file referenced by `docs/04-data-model-api.md` is the source of truth for
   the API contract. Keep the spec, explanatory document, server, and client aligned; if they
   disagree, resolve the mismatch against the approved spec.
 - Every field name, type, nullability, and HTTP status code is part of the contract. Changes to any of these are
@@ -123,13 +123,13 @@ or API versioning. This is the highest-risk surface in the project.
 - Additive changes (new optional fields, new endpoints) are safe. Removals, renames, and type changes are
   breaking.
 - When a breaking change is genuinely needed, update both sides in the same commit or PR, document the change in
-  `docs/08-andringshantering.md`, and consider API versioning.
+  `docs/08-change-management.md`, and consider API versioning.
 
 ### Error Response Shape
 
 - Define a single structured error response format and use it consistently across all endpoints.
 - The iOS client must be able to parse every error response without crashing. Agree on the shape in
-  `docs/04-datamodell-api.md` and do not deviate from it.
+  `docs/04-data-model-api.md` and do not deviate from it.
 - Never expose stack traces, class names, SQL errors, or internal server details in error responses.
 - Use HTTP status codes consistently: `400` malformed request, `401` unauthenticated, `403` forbidden, `404`
   not found, `409` conflict, `422` domain validation failure, `500` unexpected server error.
@@ -150,7 +150,7 @@ or API versioning. This is the highest-risk surface in the project.
 
 - If the project prefixes routes with a version (e.g., `/api/v1/`), respect it consistently on both sides.
 - If the project does not yet have versioning and a breaking change is needed, introduce a versioning strategy
-  before making the change; document the decision in `docs/08-andringshantering.md`.
+  before making the change; document the decision in `docs/08-change-management.md`.
 
 ---
 
@@ -316,7 +316,7 @@ Apply this profile when the task involves login, token handling, session managem
 
 ### Authentication Flow
 
-- The canonical authentication flow for this project is documented in `docs/04-datamodell-api.md`. Read it before
+- The canonical authentication flow for this project is documented in `docs/04-data-model-api.md`. Read it before
   making any auth-related change.
 - The Spring Boot backend issues tokens (typically JWT). The iOS client stores them in the Keychain and attaches
   them to requests via the `Authorization` header.

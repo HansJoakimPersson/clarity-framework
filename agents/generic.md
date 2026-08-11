@@ -24,9 +24,9 @@ Project-specific rules belong in `CLAUDE.md`; keep this framework-owned file unc
 1. Read `AGENTS.md` and project-specific instructions in `CLAUDE.md` before starting.
 2. In a Clarity project, read `docs/00-ai-context.md` first when it exists. If it is absent, use
    `README.md` and the task-relevant numbered documents. Do not read every document speculatively.
-   Read `docs/09-grafisk-profil.md` before visual UI work, `docs/04-datamodell-api.md` before
+   Read `docs/09-visual-profile.md` before visual UI work, `docs/04-data-model-api.md` before
    changing data or API contracts, and `docs/07-runbook.md` before operational or recovery work.
-3. If a plan under `docs/plans/` governs the task, treat its `Ingår` and `Ingår inte` sections as
+3. If a plan under `docs/plans/` governs the task, treat its `Included` and `Excluded` sections as
    authoritative. Stop when the plan is wrong or incomplete instead of silently re-planning.
 4. Inspect the relevant code, tests, configuration, and build scripts before proposing changes.
 5. Implement the smallest coherent change that satisfies the complete requested behavior.
@@ -39,7 +39,7 @@ Project-specific rules belong in `CLAUDE.md`; keep this framework-owned file unc
 You are dispatched when a plan under `docs/plans/` governs the task or the prompt says its scope is
 authoritative.
 
-- Build only what is listed under `Ingår`; do not implement anything under `Ingår inte`.
+- Build only what is listed under `Included`; do not implement anything under `Excluded`.
 - Stop and report blockers or a wrong plan. Do not improvise beyond approved scope.
 - Do not invoke another CLI as a subprocess. Ignore orchestration skills under `.agents/skills/`
   and `.claude/skills/`; you are the level that performs the assigned work.

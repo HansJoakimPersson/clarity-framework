@@ -39,11 +39,11 @@ profiles.
    this task, read that too: its scope section is
    authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
    improvising. Read the remaining documents only when the task touches their subject:
-   - `docs/09-grafisk-profil.md` — before touching any visual value: design tokens, colour palette, typography,
+   - `docs/09-visual-profile.md` — before touching any visual value: design tokens, colour palette, typography,
      and spacing. If this file does not exist, do not hardcode visual values — raise the gap instead.
    - `docs/03-sad.md` — when the change adds or moves a component, crosses a module boundary, or you are unsure
      where the change belongs
-   - `docs/02-kravdokumentation.md` — when the task touches functional behavior or product scope
+   - `docs/02-requirements.md` — when the task touches functional behavior or product scope
    - `docs/05-deployment-view.md` — when the task affects builds, signing, packaging, or releases
 
    Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
@@ -64,7 +64,7 @@ You are in that situation when a plan under `docs/plans/` governs the task, or w
 says the scope is authoritative.
 
 - The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
-  listed under `Ingår`.
+  listed under `Included`.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
@@ -150,8 +150,8 @@ says the scope is authoritative.
 - In Clarity Framework projects, update the relevant docs when their content changes:
   - `docs/03-sad.md` — when architecture or key design decisions change
   - `docs/05-deployment-view.md` — when distribution, packaging, signing, or App Store behavior changes
-  - `docs/06-testdokumentation.md` — when testing strategy or coverage targets change
-  - `docs/08-andringshantering.md` — for change tracking and ADRs
+  - `docs/06-test-documentation.md` — when testing strategy or coverage targets change
+  - `docs/08-change-management.md` — for change tracking and ADRs
   - `docs/00-ai-context.md` — when stack, status, or key context shifts significantly
 - Keep generated files out of source control unless the project intentionally tracks them.
 - Do not reformat unrelated files.

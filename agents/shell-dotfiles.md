@@ -35,7 +35,7 @@ You are in that situation when a plan under `docs/plans/` governs the task, or w
 says the scope is authoritative.
 
 - The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
-  listed under `Ingår`.
+  listed under `Included`.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
@@ -130,7 +130,7 @@ name() {
 - In Clarity Framework projects, update the relevant docs when their content changes:
   - `docs/07-runbook.md` — when operational scripts or runbook-relevant procedures change
   - `docs/05-deployment-view.md` — when deployment or infrastructure scripts change
-  - `docs/08-andringshantering.md` — for change tracking
+  - `docs/08-change-management.md` — for change tracking
 
 ## Definition of Done
 

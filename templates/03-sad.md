@@ -1,230 +1,228 @@
 # System Architecture Document (SAD)
 
-## [Produktnamn]
+## [Product name]
 
 | | |
 | --- | --- |
 | **Version** | 0.1 |
-| **Status** | Utkast / Under granskning / Godkänd |
-| **Datum** | ÅÅÅÅ-MM-DD |
-| **Författare** | [Namn] |
-| **Kopplad till** | Kravdokumentation v[X.X] |
+| **Status** | Draft / Under review / Approved |
+| **Date** | YYYY-MM-DD |
+| **Author** | [Name] |
+| **Related to** | Requirements Documentation v[X.X] |
 
-### Versionshistorik
+### Version history
 
-| Version | Datum | Förändring | Författare |
+| Version | Date | Change | Author |
 | --- | --- | --- | --- |
-| 0.1 | ÅÅÅÅ-MM-DD | Initial version | [Namn] |
+| 0.1 | YYYY-MM-DD | Initial version | [Name] |
 
 ---
 
-## 1. Arkitekturöversikt
+## 1. Architecture overview
 
-> *½–1 sida som sammanfattar systemets övergripande design. Ska kunna läsas fristående.*
+> *Half to one page summarizing the system's overall design. It should be readable on its own.*
 
-**Arkitekturmönster:**  
-[Beskriv valt mönster, t.ex. Layered Architecture, Hexagonal Architecture, Event-Driven, Microservices, Monolith]
+**Architectural pattern:**
+[Describe the chosen pattern, e.g. Layered Architecture, Hexagonal Architecture, Event-Driven,
+Microservices, or Monolith.]
 
-**Primära teknologier:**  
-[Kort lista med de viktigaste teknologivalen och ett ord om varför]
+**Primary technologies:**
+[List the most important technology choices and one reason for each.]
 
-**Viktigaste kvalitetsattribut (prioritetsordning):**  
+**Most important quality attributes, in priority order:**
 
-1. [t.ex. Underhållbarhet – liten kodbas, viktigt att kunna ändra snabbt]
-2. [t.ex. Korrekthet – finansiell data får inte vara felaktig]
-3. [t.ex. Prestanda]
+1. [e.g. Maintainability – the codebase must remain easy to change]
+2. [e.g. Correctness – financial data must never be inaccurate]
+3. [e.g. Performance]
 
-**Arkitekturella begränsningar:**  
-[Krav eller beslut som begränsar arkitekturvalen, t.ex. "måste köra on-premise", "befintligt databassystem"]
+**Architectural constraints:**
+[Requirements or decisions that limit the available choices, e.g. “must run on-premises” or
+“existing database system”.]
 
 ---
 
-## 2. Kontextvy
+## 2. Context view
 
-> Visar systemet som en svart låda och dess relationer till externa aktörer och system.  
-> Rita med Mermaid, draw.io eller liknande. Ersätt kodblocket nedan med ditt diagram.
+> Show the system as a black box and its relationships with external actors and systems. Draw with
+> Mermaid, draw.io, or an equivalent tool. Replace the example below with the project's diagram.
 
 ```mermaid
 graph TD
-    A[Slutanvändare / Browser] -->|HTTPS| B([Ditt system])
-    B -->|SQL| C[(Databas)]
-    B -->|REST API| D[Extern tjänst]
+    A[End user / Browser] -->|HTTPS| B([Your system])
+    B -->|SQL| C[(Database)]
+    B -->|REST API| D[External service]
     E[Admin] -->|HTTPS| B
 ```
 
-**Beskrivning av externa relationer:**
+**External relationships:**
 
-| Aktör / System | Relation | Protokoll/Format | Riktning |
+| Actor / System | Relationship | Protocol / Format | Direction |
 | --- | --- | --- | --- |
-| [Slutanvändare] | Primär användare av systemet | HTTPS / Browser | → System |
-| [Extern API] | [Beskriv syftet] | REST / JSON | System → |
-| [Databas] | Primär datapersistens | SQL / JDBC | System → |
+| [End user] | Primary user of the system | HTTPS / Browser | → System |
+| [External API] | [Describe the purpose] | REST / JSON | System → |
+| [Database] | Primary data persistence | SQL / JDBC | System → |
 
 ---
 
-## 3. Komponentvy
+## 3. Component view
 
-> Visar systemets interna struktur – moduler, lager, tjänster och deras beroenden.
+> Show the system's internal structure: modules, layers, services, and dependencies.
 
 ```mermaid
 graph TD
     subgraph Presentation
-        UI[Web UI / API-lager]
+        UI[Web UI / API layer]
     end
-    subgraph Applikation
-        SVC[Service-lager]
-        DOM[Domänlogik]
+    subgraph Application
+        SVC[Service layer]
+        DOM[Domain logic]
     end
-    subgraph Infrastruktur
+    subgraph Infrastructure
         REPO[Repository / DAO]
-        EXT[Externa klienter]
+        EXT[External clients]
     end
 
     UI --> SVC
     SVC --> DOM
     SVC --> REPO
     SVC --> EXT
-    REPO --> DB[(Databas)]
+    REPO --> DB[(Database)]
 ```
 
-**Komponentbeskrivningar:**
+**Component descriptions:**
 
-| Komponent | Ansvar | Teknologi |
+| Component | Responsibility | Technology |
 | --- | --- | --- |
-| [Web UI / API-lager] | Tar emot HTTP-requests, validerar input, returnerar svar | [t.ex. Spring MVC / React] |
-| [Service-lager] | Orkestrerar affärsflöden, transaktionshantering | [t.ex. Spring Service] |
-| [Domänlogik] | Kärn-affärsregler, domänobjekt | [t.ex. Java POJO / Domain model] |
-| [Repository / DAO] | Abstraktion mot databas, CRUD-operationer | [t.ex. Spring Data JPA] |
-| [Externa klienter] | Integration mot externa API:er | [t.ex. Feign / RestTemplate] |
+| [Web UI / API layer] | Receives HTTP requests, validates input, returns responses | [e.g. Spring MVC / React] |
+| [Service layer] | Orchestrates business flows and transactions | [e.g. Spring Service] |
+| [Domain logic] | Core business rules and domain objects | [e.g. Java POJO / domain model] |
+| [Repository / DAO] | Database abstraction and CRUD operations | [e.g. Spring Data JPA] |
+| [External clients] | Integrations with external APIs | [e.g. Feign / RestTemplate] |
 
 ---
 
-## 4. Dataflödesvy
+## 4. Data-flow view
 
-> Beskriv hur data flödar för de 2–3 viktigaste use cases. Fokusera på kärn-scenarierna.
+> Describe the data flow for the two or three most important use cases. Focus on the core scenarios.
 
-### Dataflöde: [Flödesnamn – t.ex. "Användare söker recept"]
+### Data flow: [Flow name – e.g. “User searches for recipes”]
 
 ```mermaid
 sequenceDiagram
-    actor Användare
+    actor User
     participant UI
     participant Service
     participant Cache
     participant DB
 
-    Användare->>UI: Söker på "pasta"
+    User->>UI: Searches for "pasta"
     UI->>Service: search("pasta")
     Service->>Cache: get("search:pasta")
-    alt Cache-träff
-        Cache-->>Service: Resultat
-    else Cache-miss
+    alt Cache hit
+        Cache-->>Service: Results
+    else Cache miss
         Service->>DB: SELECT * FROM recipes WHERE ...
-        DB-->>Service: Resultat
-        Service->>Cache: set("search:pasta", resultat, TTL=5min)
+        DB-->>Service: Results
+        Service->>Cache: set("search:pasta", results, TTL=5min)
     end
-    Service-->>UI: Lista med recept
-    UI-->>Användare: Visar sökresultat
+    Service-->>UI: Recipe list
+    UI-->>User: Shows search results
 ```
 
 ---
 
-## 5. Teknologival
+## 5. Technology choices
 
-> Dokumentera vad som valdes, varför, och vad som övervägdes men valdes bort.
+> Document what was chosen, why it was chosen, and what was considered but rejected.
 
-| Komponent | Vald teknologi | Motivering | Övervägda alternativ |
+| Component | Chosen technology | Rationale | Alternatives considered |
 | --- | --- | --- | --- |
-| Backend-ramverk | [t.ex. Spring Boot] | [Teamkompetens, ekosystem, DI] | [t.ex. Micronaut, Quarkus] |
-| Frontend | [t.ex. React + Tailwind] | [Komponentbaserat, snabb styling] | [t.ex. Vue, vanilla HTML] |
-| Databas | [t.ex. PostgreSQL] | [Relationell data, ACID, open source] | [t.ex. MySQL, MongoDB] |
-| Autentisering | [t.ex. JWT + OAuth2] | [Stateless, standardiserat] | [t.ex. Session-baserat] |
-| Build / Deploy | [t.ex. Maven + Docker] | [Reproducerbar build, portabilitet] | [t.ex. Gradle, bare metal] |
-| CI/CD | [t.ex. GitHub Actions] | [Integrerat i repo, gratis för OSS] | [t.ex. Jenkins, GitLab CI] |
+| Backend framework | [e.g. Spring Boot] | [Team skills, ecosystem, DI] | [e.g. Micronaut, Quarkus] |
+| Frontend | [e.g. React + Tailwind] | [Component-based, fast styling] | [e.g. Vue, vanilla HTML] |
+| Database | [e.g. PostgreSQL] | [Relational data, ACID, open source] | [e.g. MySQL, MongoDB] |
+| Authentication | [e.g. JWT + OAuth2] | [Stateless, standardized] | [e.g. session-based] |
+| Build / deployment | [e.g. Maven + Docker] | [Reproducible build, portability] | [e.g. Gradle, bare metal] |
+| CI/CD | [e.g. GitHub Actions] | [Integrated with repository] | [e.g. Jenkins, GitLab CI] |
 
 ---
 
-## 6. Arkitekturella beslut (ADR)
+## 6. Architecture decisions (ADR)
 
-> Varje betydande arkitekturellt beslut dokumenteras som ett ADR.  
-> Markera föråldrade ADR:er med `Status: Föråldrad` – ta aldrig bort dem.
+> Document every significant architectural decision as an ADR. Mark superseded ADRs with
+> `Status: Superseded`; never delete them.
 
----
+### ADR-001 · [Decision title]
 
-### ADR-001 · [Beslutets titel]
-
-| Fält | Värde |
+| Field | Value |
 | --- | --- |
-| **Status** | Föreslagen / Under granskning / Godkänd / Föråldrad |
-| **Datum** | ÅÅÅÅ-MM-DD |
-| **Beslutsfattare** | [Namn] |
+| **Status** | Proposed / Under review / Approved / Superseded |
+| **Date** | YYYY-MM-DD |
+| **Decision owner** | [Name] |
 
-**Kontext:**  
-[Beskriv situationen och problemet som föranledde beslutet. Vad är det som behövde bestämmas?]
+**Context:**
+[Describe the situation and problem that led to the decision. What needed to be decided?]
 
-**Beslut:**  
-[Beskriv det beslut som fattades, konkret och utan tvetydighet.]
+**Decision:**
+[Describe the decision concretely and without ambiguity.]
 
-**Motivering:**  
-[Varför fattades detta beslut? Vilka faktorer vägde tyngst?]
+**Rationale:**
+[Why was this decision made? Which factors mattered most?]
 
-**Konsekvenser:**
+**Consequences:**
 
-| + Fördelar | - Nackdelar |
+| + Benefits | - Drawbacks |
 | --- | --- |
-| [Fördel 1] | [Nackdel 1] |
-| [Fördel 2] | [Nackdel 2] |
+| [Benefit 1] | [Drawback 1] |
+| [Benefit 2] | [Drawback 2] |
 
-**Övervägda alternativ:**
+**Alternatives considered:**
 
-- **[Alternativ A]:** [Varför det valdes bort]
-- **[Alternativ B]:** [Varför det valdes bort]
+- **[Alternative A]:** [Why it was rejected]
+- **[Alternative B]:** [Why it was rejected]
 
----
+### ADR-002 · [Next decision title]
 
-### ADR-002 · [Nästa besluts titel]
-
-| Fält | Värde |
+| Field | Value |
 | --- | --- |
-| **Status** | Godkänd |
-| **Datum** | ÅÅÅÅ-MM-DD |
-| **Beslutsfattare** | [Namn] |
+| **Status** | Approved |
+| **Date** | YYYY-MM-DD |
+| **Decision owner** | [Name] |
 
-**Kontext:**  
-[...]
+**Context:**
+[…]
 
-**Beslut:**  
-[...]
+**Decision:**
+[…]
 
-**Konsekvenser:**
+**Consequences:**
 
-| + Fördelar | - Nackdelar |
+| + Benefits | - Drawbacks |
 | --- | --- |
 | | |
 
 ---
 
-## 7. Kvalitetsattribut och arkitekturella taktiker
+## 7. Quality attributes and architectural tactics
 
-> Koppla NFR:erna från kravdokumentationen till konkreta arkitekturlösningar.
+> Connect NFRs from Requirements Documentation to concrete architectural solutions.
 
-| NFR-ID | Krav | Arkitekturlösning / Taktik |
+| NFR ID | Requirement | Architectural solution / tactic |
 | --- | --- | --- |
-| NFR-P01 | Svarstid < [X] ms | [t.ex. Caching med Redis, databas-indexering] |
-| NFR-A01 | Uptime [X]% | [t.ex. Hälsokontroll-endpoint, automatisk omstart] |
-| NFR-M01 | Testbar affärslogik | [t.ex. Hexagonal architecture, dependency injection] |
-| NFR-SEC01 | TLS 1.2+ | [t.ex. Reverse proxy hanterar TLS-terminering] |
+| NFR-P01 | Response time < [X] ms | [e.g. Redis caching, database indexing] |
+| NFR-A01 | Uptime [X]% | [e.g. health endpoint, automatic restart] |
+| NFR-M01 | Testable business logic | [e.g. hexagonal architecture, dependency injection] |
+| NFR-SEC01 | TLS 1.2+ | [e.g. reverse proxy terminates TLS] |
 
 ---
 
-## 8. Teknisk skuld och kända brister
+## 8. Technical debt and known gaps
 
-> Dokumentera medvetna kompromisser som gjorts. Teknisk skuld som är synlig är hanterbar.
+> Document deliberate compromises. Visible technical debt is manageable.
 
-| ID | Beskrivning | Orsak | Planerad åtgärd |
+| ID | Description | Reason | Planned action |
 | --- | --- | --- | --- |
-| TD-001 | [Kompromiss eller brist] | [Varför gjordes kompromissen?] | [Sprints/version när det åtgärdas] |
+| TD-001 | [Compromise or gap] | [Why was it made?] | [Sprint/version for resolution] |
 
 ---
 
-*Nästa steg: Specificera Datamodell & API-kontrakt baserat på komponentvyn och dataflödena i detta dokument.*
+*Next step: Specify the Data Model & API Contract based on the component and data-flow views in this document.*

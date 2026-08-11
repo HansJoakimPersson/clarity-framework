@@ -1,484 +1,489 @@
-# Driftdokumentation (Runbook)
+# Runbook
 
-## [Produktnamn]
+## [Product name]
 
 | | |
 | --- | --- |
 | **Version** | 0.1 |
-| **Status** | Aktiv |
-| **Datum** | ÅÅÅÅ-MM-DD |
-| **Författare** | [Namn] |
-| **Kopplad till** | Deployment View v[X.X] |
+| **Status** | Draft / Under review / Approved |
+| **Date** | YYYY-MM-DD |
+| **Author** | [Name] |
+| **Related to** | Deployment View v[X.X] |
 
-### Versionshistorik
+### Version history
 
-| Version | Datum | Förändring | Författare |
+| Version | Date | Change | Author |
 | --- | --- | --- | --- |
-| 0.1 | ÅÅÅÅ-MM-DD | Initial version | [Namn] |
+| 0.1 | YYYY-MM-DD | Initial version | [Name] |
 
-> **Princip:** Alla kommandon i detta dokument ska vara testade och fungerande. Inga "se källkoden" eller "fråga [person]" – denna runbook ska vara självständig.  
-> **Uppdatera** detta dokument direkt efter varje drifthändelse som avslöjar en lucka.
+> Every command in this document must be tested and operational. The runbook must be usable by a
+> new operator without relying on undocumented personal knowledge. Update it after every operational
+> event that exposes a missing, ambiguous, or unsafe instruction.
 
 ---
 
-## 1. Systemöversikt (driftperspektiv)
+## 1. Purpose, ownership, and operating model
 
-**Driftplattform:** [VPS / AWS / Hetzner / etc.]  
-**Server-IP / Host:** [IP eller hostname]  
-**SSH-åtkomst:** `ssh [user]@[host]`
+**Purpose:** [What this system does and what this runbook covers.]
+**Operating platform:** [VPS / AWS / Hetzner / Kubernetes / Other]
+**Service owner:** [Name or team]
+**Primary operator:** [Name or team]
+**Backup operator:** [Name or team]
+**Support hours:** [Hours and timezone]
+**Escalation channel:** [Channel or incident system]
 
-**Körande processer:**
+### Operational principles
 
-| Process | Container-namn | Port | Beskrivning |
-| --- | --- | --- | --- |
-| Reverse proxy | `proxy` | 80, 443 | TLS-terminering och routing |
-| Applikation | `app` | 8080 (intern) | Spring Boot / applikationsserver |
-| Databas | `db` | 5432 (intern) | PostgreSQL |
+- Confirm scope and impact before making changes.
+- Prefer reversible, documented actions over improvisation.
+- Record commands, timestamps, versions, decisions, and evidence during incidents.
+- Do not expose secrets in shell history, logs, screenshots, or incident records.
+- Stop and escalate when a step may cause data loss or documented assumptions do not hold.
 
-**Kritiska filsökvägar:**
+---
 
-| Syfte | Sökväg |
+## 2. System overview from an operational perspective
+
+**Production host / account:** [Host, cloud account, or cluster]
+**Primary hostname:** `[hostname]`
+**SSH or console access:** `ssh [user]@[host]`
+**Deployment directory:** `/opt/[product-name]`
+
+### Running processes
+
+| Process | Container / service | Port | Description | Dependency |
+| --- | --- | --- | --- | --- |
+| Reverse proxy | `proxy` | 80, 443 | TLS termination and routing | — |
+| Application | `app` | 8080 internal | Application server | Database |
+| Database | `db` | 5432 internal | PostgreSQL | Persistent volume |
+
+### Critical paths and dashboards
+
+| Purpose | Location |
 | --- | --- |
-| Docker Compose (prod) | `/opt/[produktnamn]/docker-compose.prod.yml` |
-| Environment-fil | `/opt/[produktnamn]/.env` |
-| Applikationsloggar | `docker logs app` / `/var/log/[produktnamn]/` |
-| Databas-volym | `/data/db/` |
-| Backup-destination | `/backup/[produktnamn]/` |
+| Production deployment configuration | `/opt/[product-name]/docker-compose.prod.yml` |
+| Runtime configuration | `/opt/[product-name]/.env` or secret manager |
+| Application logs | `docker compose logs app` / [log dashboard] |
+| Database volume | `/data/db/` |
+| Backup destination | `/backup/[product-name]/` |
+| Monitoring dashboard | [URL] |
+| Incident log | [URL or repository path] |
+
+Do not store actual passwords, private keys, tokens, or personal data in this document.
 
 ---
 
-## 2. Uppstart och nedstängning
+## 3. Prerequisites and access
 
-### Normal uppstart
+The operator must have the required CLI tools, account, role, network access, and temporary access
+to the approved secret source. Document how to obtain and revoke access, but never record the
+credentials themselves.
+
+| Requirement | How to verify | Owner |
+| --- | --- | --- |
+| Repository access | [Safe verification command] | [Owner] |
+| Production host or cluster access | [Safe verification command] | [Owner] |
+| Container or deployment CLI | `[tool] --version` | [Owner] |
+| Secret manager access | [Safe verification command] | [Owner] |
+| Monitoring and incident system | Open [URL] | [Owner] |
+
+Before any production operation, confirm the target environment, current version, maintenance
+window, active incident status, and that a current rollback or recovery path exists.
+
+---
+
+## 4. Start, stop, and restart operations
+
+### Normal startup
 
 ```bash
-# 1. SSH till server
+# 1. Connect to the approved host or cluster.
 ssh [user]@[host]
 
-# 2. Navigera till projektkatalogen
-cd /opt/[produktnamn]
+# 2. Navigate to the deployment directory.
+cd /opt/[product-name]
 
-# 3. Starta alla containers
+# 3. Start all services.
 docker compose -f docker-compose.prod.yml up -d
 
-# 4. Verifiera att alla containers körs
+# 4. Verify service state.
 docker compose -f docker-compose.prod.yml ps
 
-# 5. Verifiera hälsa
-curl -f https://[domän]/health
-# Förväntat svar: {"status":"UP"}
+# 5. Verify application health.
+curl -f https://[domain]/health
 
-# 6. Kontrollera loggar för eventuella fel
+# 6. Check recent application logs.
 docker compose -f docker-compose.prod.yml logs --tail=50 app
 ```
 
-### Planerad nedstängning
+**Expected result:** All required services are running or healthy, the health endpoint returns the
+documented response, and no new startup errors appear in the logs.
+
+### Planned shutdown
 
 ```bash
-# Graciös nedstängning (väntar på att aktiva requests avslutas)
+# Gracefully stop services and allow active requests to finish.
 docker compose -f docker-compose.prod.yml down --timeout 30
 
-# Verifiera att allt är stoppat
+# Verify that services have stopped.
 docker compose -f docker-compose.prod.yml ps
-# Förväntat: inga körande containers
 ```
 
-### Omstart av enskild tjänst
+Do not stop the database or delete volumes unless the approved procedure explicitly requires it.
+
+### Restart an individual service
 
 ```bash
-# Starta om enbart applikationen (t.ex. vid minnesproblem)
+# Restart the application only.
 docker compose -f docker-compose.prod.yml restart app
 
-# Starta om databasen (OBS: orsakar kortvarig nedtid)
-docker compose -f docker-compose.prod.yml restart db
+# Verify health and logs after the restart.
+curl -f https://[domain]/health
+docker compose -f docker-compose.prod.yml logs --tail=100 app
 ```
+
+Restarting the database can cause downtime and may affect active requests. Record the reason and
+verify application recovery after the database restart.
 
 ---
 
-## 3. Releaseprocess
+## 5. Release and deployment procedure
 
-### Förberedelse inför release
+### Release readiness checklist
 
 ```text
-FÖRBEREDELSECHECKLIST
-☐ Alla tester passerar i CI
-☐ Smoke test passerar i staging
-☐ Releaseversion och releasekandidatens commit är fastställda
-☐ CHANGELOG och GitHub-releasenoter är skrivna
-☐ Breaking changes, migreringssteg och kända problem är dokumenterade
-☐ Databasmigration är testad i staging (om tillämpligt)
-☐ Rollback-plan är klar
-☐ [Eventuell underhållssida är förberedd]
+RELEASE READINESS
+☐ Required tests pass in CI
+☐ Staging smoke test passes
+☐ Visual UX verification is complete for UI changes
+☐ Release notes and Change Management entry are ready
+☐ Database migrations have been tested in staging, if applicable
+☐ Migration compatibility with rollback has been assessed
+☐ Backup and rollback target are available
+☐ Required reviewers have approved the release
+☐ Maintenance communication is prepared, if needed
 ```
 
-### Skapa release i GitHub
-
-| Egenskap | Projektets val |
-| --- | --- |
-| Trigger | [Push av annoterad tagg / manuell körning av `release.yml`] |
-| Workflow | `.github/workflows/release.yml` |
-| Godkännare | [Roll eller namn] |
+### Production deployment
 
 ```bash
-# 1. Kontrollera att rätt commit på main ska releasas
-git switch main
-git pull --ff-only origin main
-git status --short
-git log -1 --oneline
+# 1. Select the approved, manually created release tag.
+export APP_VERSION=vX.Y.Z
 
-# 2. Skapa och pusha en annoterad versionstagg
-git tag -a vX.Y.Z -m "[Produktnamn] vX.Y.Z"
-git push origin vX.Y.Z
-
-# 3. Verifiera att release-workflow och GitHub Release har skapats
-# [Projektets gh-kommando eller URL till Actions och Releases]
-```
-
-Verifiera före deployment att GitHub-releasen pekar på avsedd commit, att artefakterna är kompletta och att
-releasenoterna innehåller ändringar, migreringssteg, kända problem och länk till fullständig changelog.
-
-### Deploy till produktion
-
-```bash
-# 1. Sätt APP_VERSION till ny release-tagg
-export APP_VERSION=v1.2.3
-
-# 2. Hämta ny image
+# 2. Retrieve the approved application artifact.
 docker compose -f docker-compose.prod.yml pull app
 
-# 3. Kör databasmigrationer (om tillämpligt)
+# 3. Run database migrations through the approved project command.
 docker compose -f docker-compose.prod.yml run --rm app \
-  java -jar app.jar --spring.batch.job.enabled=false migrate
+  [migration command]
 
-# 4. Deploya ny version
+# 4. Deploy the application.
 docker compose -f docker-compose.prod.yml up -d app
 
-# 5. Verifiera hälsa
-sleep 10
-curl -f https://[domän]/health
+# 5. Verify health after startup.
+curl -f https://[domain]/health
 
-# 6. Kör smoke test
-./scripts/smoke-test.sh https://[domän]
+# 6. Run the release smoke test.
+./scripts/smoke-test.sh https://[domain]
 ```
+
+Record the release tag, commit, migration result, deploy time, operator, smoke-test result, and
+monitoring confirmation. If any verification fails, stop promotion and follow the rollback or
+incident procedure.
 
 ### Rollback
 
 ```bash
-# Identifiera senaste fungerande version
-docker images [registry]/[produktnamn] --format "{{.Tag}}" | sort -V
+# Identify the last approved working version.
+git tag --list | sort -V | tail -10
 
-# Rulla tillbaka
-export APP_VERSION=[föregående-version]
+# Deploy the approved previous version.
+export APP_VERSION=[previous-version]
 docker compose -f docker-compose.prod.yml up -d app
 
-# Verifiera
-curl -f https://[domän]/health
+# Verify health and critical user journeys.
+curl -f https://[domain]/health
+./scripts/smoke-test.sh https://[domain]
 ```
 
-**OBS vid databasmigrationer:** Om den nya versionen innehöll en databasmigration som inte är reversibel, kontakta [ansvarig] innan rollback. Databasåterställning kräver backup-restore (se avsnitt 5).
-
-### Dokumentera releaseutfall
-
-Efter deployment:
-
-- Markera deploymentresultat och smoke test i GitHub Release eller länka till workflow-körningen
-- Registrera version, produktionsdatum och utfall i `docs/08-andringshantering.md`
-- Dokumentera rollback, avbruten release eller kända produktionsproblem i samma releasepost
-- Uppdatera Runbook och Deployment View om releasen avslöjade en processlucka
+Before rolling back, verify whether the release applied an irreversible database migration. If it
+did, do not improvise a database rollback; escalate to the service owner and use the tested restore
+or forward-fix procedure in the Data Model and Deployment documents.
 
 ---
 
-## 4. Vanliga driftuppgifter
+## 6. Routine operations
 
-### Kontrollera systemstatus
+### Check system status
 
 ```bash
-# Containers
+# Service state
 docker compose -f docker-compose.prod.yml ps
 
-# Resursanvändning
+# Resource usage
 docker stats --no-stream
 
-# Diskutrymme
+# Disk usage
 df -h
 du -sh /data/db/
 
-# Applikationsloggar (senaste 100 rader)
-docker logs --tail=100 app
+# Recent application logs
+docker compose -f docker-compose.prod.yml logs --tail=100 app
 
-# Följa loggar live
-docker logs -f app
+# Follow application logs temporarily
+docker compose -f docker-compose.prod.yml logs -f app
 ```
 
-### Loggrotation
+### Log rotation
 
-Loggar roteras automatiskt av Docker med följande konfiguration i `docker-compose.prod.yml`:
+Logs must have an explicit retention policy. Example Docker configuration:
 
 ```yaml
 logging:
-  driver: "json-file"
+  driver: json-file
   options:
-    max-size: "100m"
+    max-size: 100m
     max-file: "5"
 ```
 
-Diagnos om diskutrymme är kritiskt:
+Do not run broad destructive cleanup commands in production without verifying the exact targets,
+impact, and approved recovery path. If disk space is critical, preserve current logs and escalate
+before removing images, volumes, or backups.
 
-```bash
-docker system df -v
-docker ps -a --size
-```
-
-Rensa inte volumes eller alla images direkt från runbooken. Identifiera först exakt resurs, bekräfta
-att den inte används, dokumentera återställningsvägen och kör den avgränsade borttagningen genom
-projektets godkända change-process.
-
-### Köra databasmigration manuellt
+### Run a database migration manually
 
 ```bash
 docker compose -f docker-compose.prod.yml run --rm app \
-  [kommando för att köra Flyway/Liquibase manuellt]
+  [approved Flyway, Liquibase, or migration command]
 ```
 
-### Skalning (om tillämpligt)
+Run migrations only after verifying the target version, backup status, lock behavior, and rollback
+compatibility. Record the output and resulting schema version.
+
+### Scale the application, if supported
 
 ```bash
-# Skala upp till X instanser av applikationen
+# Replace X with the approved number of instances.
 docker compose -f docker-compose.prod.yml up -d --scale app=X
 ```
 
+Confirm that the application is stateless or that sessions, queues, and shared storage support the
+new instance count before scaling.
+
 ---
 
-## 5. Backup och återställning
+## 7. Backup and restore
 
-### Backup-strategi
+### Backup strategy
 
-| Vad | Frekvens | Retention | Destination |
-| --- | --- | --- | --- |
-| Databasdump (full) | Dagligen 02:00 | 30 dagar | `/backup/[produktnamn]/db/` |
-| Databasdump (weekly) | Söndagar 02:00 | 12 veckor | `/backup/[produktnamn]/db/weekly/` |
-| Konfigurationsfiler | Vid förändring | Permanent | Git-repo |
+| Asset | Frequency | Retention | Destination | Restore test | Owner |
+| --- | --- | --- | --- | --- | --- |
+| Full database dump | Daily at [time] | 30 days | `/backup/[product-name]/db/` | [Schedule] | [Owner] |
+| Weekly database dump | Weekly | 12 weeks | `/backup/[product-name]/db/weekly/` | [Schedule] | [Owner] |
+| Object or file storage | [Schedule] | [Policy] | [Destination] | [Schedule] | [Owner] |
+| Configuration | On change | [Policy] | Git / secret manager | [Schedule] | [Owner] |
 
-### Manuell backup
+Document encryption, off-site copies, access controls, recovery point objective (RPO), recovery
+time objective (RTO), and the person responsible for verifying backup success.
+
+### Manual database backup
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
+# Use a task-specific timestamp and the approved backup destination.
+BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+docker exec db pg_dump -U [DB_USER] [DB_NAME] | \
+  gzip > /backup/[product-name]/db/manual_${BACKUP_TIMESTAMP}.sql.gz
 
-: "${DB_USER:?Sätt DB_USER}"
-: "${DB_NAME:?Sätt DB_NAME}"
-: "${PRODUKTNAMN:?Sätt PRODUKTNAMN}"
-
-datum=$(date +%Y%m%d_%H%M%S)
-backup_katalog="/backup/${PRODUKTNAMN}/db"
-test -d "$backup_katalog"
-backup_fil="${backup_katalog}/manual_${datum}.sql.gz"
-temporar_fil="${backup_fil}.partial"
-trap 'rm -f "$temporar_fil"' EXIT HUP INT TERM
-
-docker exec db pg_dump --no-owner --no-privileges -U "$DB_USER" "$DB_NAME" \
-  | gzip -c > "$temporar_fil"
-test -s "$temporar_fil"
-gzip -t "$temporar_fil"
-mv "$temporar_fil" "$backup_fil"
-trap - EXIT HUP INT TERM
-
-printf 'Verifierad backup: %s\n' "$backup_fil"
+# Verify that the file exists and is non-empty.
+ls -lh /backup/[product-name]/db/manual_${BACKUP_TIMESTAMP}.sql.gz
 ```
 
-En backup räknas inte som verifierad förrän ett återställningstest har körts i en isolerad miljö
-och dokumenterats med datum, resultat och ansvarig.
+Verify checksum, permissions, available space, and (where required) upload to the protected backup
+destination.
 
-### Återställning från backup
+### Restore from backup
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-: "${DB_USER:?Sätt DB_USER}"
-: "${DB_NAME:?Sätt DB_NAME}"
-: "${PRODUKTNAMN:?Sätt PRODUKTNAMN}"
-: "${BACKUP_FIL:?Sätt BACKUP_FIL till arkivet som ska återställas}"
-: "${UNDERHALL_PA_SCRIPT:?Sätt UNDERHALL_PA_SCRIPT till ett granskat körbart skript}"
-: "${INTEGRITETSKONTROLL_SCRIPT:?Sätt INTEGRITETSKONTROLL_SCRIPT till ett granskat körbart skript}"
-: "${UNDERHALL_AV_SCRIPT:?Sätt UNDERHALL_AV_SCRIPT till ett granskat körbart skript}"
-: "${DOMAN:?Sätt DOMAN till tjänstens hostname}"
-
-BACKUP_KATALOG="/backup/${PRODUKTNAMN}/db"
-test -d "$BACKUP_KATALOG"
-test -x "$UNDERHALL_PA_SCRIPT"
-test -x "$INTEGRITETSKONTROLL_SCRIPT"
-test -x "$UNDERHALL_AV_SCRIPT"
-
-SAKERHETSKOPIA="${BACKUP_KATALOG}/pre_restore_$(date +%Y%m%d_%H%M%S).sql.gz"
-SAKERHETSKOPIA_PARTIAL="${SAKERHETSKOPIA}.partial"
-
-# 1. Kontrollera källan innan tjänsten stoppas
-test -r "$BACKUP_FIL"
-test -s "$BACKUP_FIL"
-gzip -t "$BACKUP_FIL"
-
-# 2. Ta en verifierad säkerhetskopia av nuvarande databas
-trap 'rm -f "$SAKERHETSKOPIA_PARTIAL"' EXIT HUP INT TERM
-docker exec db pg_dump --no-owner --no-privileges -U "$DB_USER" "$DB_NAME" \
-  | gzip -c > "$SAKERHETSKOPIA_PARTIAL"
-test -s "$SAKERHETSKOPIA_PARTIAL"
-gzip -t "$SAKERHETSKOPIA_PARTIAL"
-mv "$SAKERHETSKOPIA_PARTIAL" "$SAKERHETSKOPIA"
-trap - EXIT HUP INT TERM
-
-# 3. Aktivera dokumenterat underhållsläge och stoppa applikationen (ej databasen)
-"$UNDERHALL_PA_SCRIPT"
+# 1. Stop the application but keep the database service available.
 docker compose -f docker-compose.prod.yml stop app
 
-# 4. Återskapa databasen först efter att båda arkiven verifierats
-docker exec db dropdb --if-exists --force -U "$DB_USER" "$DB_NAME"
-docker exec db createdb -U "$DB_USER" "$DB_NAME"
-gzip -dc "$BACKUP_FIL" | docker exec -i db psql -v ON_ERROR_STOP=1 -U "$DB_USER" "$DB_NAME"
+# 2. Set the approved backup file.
+BACKUP_FILE=/backup/[product-name]/db/[file-name].sql.gz
 
-# 5. Starta och verifiera innan underhållsläget tas bort
+# 3. Restore using the approved database procedure.
+zcat "$BACKUP_FILE" | docker exec -i db psql -U [DB_USER] [DB_NAME]
+
+# 4. Start the application.
 docker compose -f docker-compose.prod.yml start app
-curl -f "https://${DOMAN}/health"
-"$INTEGRITETSKONTROLL_SCRIPT"
-"$UNDERHALL_AV_SCRIPT"
+
+# 5. Verify health and critical data paths.
+curl -f https://[domain]/health
+./scripts/smoke-test.sh https://[domain]
 ```
 
-**Rollback:** Om återställningen eller integritetskontrollen misslyckas, håll underhållsläget aktivt
-och upprepa samma procedur med `SAKERHETSKOPIA`. Starta inte normal trafik förrän kontrollen går
-igenom. Testa hela sekvensen i staging innan den används i produktion.
+Use a tested clean-database procedure when the backup requires replacement rather than additive
+restore. Confirm the target database, backup timestamp, migration compatibility, permissions, and
+expected data loss before executing a destructive restore.
 
 ---
 
-## 6. Felsökningsguide
+## 8. Troubleshooting guide
 
-> Uppdatera detta avsnitt efter varje incident.
+Update this section after every incident or recurring operational problem.
 
----
-
-### SYMPTOM: HTTP 503 Service Unavailable
-
-**Kontrollpunkter:**
+### Symptom: HTTP 503 Service Unavailable
 
 ```bash
-# 1. Är applikationen igång?
+# 1. Is the application running?
 docker compose -f docker-compose.prod.yml ps app
-# Om "Exit" visas: starta om med 'docker compose up -d app'
 
-# 2. Är databasen igång?
+# 2. Is the database healthy?
 docker compose -f docker-compose.prod.yml ps db
-# Om ej "healthy": kontrollera db-loggar: docker logs db
+docker compose -f docker-compose.prod.yml logs --tail=100 db
 
-# 3. Minnesproblem?
+# 3. Is the application under resource pressure?
 docker stats --no-stream app
-# Om mem > 90%: starta om 'docker compose restart app'
 
-# 4. Diskutrymme fullt?
+# 4. Is the disk full?
 df -h
-docker system df -v
-# Om > 90%: identifiera exakt oanvänd resurs och följ den godkända, avgränsade rensningsproceduren.
 ```
 
----
+If a service has exited, capture logs and the current version before restarting it. If memory,
+storage, or repeated crashes are involved, escalate rather than repeatedly restarting the service.
 
-### SYMPTOM: Applikationen startar men kraschar efter några sekunder
+### Symptom: Application starts and then crashes
 
 ```bash
-# Kontrollera applikationsloggar
-docker logs app --tail=200
+# Inspect the last application logs.
+docker compose -f docker-compose.prod.yml logs --tail=200 app
 
-# Vanliga orsaker:
-# - Kan ej ansluta till databas → kontrollera DB_URL i .env
-# - Port 8080 redan upptagen → kontrollera: ss -tlnp | grep 8080
-# - Felaktig konfiguration → kontrollera miljövariabler: docker inspect app
+# Inspect service state without printing secrets.
+docker compose -f docker-compose.prod.yml ps app
+docker inspect app --format '{{.State.Status}} {{.State.ExitCode}}'
 ```
 
----
+Common causes include database connection failure, invalid configuration, unavailable dependencies,
+port conflicts, incompatible migrations, and exhausted memory. Confirm each against evidence before
+taking corrective action.
 
-### SYMPTOM: Databasen är otillgänglig
+### Symptom: Database is unavailable
 
 ```bash
-# Kontrollera status
+# Check status and logs.
 docker compose -f docker-compose.prod.yml ps db
-docker logs db --tail=100
+docker compose -f docker-compose.prod.yml logs --tail=100 db
 
-# Försök ansluta manuellt
-docker exec -it db psql -U [DB_USER] -c "\l"
-
-# Om "no space left on device":
+# Check storage without exposing credentials.
 df -h /data/db/
-# Åtgärd: Frigör diskutrymme eller utöka volym
 ```
+
+Do not delete database files or volumes to resolve a full disk or startup failure. Escalate for
+storage expansion, cleanup approval, or restore.
+
+### Symptom: [Add recurring symptom]
+
+**Impact:** [What users observe]
+**Checks:** [Safe commands or dashboards]
+**Mitigation:** [Reversible action]
+**Escalation:** [Stop condition and owner]
 
 ---
 
-### SYMPTOM: [Lägg till fler symptom löpande]
+## 9. Incident response
 
-```bash
-# Kontrollpunkter:
-# ...
-```
+### Severity classification
 
----
-
-## 7. Incidenthantering
-
-### Klassificering
-
-| Nivå | Beskrivning | Exempel | Responstid |
+| Level | Description | Example | Initial response |
 | --- | --- | --- | --- |
-| **P1 – Kritisk** | Systemet är helt otillgängligt | HTTP 503 på produktion | Omedelbart |
-| **P2 – Hög** | Kritisk funktion bruten | Inloggning fungerar ej | < 1 timme |
-| **P3 – Medel** | Degraderad funktion | Sökning långsam | < 4 timmar |
-| **P4 – Låg** | Kosmetiskt / icke-kritiskt | Felaktig text i UI | Nästa sprint |
+| **P1 – Critical** | System unavailable or severe data risk | Production returns 503 | Immediate |
+| **P2 – High** | Critical function is broken or heavily degraded | Login unavailable | Within 1 hour |
+| **P3 – Medium** | Degraded but usable function | Search is slow | Within 4 hours |
+| **P4 – Low** | Cosmetic or non-critical issue | Incorrect UI text | Next planned work |
 
-### Kontaktlista
+### Response steps
 
-| Roll | Namn | Kontakt |
-| --- | --- | --- |
-| Primär driftansvarig | [Namn] | [E-post / Telefon] |
-| Backup driftansvarig | [Namn] | [E-post / Telefon] |
+1. Confirm the symptom, start time, affected scope, current version, and severity.
+2. Open or update the incident record and notify the responsible operator.
+3. Check health, logs, metrics, recent changes, dependencies, and capacity.
+4. Apply the least risky documented mitigation.
+5. Escalate when a stop condition is met or when data loss is possible.
+6. Communicate status and the next expected update to affected stakeholders.
+7. Verify recovery with health checks and critical user journeys.
+8. Record impact, timeline, actions, evidence, and follow-up work.
 
-### Post-mortem-process
+### Contacts
 
-Efter varje P1- eller P2-incident dokumenteras:
+| Role | Name / team | Contact | Escalation condition |
+| --- | --- | --- | --- |
+| Primary operator | [Name] | [Email / phone / channel] | First response |
+| Backup operator | [Name] | [Email / phone / channel] | No response after [time] |
+| Product owner | [Name] | [Contact] | User or business impact |
+| Infrastructure owner | [Name] | [Contact] | Host, network, or platform issue |
 
-1. **Tidslinje** – Vad hände och när?
-2. **Grundorsak** – Varför inträffade det?
-3. **Påverkan** – Hur många användare drabbades? Under hur lång tid?
-4. **Åtgärder** – Vad gjordes för att lösa det?
-5. **Preventiva åtgärder** – Vad görs för att förhindra upprepning?
+### Post-incident review
 
-*Post-mortem sparas i `/docs/incidents/ÅÅÅÅ-MM-DD-[kortbeskrivning].md`*
+After every P1 or P2 incident, document:
+
+1. Timeline — what happened and when.
+2. Root cause or contributing factors.
+3. User and business impact.
+4. Detection and response quality.
+5. Mitigation and recovery actions.
+6. Preventive actions, owners, and due dates.
+
+Store the review under
+`[incident record location]/YYYY-MM-DD-[short-description].md`.
 
 ---
 
-## 8. Smoke test-checklist
+## 10. Production smoke-test checklist
 
-> Körs efter varje deployment till produktion.
+Run after every production deployment and after recovery from a significant incident.
 
 ```text
-SMOKE TEST – [Produktnamn] v[VERSION] – [DATUM]
-Utfört av: [Namn]
+SMOKE TEST – [Product name] v[VERSION] – [DATE]
+Performed by: [Name]
+Environment: [URL]
 
-GRUNDLÄGGANDE
-☐ https://[domän] laddar utan fel
-☐ GET /health returnerar {"status":"UP"}
-☐ Inloggning fungerar med testanvändare
+BASIC AVAILABILITY
+☐ The production URL loads without an unexpected error.
+☐ GET /health returns the documented healthy response.
+☐ Authentication works with the approved test account, if applicable.
 
-KRITISKA FLÖDEN
-☐ [Kritiskt flöde 1 – t.ex. "Kan skapa ett nytt recept"]
-☐ [Kritiskt flöde 2 – t.ex. "Kan lägga till recept i veckoplan"]
-☐ [Kritiskt flöde 3]
+CRITICAL JOURNEYS
+☐ [Critical journey 1]
+☐ [Critical journey 2]
+☐ [Critical journey 3]
 
-INFRASTRUKTUR
-☐ SSL-certifikat är giltigt (ej snart utgående)
-☐ Diskutrymme < 80%
-☐ Inga ERROR-loggar i de senaste 5 minuterna
+INFRASTRUCTURE
+☐ TLS certificate is valid and not near expiry.
+☐ Disk usage is below the defined threshold.
+☐ No unexpected ERROR logs appeared after deployment.
+☐ Monitoring and alerting report the expected state.
 
-RESULTAT: ☐ Godkänt  ☐ Underkänt (beskriv nedan)
-Anmärkningar: _______________
+UI VERIFICATION, IF APPLICABLE
+☐ Target viewport and browser check completed.
+☐ Changed screens and critical states render correctly.
+☐ Accessibility and keyboard checks completed.
+
+RESULT: ☐ Pass  ☐ Fail
+Notes and evidence: _______________________________
 ```
 
 ---
 
-*Uppdatera detta dokument direkt när en drifthändelse avslöjar en lucka.*
+## 11. Definition of Done
+
+- [ ] A new operator can access the system, deploy, verify, and roll back from this document.
+- [ ] System ownership, topology, paths, dashboards, and escalation contacts are documented.
+- [ ] Startup, shutdown, restart, release, rollback, and routine operations use tested commands.
+- [ ] Backup, restore, RPO, RTO, and recovery verification are documented.
+- [ ] Troubleshooting and incident procedures include stop conditions.
+- [ ] Smoke-test evidence is recorded after deployment and recovery.
+- [ ] No secrets, machine-specific credentials, or destructive unverified commands are included.
+
+---
+
+*Update this document immediately when an operational event exposes a gap.*
+
+*Clarity Framework v2.0.5 – Runbook*

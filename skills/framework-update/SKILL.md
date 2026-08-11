@@ -1,9 +1,9 @@
 ---
-name: ramverksuppdatering
+name: framework-update
 description: Upgrade a project's Clarity Framework documents and tooling to the latest release, preserving everything already written. Use when the project is on an older framework version, when a new release is out, or when the user asks to update or sync the framework.
 ---
 
-# Framework Update (ramverksuppdatering)
+# Framework Update (framework-update)
 
 Bring this project to the shape the **current** Clarity Framework release prescribes, without losing
 a word of what is already written.
@@ -29,18 +29,17 @@ Every path has exactly one owner, and that decides what happens to it:
 - Everything else is untouched.
 
 Do not carry a copy of the mapping in this file. Read it from the release you fetched, in
-`README.md` under **Projektstruktur** and **Vem äger vad** — that section is normative and is what
+`README.md` under **Project structure** and **Ownership** — that section is normative and is what
 this skill follows. If it disagrees with anything below, it wins.
 
 Three rules hold throughout: **never delete project-owned content**, **never touch source code**,
 and **never overwrite `CLAUDE.md`**. The only permitted `CLAUDE.md` change is adding the exact
 `@AGENTS.md` import after the user approves it; preserve every project-specific line already there.
 
-Skill ownership is name-scoped, not wildcard-scoped. Only names listed under `skills:` in
-`docs/.clarity-version` are managed by Clarity. Skills with any other name are project- or
-third-party-owned and must remain untouched. Treat the literal marker value `inga` as an empty set,
-not as a skill name. If the marker predates that field, infer candidates only when the same name
-exists in the fetched release and ask the user to confirm them in step 4.
+Skill ownership is name-scoped, not wildcard-scoped. Only Clarity skill names listed in the
+project's `00-ai-context.md` are managed by Clarity. Skills with any other name are project- or
+third-party-owned and must remain untouched. If no list exists, propose managed skills explicitly
+and ask the user to confirm them before replacing anything.
 
 ## Preconditions
 
@@ -48,8 +47,8 @@ exists in the fetched release and ask the user to confirm them in step 4.
 - Run from the project root of a Git repository. Existing source, dependency, test and application
   configuration changes may remain dirty; this skill must neither stage nor modify them.
 - A dirty path is a blocker only when it is in the **update surface**: `AGENTS.md`, `CLAUDE.md`,
-  `.gitignore`, `docs/.clarity-version`, `docs/NN-*.md`, or a runtime copy of a skill shipped by
-  the fetched release. A newly copied, untracked `ramverksuppdatering` directory under either
+  `.gitignore`, `docs/NN-*.md`, or a runtime copy of a skill shipped by
+  the fetched release. A newly copied, untracked `framework-update` directory under either
   runtime root is a bootstrap artifact and is allowed.
 
 ## Step 1 — Fetch the framework and read the rules
@@ -64,12 +63,12 @@ NEW_VERSION=${NEW#v}
 git -C "$TMP/cf" show "$NEW:README.md"          # placement and ownership
 git -C "$TMP/cf" show "$NEW:templates/03-sad.md" # read any file at any version like this
 
-if [ -f .agents/skills/ramverksuppdatering/scripts/check-update-scope.sh ]; then
-  UPDATE_SKILLDIR=.agents/skills/ramverksuppdatering
-elif [ -f .claude/skills/ramverksuppdatering/scripts/check-update-scope.sh ]; then
-  UPDATE_SKILLDIR=.claude/skills/ramverksuppdatering
+if [ -f .agents/skills/framework-update/scripts/check-update-scope.sh ]; then
+  UPDATE_SKILLDIR=.agents/skills/framework-update
+elif [ -f .claude/skills/framework-update/scripts/check-update-scope.sh ]; then
+  UPDATE_SKILLDIR=.claude/skills/framework-update
 else
-  printf '%s\n' 'Installed ramverksuppdatering is missing check-update-scope.sh; install this release first' >&2
+  printf '%s\n' 'Installed framework-update is missing check-update-scope.sh; install this release first' >&2
   exit 2
 fi
 FRAMEWORK_SKILLS=$(git -C "$TMP/cf" ls-tree -d --name-only "$NEW:skills" | tr '\n' ',' | sed 's/,$//')
@@ -85,10 +84,9 @@ unrelated `src/`, build, dependency, test or application-configuration changes.
 
 Look in this order and use the first that answers:
 
-1. `docs/.clarity-version` — written by this skill, authoritative when present.
-2. The **Ramverksversion** field in `docs/00-ai-context.md`.
-3. A `*Clarity Framework vX.Y.Z*` footer in any file under `docs/`.
-4. Nothing found — say so, and treat every document as needing a structure check against `$NEW`.
+1. The **Framework version** field in `docs/00-ai-context.md`.
+2. A `*Clarity Framework vX.Y.Z*` footer in any project document.
+3. Nothing found — say so, and treat every document as needing a structure check against `$NEW`.
    You do not need the old version to do the work; it only tells you how much to expect.
 
 Normalize a leading `v` before comparing. If the project version equals `$NEW_VERSION`, also verify
@@ -102,10 +100,9 @@ divergent, or ignored runtime copy still needs repair.
 
 | File | How to place it |
 | --- | --- |
-| `AGENTS.md` | Copy the matching starter from `$NEW:agents/`. Identify which one from `docs/.clarity-version`, or from the project file's own title line — every starter begins `# AGENTS.md - <Stack> vX.Y`. If the project has none, ask which stack rather than guessing |
+| `AGENTS.md` | Copy the matching starter from `$NEW:agents/`. Identify the stack from the project file's own title line or from `00-ai-context.md` — every starter begins `# AGENTS.md - <Stack> vX.Y`. If the project has none, ask which stack rather than guessing |
 | `.agents/skills/<managed-name>/` | Replace the whole directory from `$NEW:skills/<managed-name>/`, including removal of files no longer shipped |
 | `.claude/skills/<managed-name>/` | Create an identical copy of the same release directory for Claude Code |
-| `docs/.clarity-version` | Rewrite after the approved update with normalized version and managed skill names |
 
 If a framework-owned file in the project differs from the new release, that is expected — it is an
 older version. Replace it. Do not report the difference as a conflict and do not try to preserve
@@ -183,29 +180,30 @@ Report each document as you finish it.
 
 **Staging and committing:** Keep an exact `UPDATE_PATHS` list containing only approved files and
 directories this run changed: framework-owned paths, merged `docs/NN-*.md`,
-`docs/.clarity-version`, and approved `CLAUDE.md` or `.gitignore` changes. Stage only those paths
-with `git add -- <UPDATE_PATHS>`. Never use `git add .`, `git add -A`, or a broad `git add docs/`.
-Pre-existing staged source changes may remain in the index; when the user approves the update
-commit, use `git commit --only -m "[minor] Uppdatera Clarity Framework till vX.Y.Z" --
-<UPDATE_PATHS>` so they cannot be included. If `git diff --cached --name-only` reveals an
-update-surface path that was already staged before this run, stop instead of trying to repair the
-user's index.
+and approved `CLAUDE.md` or `.gitignore` changes. Never use `git add .`,
+`git add -A`, or a broad `git add docs/`. Pre-existing staged source changes may remain in the
+index. If `git diff --cached --name-only` reveals an update-surface path that was already staged
+before this run, stop instead of trying to repair the user's index.
+
+Before handing back, generate the commit block with the installed skill's renderer, one complete
+relative path per `--path` argument:
+
+```bash
+bash "$UPDATE_SKILLDIR/scripts/render-update-commit.sh" --version "$NEW_VERSION" \
+  --path AGENTS.md \
+  --path <each-other-approved-update-path>
+```
+
+Paste the renderer's output verbatim in the handoff. It defines a Bash `UPDATE_PATHS` array, stages
+only that array, and commits with `git commit --only`. Never manually wrap a raw path across lines,
+never emit a directory prefix such as `.agents/skills/` by itself, and never replace the array with
+a hand-written command.
 
 ## Step 6 — Stamp the version
 
-Write `docs/.clarity-version`:
-
-```text
-version: X.Y.Z
-uppdaterad: ÅÅÅÅ-MM-DD
-agents-starter: <filename from agents/, without .md>
-skills: <comma-separated Clarity-managed skill names installed in both runtime paths, or "inga">
-skill-paths: .agents/skills, .claude/skills
-```
-
-Then update the version markers already present in the project's files — the **Ramverksversion**
-field in `docs/00-ai-context.md` and any `*Clarity Framework vX.Y.Z*` footers. A stale marker left
-behind makes the next run report the wrong starting point.
+Then update the Framework version markers already present in the project's files, including the
+version field in `docs/00-ai-context.md` and any `*Clarity Framework vX.Y.Z*` footers. A stale
+marker left behind makes the next run report the wrong starting point.
 
 ## Step 7 — Hand back
 
@@ -217,8 +215,8 @@ Tell the user, in this order:
    not excluded by `.gitignore`.
 3. Orphans, with a recommendation for each.
 
-Then propose the exact `git commit --only` command and wait. Keep the framework update in its own
-commit — mixing it with project work makes it impossible to undo cleanly, and this is a change that
+Then paste the renderer's exact output and wait. Keep the framework update in its own commit —
+mixing it with project work makes it impossible to undo cleanly, and this is a change that
 occasionally needs undoing.
 
 ## Notes

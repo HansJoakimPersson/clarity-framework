@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Clarity Framework – dispatch for planstyrt-bygge.
+# Clarity Framework – dispatch for plan-driven-build.
 #
 # One stable entry point for every dispatch in the workflow. It exists for four reasons:
 #   1. The prompt lives in prompts/*.txt, not in SKILL.md. That keeps roughly a thousand words of

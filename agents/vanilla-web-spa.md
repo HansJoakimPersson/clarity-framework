@@ -22,11 +22,11 @@ Guidance for agents working in small single-page web applications without a fram
    this task, read that too: its scope section is
    authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
    improvising. Read the remaining documents only when the task touches their subject:
-   - `docs/09-grafisk-profil.md` — before touching any visual value: design tokens, colour palette, typography,
+   - `docs/09-visual-profile.md` — before touching any visual value: design tokens, colour palette, typography,
      spacing, and motion. If this file does not exist, do not hardcode visual values — raise the gap instead.
    - `docs/03-sad.md` — when the change adds or moves a component, crosses a module boundary, or you are unsure
      where the change belongs
-   - `docs/04-datamodell-api.md` — when the task touches network behavior or data structures
+   - `docs/04-data-model-api.md` — when the task touches network behavior or data structures
 
    Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
 3. If the project has a backend component, confirm the run model before starting anything: is the frontend served
@@ -47,7 +47,7 @@ You are in that situation when a plan under `docs/plans/` governs the task, or w
 says the scope is authoritative.
 
 - The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
-  listed under `Ingår`.
+  listed under `Included`.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
@@ -102,7 +102,7 @@ says the scope is authoritative.
 
 ## CSS
 
-- Use design token values (CSS custom properties generated from `docs/09-grafisk-profil.md`) for all colours,
+- Use design token values (CSS custom properties generated from `docs/09-visual-profile.md`) for all colours,
   typography, spacing, radii, shadows, and animation durations. Never hardcode these values in stylesheets.
 - Use existing CSS variables and naming conventions.
 - Keep layouts stable as content changes.
@@ -141,9 +141,9 @@ says the scope is authoritative.
 ## Documentation and Hygiene
 
 - In Clarity Framework projects, update the relevant docs when their content changes:
-  - `docs/04-datamodell-api.md` — when API contracts or data structures change
-  - `docs/06-testdokumentation.md` — when testing strategy or coverage changes
-  - `docs/08-andringshantering.md` — for change tracking
+  - `docs/04-data-model-api.md` — when API contracts or data structures change
+  - `docs/06-test-documentation.md` — when testing strategy or coverage changes
+  - `docs/08-change-management.md` — for change tracking
   - `docs/00-ai-context.md` — when stack or project status shifts significantly
 
 ## Definition of Done

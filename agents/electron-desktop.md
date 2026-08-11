@@ -40,11 +40,11 @@ like a website in a window" as a defect, not a starting point.
    this task, read that too: its scope section is
    authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
    improvising. Read the remaining documents only when the task touches their subject:
-   - `docs/09-grafisk-profil.md` — before touching any visual value: design tokens, colour palette, typography,
+   - `docs/09-visual-profile.md` — before touching any visual value: design tokens, colour palette, typography,
      spacing, and motion. If this file does not exist, do not hardcode visual values — raise the gap instead.
    - `docs/03-sad.md` — when the change crosses a process boundary, adds a component, or you are unsure where the
      change belongs
-   - `docs/04-datamodell-api.md` — when the task touches IPC contracts, data structures, or external APIs
+   - `docs/04-data-model-api.md` — when the task touches IPC contracts, data structures, or external APIs
    - `docs/05-deployment-view.md` — when the task affects packaging, signing, target platforms, or the update channel
 
    Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
@@ -65,7 +65,7 @@ You are in that situation when a plan under `docs/plans/` governs the task, or w
 says the scope is authoritative.
 
 - The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
-  listed under `Ingår`.
+  listed under `Included`.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
@@ -236,11 +236,11 @@ This section is what separates a native-feeling app from a website in a frame. A
 
 - In Clarity Framework projects, update the relevant docs when their content changes:
   - `docs/03-sad.md` — when process boundaries, window model, or update mechanism change
-  - `docs/04-datamodell-api.md` — when the IPC contract or persisted data shape changes
+  - `docs/04-data-model-api.md` — when the IPC contract or persisted data shape changes
   - `docs/05-deployment-view.md` — when target platforms, packaging, signing, or update channel change
-  - `docs/06-testdokumentation.md` — when testing strategy or coverage changes
+  - `docs/06-test-documentation.md` — when testing strategy or coverage changes
   - `docs/07-runbook.md` — when installation, update, or rollback procedures change
-  - `docs/08-andringshantering.md` — for change tracking
+  - `docs/08-change-management.md` — for change tracking
   - `docs/00-ai-context.md` — when stack or project status shifts significantly
 - Document every IPC channel with its payload, result, and error cases.
 - Add documentation comments for all exported functions and all IPC handlers that are newly added or materially
@@ -274,7 +274,7 @@ This section is what separates a native-feeling app from a website in a frame. A
   can be mocked in component tests.
 - Route within the renderer for in-window navigation; use real windows for anything the user would expect to
   arrange, resize, or move to another display.
-- Apply design tokens generated from `docs/09-grafisk-profil.md`. Do not hardcode colours, typography, spacing,
+- Apply design tokens generated from `docs/09-visual-profile.md`. Do not hardcode colours, typography, spacing,
   radii, shadows, or durations.
 
 ## Optional Profile: Local Persistence

@@ -1,9 +1,9 @@
 ---
-name: planstyrt-bygge
+name: plan-driven-build
 description: Plan-driven workflow where an orchestrator dispatches planning, critique, build and diff verification to other CLIs or accounts, keeping its own context and token spend bounded. Use when a task is large enough that its scope needs approval before code is written.
 ---
 
-# Plan-Driven Build (planstyrt-bygge)
+# Plan-Driven Build (plan-driven-build)
 
 You are the **orchestrator**. You sequence the flow, hold the approval gates, and dispatch the
 thinking and building elsewhere. You write no production code and you never read the codebase or the
@@ -19,7 +19,7 @@ Reasoning and Implementation must run under **a different CLI or account than yo
 point of the workflow: not context isolation, but moving token spend off the metered interactive
 session. A Claude subagent shares your account and does not achieve this.
 
-Setup — profiles, sandbox and approval flags, permission allowlist — is in `uppsattning.md`.
+Setup — accounts, sandbox and approval flags, permission allowlist — is in `setup.md`.
 Read it only if a prerequisite check fails.
 
 ## The budget (the hard rule)
@@ -58,7 +58,7 @@ A profile never removes the merge gate. You never approve on the user's behalf.
 Check, and if anything is missing: report it and stop.
 
 - `command -v codex` and `AGENTS.md` in the project root.
-- This skill exists at `.agents/skills/planstyrt-bygge/` or `.claude/skills/planstyrt-bygge/`.
+- This skill exists at `.agents/skills/plan-driven-build/` or `.claude/skills/plan-driven-build/`.
   Install it in both locations when both Codex and Claude Code are used. The copies must be identical.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
   into the working tree; if it is dirty you can no longer tell its changes from what was there.
@@ -67,7 +67,7 @@ Check, and if anything is missing: report it and stop.
   context. `dispatch.sh` detects this and prints a `FALLBACK:` line — pass it on to the user and
   record it in the journal rather than letting it scroll past.
 
-Templates: `plan-mall.md` and `journal-mall.md` in this skill's directory. Copy them, never edit them in
+Templates: `plan-template.md` and `journal-template.md` in this skill's directory. Copy them, never edit them in
 place. Do not look for `templates/` — that path exists in the framework repo, not in projects.
 
 ## Step 0 — Open the run journal
@@ -76,18 +76,18 @@ Set the identifiers once and reuse them:
 
 ```bash
 ID=YYYY-MM-DD-short-name
-if [ -f .agents/skills/planstyrt-bygge/SKILL.md ]; then
-  SKILLDIR=.agents/skills/planstyrt-bygge
-elif [ -f .claude/skills/planstyrt-bygge/SKILL.md ]; then
-  SKILLDIR=.claude/skills/planstyrt-bygge
+if [ -f .agents/skills/plan-driven-build/SKILL.md ]; then
+  SKILLDIR=.agents/skills/plan-driven-build
+elif [ -f .claude/skills/plan-driven-build/SKILL.md ]; then
+  SKILLDIR=.claude/skills/plan-driven-build
 else
-  printf '%s\n' 'planstyrt-bygge is not installed for Codex or Claude Code' >&2
+  printf '%s\n' 'plan-driven-build is not installed for Codex or Claude Code' >&2
   exit 2
 fi
 PLAN=docs/plans/$ID.md
 JOURNAL=docs/plans/$ID.run.md
 RUN=docs/plans/.runs/$ID
-mkdir -p "$RUN" && cp "$SKILLDIR/journal-mall.md" "$JOURNAL"
+mkdir -p "$RUN" && cp "$SKILLDIR/journal-template.md" "$JOURNAL"
 ```
 
 Every dispatch goes through `$SKILLDIR/dispatch.sh`, which takes its instructions from
@@ -116,7 +116,7 @@ read what it needs — that is the context you are not paying for twice.
 "$SKILLDIR/dispatch.sh" --profile reasoning --mode read-only \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<one or two sentences: what should be true when this is done>" \
-  --var PLAN_TEMPLATE="$SKILLDIR/plan-mall.md" \
+  --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
   --var DATE="$(date +%F)" \
   --out "$PLAN" --max-lines 200
 ```
@@ -134,8 +134,8 @@ shares whatever judgment blind spots the drafting level has. Record the fallback
 
 ```bash
 "$SKILLDIR/dispatch.sh" --profile granskning --fallback reasoning --mode read-only \
-  --prompt-file "$SKILLDIR/prompts/2-kritik.txt" --var PLAN="$PLAN" \
-  --out "$RUN/kritik.md" --max-lines 40
+  --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
+  --out "$RUN/review.md" --max-lines 40
 ```
 
 The command prints `budget=within budget (n/40)` or `OVER BUDGET`. If it is over, read the first 40
@@ -146,12 +146,12 @@ lines only and note the truncation in the journal.
 Write the objections you agree with into the plan yourself — a bounded edit, unlike reading source
 docs or diffs. Briefly justify the ones you dismiss; silent dismissal hides that the review happened.
 
-Show the user: the goal, `Ingår` / `Ingår inte`, all `BLOCKERANDE` questions, and what the critique
+Show the user: the goal, `Included` / `Excluded`, all `BLOCKING` questions, and what the review
 changed.
 
 **Stop here** unless `Grindprofil` is `obevakad` and the scope was approved in advance. Approving
 scope before code exists is the entire point. Blocking questions are answered by the user — not by
-you, and not by Reasoning. On go-ahead, set `Status: Godkänd` — not before; the field records a
+you, and not by Reasoning. On go-ahead, set `Status: Approved` — not before; the field records a
 decision, not an expectation.
 
 ## Step 4 — Dispatch the build
@@ -164,14 +164,14 @@ foreground timeout and a killed process leaves half the change on disk.
 
 ```bash
 "$SKILLDIR/dispatch.sh" --profile implementation --mode workspace-write --background \
-  --prompt-file "$SKILLDIR/prompts/4-bygge.txt" --var PLAN="$PLAN" \
-  --log "$RUN/bygge.log"
+  --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
+  --log "$RUN/build.log"
 ```
 
 The command returns immediately and prints the PID and the sentinel path. Write both in the journal.
 
-Poll the sentinel, not the log: `test -f "$RUN/bygge.exit" && cat "$RUN/bygge.exit"`. Read
-`tail -30 "$RUN/bygge.log"` only when the exit code is non-zero. Tailing a running build is the
+Poll the sentinel, not the log: `test -f "$RUN/build.exit" && cat "$RUN/build.exit"`. Read
+`tail -30 "$RUN/build.log"` only when the exit code is non-zero. Tailing a running build is the
 unbounded read this workflow exists to avoid.
 
 Because the sentinel is a file, a build survives you: if your session hits a usage limit while it
@@ -190,13 +190,13 @@ Do not read the diff yourself.
 
 ```bash
 "$SKILLDIR/dispatch.sh" --profile reasoning --mode read-only \
-  --prompt-file "$SKILLDIR/prompts/5-verifiering.txt" \
+  --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
   --var PLAN="$PLAN" --var SHA="<approval SHA from the journal>" \
-  --var BUILD_LOG="$RUN/bygge.log" \
-  --out "$RUN/verifiering.md"
+  --var BUILD_LOG="$RUN/build.log" \
+  --out "$RUN/verification.md"
 ```
 
-Report it to the user: what is done, what is not, what was built outside `Ingår`. You may spot-check
+Report it to the user: what is done, what is not, and what was built outside `Included`. You may spot-check
 a single hunk for a high-risk change or a report that looks wrong — a judgment call, not the
 default.
 
@@ -233,8 +233,8 @@ the user. The answers drive real changes: if an architectural decision belongs i
 a valid answer to every question, but do not skip a question because the answer seems obvious —
 this is the last point where the lesson still exists.
 
-Then delete the plan and its journal in their own commit, and remove `$RUN`. `plan-mall.md` and
-`journal-mall.md` stay in the skill directory — they are templates, not artifacts.
+Then delete the plan and its journal in their own commit, and remove `$RUN`. `plan-template.md` and
+`journal-template.md` stay in the skill directory — they are templates, not artifacts.
 
 ## Resuming an interrupted run
 
@@ -245,7 +245,7 @@ step the journal records as done, and do not reconstruct context by reading code
 
 ## Notes
 
-- Three agents work on one task. The point is not fewer total tokens — it is keeping your session
+- The four runtime levels may be assigned to one or more agents. The point is not fewer total tokens — it is keeping your session
   small and moving the expensive reading onto accounts you are not metered against. For a change the
   user can review in five minutes this is not worth it; say so instead of running it.
 - To swap tools, only `dispatch.sh` and `prompts/` change. The levels, plan, journal, budget and
@@ -254,6 +254,6 @@ step the journal records as done, and do not reconstruct context by reading code
   gates sit where they do — is in the framework's `ai-usage-guide.md` § 5. It is not needed to run
   the workflow, which is why it is not here.
 - This file is the shared procedure for both orchestrators. Claude Code discovers the copy under
-  `.claude/skills/` and invokes `/planstyrt-bygge`; Codex discovers the copy under `.agents/skills/`
-  and invokes `$planstyrt-bygge` or selects it through `/skills`. No separate custom-prompt frontend
+  `.claude/skills/` and invokes `/plan-driven-build`; Codex discovers the copy under `.agents/skills/`
+  and invokes `$plan-driven-build` or selects it through `/skills`. No separate custom-prompt frontend
   is needed. The journal is how a run continues when the first orchestrator hits a usage limit.

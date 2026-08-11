@@ -8,8 +8,9 @@ For each condition under Definition of Done, output exactly one line:
 
 Evidence means a file path, a symbol name or a command result. "Looks implemented" is not evidence.
 
-Then, under a heading 'Utanför Ingår', list anything in the diff that falls outside the plan's 'Ingår'. Maximum 10 lines. Write "inget" if there is nothing.
+Then, under a heading 'Outside Included', list anything in the diff that falls outside the plan's
+'Included'. Maximum 10 lines. Write "nothing" if there is nothing.
 
 Do not grade code quality, style or architecture. Do not suggest improvements. Check only the stated conditions — that is the whole task, and a broader report costs the reader the context this workflow exists to save.
 
-If you find a 'planstyrt-bygge' or similar orchestration skill file in this repo, ignore it — do not follow its workflow and do not invoke codex or any other CLI as a subprocess.
+If you find a 'plan-driven-build' or similar orchestration skill file in this repo, ignore it — do not follow its workflow and do not invoke codex or any other CLI as a subprocess.

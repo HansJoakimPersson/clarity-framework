@@ -36,8 +36,8 @@ optional profiles that match the project in front of you.
    improvising. Read the remaining documents only when the task touches their subject:
    - `docs/03-sad.md` — when the change adds or moves a module, crosses a module boundary, or you are unsure where
      the change belongs
-   - `docs/02-kravdokumentation.md` — when the task touches functional behavior
-   - `docs/04-datamodell-api.md` — when the task touches persistence, data structures, or API contracts
+   - `docs/02-requirements.md` — when the task touches functional behavior
+   - `docs/04-data-model-api.md` — when the task touches persistence, data structures, or API contracts
 
    Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
 3. Read relevant source code before proposing changes — never guess reactive variable names, module IDs, or function signatures.
@@ -54,7 +54,7 @@ You are in that situation when a plan under `docs/plans/` governs the task, or w
 says the scope is authoritative.
 
 - The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
-  listed under `Ingår`.
+  listed under `Included`.
 - If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
   the way it does, and improvising past it produces work nobody approved.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
@@ -183,11 +183,11 @@ Shiny apps render as HTML in a real browser, so three complementary layers of ac
 
 - Update README, usage docs, or release notes when user-visible behavior changes.
 - In Clarity Framework projects, update the relevant docs when their content changes:
-  - `docs/02-kravdokumentation.md` — when requirements or acceptance criteria are affected
+  - `docs/02-requirements.md` — when requirements or acceptance criteria are affected
   - `docs/03-sad.md` — when architecture, modules, or key design decisions change
-  - `docs/04-datamodell-api.md` — when data model or API contracts change
-  - `docs/06-testdokumentation.md` — when testing strategy or coverage targets change
-  - `docs/08-andringshantering.md` — for change tracking and ADRs
+  - `docs/04-data-model-api.md` — when data model or API contracts change
+  - `docs/06-test-documentation.md` — when testing strategy or coverage targets change
+  - `docs/08-change-management.md` — for change tracking and ADRs
   - `docs/00-ai-context.md` — when stack, status, or key context shifts significantly
 - Add roxygen2 documentation for exported functions and public modules that are newly added or materially changed.
 - Document parameters, return values, reactive inputs/outputs, and side effects.

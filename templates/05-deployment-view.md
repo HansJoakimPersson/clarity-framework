@@ -1,86 +1,99 @@
-# Driftsättningsvy (Deployment View)
+# Deployment View
 
-## [Produktnamn]
+## [Product name]
 
 | | |
 | --- | --- |
 | **Version** | 0.1 |
-| **Status** | Utkast / Godkänd |
-| **Datum** | ÅÅÅÅ-MM-DD |
-| **Författare** | [Namn] |
-| **Kopplad till** | SAD v[X.X] |
+| **Status** | Draft / Under review / Approved |
+| **Date** | YYYY-MM-DD |
+| **Author** | [Name] |
+| **Related to** | SAD v[X.X] |
 
-### Versionshistorik
+### Version history
 
-| Version | Datum | Förändring | Författare |
+| Version | Date | Change | Author |
 | --- | --- | --- | --- |
-| 0.1 | ÅÅÅÅ-MM-DD | Initial version | [Namn] |
+| 0.1 | YYYY-MM-DD | Initial version | [Name] |
 
 ---
 
-## 1. Miljööversikt
+## 1. Environment overview
 
-| Miljö | Syfte | URL / Host | Uppdateras |
+| Environment | Purpose | URL / host | Updated by |
 | --- | --- | --- | --- |
-| **Lokal (dev)** | Individuell utveckling | `localhost` | Av varje utvecklare |
-| **Staging** | Integration, QA, demo | `staging.[domän]` | Vid merge till `main` |
-| **Produktion** | Skarp drift | `[domän]` | Vid godkänd release |
+| **Local development** | Individual development | `localhost` | Each developer |
+| **Staging** | Integration, QA, and demos | `staging.[domain]` | On merge to `main` |
+| **Production** | Live operation | `[domain]` | On approved release |
 
-**Konfigurationsskillnader per miljö:**
+### Configuration differences
 
-| Parameter | Lokal | Staging | Produktion |
+| Parameter | Local | Staging | Production |
 | --- | --- | --- | --- |
-| Loggningsnivå | DEBUG | INFO | WARN |
-| Databas | Lokal Docker | Staging DB | Prod DB |
-| Cache | Avstängd | Påslagen | Påslagen |
-| E-postutskick | Fångad i dev-inbox | Skickas till testadress | Skickas skarpt |
+| Log level | DEBUG | INFO | WARN |
+| Database | Local container | Staging database | Production database |
+| Cache | Disabled or local | Enabled | Enabled |
+| Email delivery | Captured in development inbox | Test recipients | Real recipients |
+| External integrations | Mocks or sandboxes | Test accounts | Production accounts |
+| Backups | Optional | Scheduled | Scheduled and verified |
+
+Document the purpose, data sensitivity, access rules, and reset procedure for every environment.
+State whether staging contains production data; production data should not be copied into lower
+environments without documented minimization or anonymization.
 
 ---
 
-## 2. Infrastrukturdiagram
+## 2. Infrastructure topology
 
-> Ersätt med faktiskt diagram för din infrastruktur.
+> Replace this example with the actual infrastructure diagram. Show trust boundaries, public and
+> private networks, persistent storage, external services, and the direction of important traffic.
 
 ```mermaid
 graph TD
-    User[Användare / Browser]
-    
-    subgraph "Produktionsserver (VPS / Cloud)"
-        Proxy[Reverse Proxy\nNginx / Traefik]
-        App[Applikationscontainer\nSpring Boot / Node]
-        DB[(Databascontainer\nPostgreSQL)]
-        Vol[Persistent volym\n/data/db]
+    User[User / Browser]
+
+    subgraph "Production host or cloud account"
+        Proxy[Reverse proxy\nNginx / Traefik]
+        App[Application container\nSpring Boot / Node]
+        DB[(Database\nPostgreSQL)]
+        Vol[Persistent volume\n/data/db]
     end
 
     CDN[CDN / Static assets]
+    Mail[Email provider]
+    Monitor[Monitoring and alerting]
 
     User -->|HTTPS :443| Proxy
     Proxy -->|HTTP :8080| App
     App -->|TCP :5432| DB
     DB --- Vol
     User -->|HTTPS| CDN
+    App -->|HTTPS| Mail
+    App -->|Metrics and logs| Monitor
 ```
 
-**Komponentbeskrivning:**
+### Component capacity
 
-| Komponent | Teknologi | CPU | Minne | Disk |
-| --- | --- | --- | --- | --- |
-| Reverse proxy | [Nginx / Traefik] | [X] vCPU | [X] GB | [X] GB |
-| Applikation | [Spring Boot / Node] | [X] vCPU | [X] GB | — |
-| Databas | [PostgreSQL X.X] | [X] vCPU | [X] GB | [X] GB |
+| Component | Technology | CPU | Memory | Disk | Scaling | Availability |
+| --- | --- | --- | --- | --- | --- | --- |
+| Reverse proxy | [Nginx / Traefik] | [X] vCPU | [X] GB | [X] GB | [Manual / Auto] | [Target] |
+| Application | [Spring Boot / Node] | [X] vCPU | [X] GB | — | [Manual / Auto] | [Target] |
+| Database | [PostgreSQL X.X] | [X] vCPU | [X] GB | [X] GB | [Vertical / Managed] | [Target] |
+| Persistent storage | [Block / Object storage] | — | — | [X] GB | [Policy] | [Target] |
+
+### Network and trust boundaries
+
+Document which components are public, which are private, required ports, TLS termination, firewall
+rules, outbound access, DNS ownership, and the accounts or roles allowed to administer each layer.
 
 ---
 
-## 3. Container-konfiguration
+## 3. Container and service configuration
 
-### `docker-compose.yml` (produktion)
-
-> Den fullständiga filen versioneras i repot under `/deploy/docker-compose.prod.yml`.  
-> Nedan visas struktur och viktiga inställningar.
+> The complete production configuration is versioned in the repository, for example under
+> `/deploy/docker-compose.prod.yml`, Helm charts, Terraform, or the platform's equivalent.
 
 ```yaml
-version: "3.9"
-
 services:
   proxy:
     image: traefik:v3.0
@@ -93,26 +106,19 @@ services:
       - ./traefik:/etc/traefik
 
   app:
-    image: [registry]/[produktnamn]:${APP_VERSION}
+    image: [registry]/[product-name]:${APP_VERSION}
     restart: unless-stopped
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - APP_ENV=production
       - DB_URL=${DB_URL}
       - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`[domän]`)"
 
   db:
     image: postgres:16-alpine
     restart: unless-stopped
-    environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -126,217 +132,217 @@ volumes:
     driver: local
 ```
 
+For every service, document the image or artifact source, version pinning, ports, volumes, health
+checks, resource limits, restart policy, dependencies, and whether the service is stateful.
+
 ---
 
-## 4. Konfigurationshantering
+## 4. Configuration and secrets
 
-### Environment-variabler
+**Rule:** Never commit plaintext secrets to Git. Sensitive values must be supplied through
+environment variables, a secret manager, or the hosting platform's protected configuration.
 
-**Regel:** Inga plaintext-hemligheter i Git. Alla känsliga värden via environment-variabler eller secrets manager.
+| Variable | Description | Environment | Sensitive | Source |
+| --- | --- | --- | --- | --- |
+| `APP_VERSION` | Container image tag or artifact version | All | No | Release tag |
+| `DB_URL` | Database connection string | All | No / partial | Environment configuration |
+| `DB_PASSWORD` | Database password | All | Yes | Secret manager |
+| `JWT_SECRET` | JWT signing key | All | Yes | Secret manager |
+| `SMTP_PASSWORD` | Email provider password | Staging, Production | Yes | Secret manager |
 
-| Variabel | Beskrivning | Miljö | Känslig |
-| --- | --- | --- | --- |
-| `APP_VERSION` | Docker image-tagg | Alla | Nej |
-| `DB_URL` | JDBC-connection string | Alla | Nej |
-| `DB_PASSWORD` | Databaslösenord | Alla | **Ja** |
-| `JWT_SECRET` | Signeringsnyckel för JWT | Alla | **Ja** |
-| `SMTP_PASSWORD` | E-postlösenord | Staging, Prod | **Ja** |
+### Secret handling
 
-**Hantering av känsliga värden:**
+- Local development: `.env` file excluded by `.gitignore`, or a local secret store.
+- Staging and production: [GitHub Actions secrets, cloud secret manager, Vault, or equivalent].
+- Rotation: [Describe schedule, owner, procedure, and impact on running services].
+- Emergency revocation: [Describe who can revoke credentials and how the service is restarted].
 
-- Lokalt: `.env`-fil (finns i `.gitignore`)
-- Staging/Prod: [Beskriv hur hemligheter hanteras – t.ex. GitHub Secrets, HashiCorp Vault, server .env]
-
-### Namnkonvention
+### Naming convention
 
 ```text
-[KOMPONENT]_[EGENSKAP]
+[COMPONENT]_[PROPERTY]
 DB_URL, DB_PASSWORD, SMTP_HOST, SMTP_PORT
 ```
 
+Document configuration defaults, validation at startup, environment-specific overrides, and how a
+configuration change is reviewed and audited.
+
 ---
 
-## 5. CI/CD-pipeline
+## 5. CI/CD pipeline
 
-> Pipeline-konfigurationen versioneras i repot under `.github/workflows/` eller motsvarande.
+> Pipeline configuration is versioned under `.github/workflows/` or the equivalent CI/CD system.
+> Releases are manually tagged; deployment automation may execute after the approved release
+> trigger, but must not create releases or tags implicitly.
 
-### Repository- och mergeflöde
-
-| Regel | Projektets val |
-| --- | --- |
-| Primär branch | `main` |
-| Branchstrategi | [Kortlivade feature-branches / trunk-based / dokumenterat soloflöde] |
-| Branchnamn | `[feature|fix|chore]/[kort-beskrivning]` |
-| Commitformat | [Imperativ beskrivning, eventuell issue-referens] |
-| Direkt push till `main` | [Nej / dokumenterat undantag] |
-| Mergekrav | [Godkänd review, CI grön, branch uppdaterad] |
-| Merge-metod | [Squash / merge commit / rebase] |
-
-**Grundregler:**
-
-- En commit ska vara en sammanhängande och fungerande förändringsenhet
-- Pusha en branch och öppna en pull request när ändringen är redo för CI och granskning
-- Berörda tester och dokument uppdateras i samma pull request som implementationen
-- Hemligheter, lokala `.env`-filer och ej avsedda byggartefakter får aldrig committas
-
-### GitHub Actions-workflows
-
-| Workflow | Fil | Trigger | Syfte | Kräver godkännande |
-| --- | --- | --- | --- | --- |
-| CI | `.github/workflows/ci.yml` | `pull_request`, push till `main` | Bygg, test och statisk analys | Nej |
-| Release | `.github/workflows/release.yml` | Tagg `v*` / `workflow_dispatch` | Verifiera och publicera byggd artefakt | [Ja / Nej] |
-| Deploy staging | `.github/workflows/deploy-staging.yml` | Push till `main` | Deploy och smoke test | Nej |
-| Deploy produktion | `.github/workflows/deploy-production.yml` | Publicerad release / manuellt | Produktionsdeploy och smoke test | Ja |
-
-**Workflow-skydd:**
-
-- Ange minsta nödvändiga `permissions`; skrivbehörighet aktiveras endast för jobb som publicerar
-- Lagra känsliga värden i GitHub Secrets eller extern secrets manager
-- Använd GitHub Environments för staging och produktion, inklusive reviewers och miljöspecifika secrets
-- Sätt `concurrency` för deployments så att två produktionsdeployments inte körs samtidigt
-- Dokumentera tredjeparts-actions och hur deras versioner uppdateras
-
-### Flöde
+### Flow
 
 ```text
-Push till feature-branch
+Push to feature branch
         ↓
-    Bygg (compile)
+    Build and compile
         ↓
-    Enhetstester
+    Unit tests
         ↓
-    Statisk kodanalys (t.ex. SonarQube / Checkstyle)
+    Static analysis and dependency checks
         ↓
-    Docker image byggs
+    Build artifact or container image
         ↓
-Merge till main (automatisk)
+Merge to main after required checks
         ↓
-    Integrationstester
+    Integration and contract tests
         ↓
-    Deploy till staging
+    Deploy to staging
         ↓
-    Smoke test
+    Smoke test and visual UX verification where applicable
         ↓
-Tagg / manuellt godkännande (vid release)
+Manual release tag and approval
         ↓
-    Deploy till produktion
+    Deploy to production
         ↓
-    Smoke test produktion
+    Production smoke test and monitoring confirmation
 ```
 
-### Stegbeskrivning
+### Pipeline stages
 
-| Steg | Trigger | Automatisk | Blockerar? |
-| --- | --- | --- | --- |
-| Bygg + enhetstester | Push till alla branches | Ja | Ja – blockar merge |
-| Statisk kodanalys | Push till alla branches | Ja | Nej (varning) |
-| Deploy staging | Merge till `main` | Ja | — |
-| Smoke test staging | Efter staging-deploy | Ja | Ja |
-| Deploy produktion | Manuellt / Git-tagg | Manuell trigger | — |
-| Smoke test produktion | Efter prod-deploy | Ja | Utlöser alert vid fel |
+| Stage | Trigger | Automatic | Blocking | Evidence |
+| --- | --- | --- | --- | --- |
+| Build and unit tests | Push to any branch | Yes | Yes | Test report |
+| Static analysis | Push to any branch | Yes | [Yes / No] | Analysis report |
+| Dependency and security scan | Pull request or scheduled run | Yes | [Yes / No] | Scan report |
+| Integration and contract tests | Merge to `main` | Yes | Yes | Test report |
+| Staging deployment | Merge to `main` | Yes | — | Deployment record |
+| Staging smoke test | After staging deployment | Yes | Yes | Smoke-test evidence |
+| Production deployment | Approved release tag | Manual approval | — | Release record |
+| Production smoke test | After production deployment | Yes | Alert on failure | Smoke-test evidence |
 
-### Release och GitHub Release
-
-| Egenskap | Projektets val |
-| --- | --- |
-| Versionsstrategi | [Semantic Versioning / annan dokumenterad strategi] |
-| Release-trigger | [Annoterad tagg `vX.Y.Z` / manuellt workflow] |
-| Källa för releasenoter | [`CHANGELOG.md` / PR-etiketter / manuellt kuraterade noter] |
-| Artefakter | [Container-image, binär, paket, checksummor, SBOM] |
-| Ansvarig | [Roll eller namn] |
-
-Varje produktionsrelease ska kunna spåras till samma version och commit i:
-
-- Git-tagg
-- GitHub Release
-- Publicerade artefakter eller container-image
-- Produktionsdeployment
-
-GitHub-releasen ska minst innehålla:
-
-- Sammanfattning av användar- och driftpåverkande ändringar
-- Breaking changes och eventuella migreringssteg
-- Kända problem eller begränsningar
-- Länk till fullständig changelog och jämförelse mot föregående version
-- Publicerade artefakter och relevanta verifieringsuppgifter
-- Deploymentstatus eller länk till deploymentkörningen
-
-### Rollback-procedur
-
-```bash
-# Identifiera tidigare fungerande version
-git tag --list | sort -V | tail -10
-
-# Deploya föregående version
-APP_VERSION=[föregående-tagg] docker compose -f docker-compose.prod.yml up -d app
-
-# Verifiera
-curl -f https://[domän]/health
-```
+Document branch protection, required checks, deployment permissions, reviewers, protected
+environments, concurrency rules, action versions, artifact retention, and how failed deployments
+are prevented from being promoted.
 
 ---
 
-## 6. Övervaknings- och loggningsstrategi
+## 6. Release traceability
 
-### Loggning
+Every production deployment must connect the same version and commit across:
 
-**Format:** Strukturerad JSON  
-**Nivåer per miljö:**
+- the manually created Git tag and GitHub Release;
+- the published artifact or container image;
+- the deployment record and environment;
+- migration execution and database state;
+- smoke-test and visual verification evidence where applicable;
+- the approved rollback target.
 
-- Lokal: `DEBUG`
-- Staging: `INFO`
-- Produktion: `WARN` (applikationsloggar), `ERROR` (infrastrukturloggar)
+Record who approved the release, when it was deployed, which checks passed, and where the release
+can be inspected after deployment.
 
-**Destination:**
+---
 
-- Lokalt: stdout / fil
-- Staging/Prod: [t.ex. stdout → Loki / Papertrail / ELK]
+## 7. Monitoring, logging, and health
 
-**Obligatoriska fält i varje loggpost:**
+### Structured logging
+
+**Format:** Structured JSON
+**Levels:** Local `DEBUG`, staging `INFO`, production `WARN` for application logs and `ERROR` for
+infrastructure logs
+**Destination:** Local stdout or file; staging and production [Loki, Papertrail, ELK, or equivalent]
+
+Every log entry should include the fields needed to investigate a request without exposing secrets:
 
 ```json
 {
   "timestamp": "2025-01-15T10:30:00.123Z",
   "level": "INFO",
-  "service": "produktnamn",
-  "traceId": "abc123",
-  "message": "...",
+  "service": "product-name",
+  "traceId": "example-trace-id",
+  "message": "Request completed",
   "context": {}
 }
 ```
 
-### Hälsokontroll
+### Health checks
 
-**Endpoint:** `GET /health`  
-**Autentisering:** Ej krävs  
-**Vad kontrolleras:**
+**Endpoint:** `GET /health`
+**Authentication:** Not required, but do not expose credentials, connection strings, or internal
+topology
+**Checks:**
 
-- [ ] Applikationen startar och svarar
-- [ ] Databasanslutning aktiv
-- [ ] [Andra kritiska beroenden]
+- [ ] Application starts and responds.
+- [ ] Database connection is available.
+- [ ] Cache and queue dependencies are available where required.
+- [ ] Critical external integrations are within the defined policy.
 
-**Förväntad response `200 OK`:**
+**Expected `200 OK` response:**
 
 ```json
 {
-  "status": "UP"
+  "status": "UP",
+  "components": {
+    "database": { "status": "UP" },
+    "cache": { "status": "UP" }
+  }
 }
 ```
 
-Den publika endpointen visar bara sammanvägd status. Detaljer per databas, cache eller annat
-beroende exponeras separat bakom autentisering och/eller nätverksbegränsning, till exempel på
-`GET /internal/health`, och får inte innehålla anslutningssträngar, credentials eller intern
-infrastrukturinformation.
+### Alerts
 
-### Alerting
+| Trigger | Channel | Recipient | Priority | First response |
+| --- | --- | --- | --- | --- |
+| Health endpoint is not `200` | [Email / Slack / PagerDuty] | [Owner] | Critical | [Action] |
+| Disk usage above 85% | [Channel] | [Owner] | High | [Action] |
+| Memory usage above 90% | [Channel] | [Owner] | High | [Action] |
+| 5xx error rate above [X]% | [Channel] | [Owner] | High | [Action] |
+| Backup verification fails | [Channel] | [Owner] | Critical | [Action] |
 
-| Trigger | Kanal | Mottagare | Prioritet |
-| --- | --- | --- | --- |
-| `/health` returnerar ej 200 | [E-post / Slack / PagerDuty] | [Namn] | Kritisk |
-| Disk > 85% | [Kanal] | [Namn] | Hög |
-| Minne > 90% | [Kanal] | [Namn] | Hög |
-| 5xx-felfrekvens > [X]% | [Kanal] | [Namn] | Hög |
+Define retention, dashboard ownership, alert thresholds, maintenance windows, and the escalation
+path for every production alert.
 
 ---
 
-*Nästa steg: Producera Testdokumentation och Runbook parallellt med implementation.*
+## 8. Backup, recovery, and rollback
+
+| Asset | Frequency | Retention | Restore test | Owner |
+| --- | --- | --- | --- | --- |
+| Database | [Schedule] | [Policy] | [Schedule] | [Owner] |
+| Object or file storage | [Schedule] | [Policy] | [Schedule] | [Owner] |
+| Configuration and secrets | [Schedule] | [Policy] | [Schedule] | [Owner] |
+
+Document the recovery point objective (RPO), recovery time objective (RTO), backup encryption,
+restore procedure, and data-loss risks. A backup is not considered reliable until a restore has
+been tested and recorded.
+
+### Rollback procedure
+
+```bash
+# Identify the last approved version.
+git tag --list | sort -V | tail -10
+
+# Deploy the previous version using the approved deployment command.
+APP_VERSION=[previous-tag] docker compose -f docker-compose.prod.yml up -d app
+
+# Verify service health.
+curl -f https://[domain]/health
+```
+
+Before rollback, state whether database migrations are backwards-compatible. After rollback,
+verify application health, data integrity, background jobs, user impact, and monitoring. Record the
+result in Change Management and open a follow-up action for the cause of the failed release.
+
+---
+
+## 9. Definition of Done
+
+- [ ] Environments, topology, capacity, access, and trust boundaries are documented.
+- [ ] Container or service configuration, health checks, volumes, and resource limits are versioned.
+- [ ] Configuration and secret handling are explicit, with no secrets committed to Git.
+- [ ] CI/CD stages, permissions, approvals, evidence, and manual release tagging are documented.
+- [ ] Release traceability connects the tag, commit, artifact, deployment, and rollback target.
+- [ ] Logging, monitoring, alerts, backups, recovery, and ownership are documented.
+- [ ] Deployment is repeatable and rollback has been tested or explicitly rehearsed.
+- [ ] Production readiness includes smoke tests and visual UX verification for UI changes.
+
+---
+
+*Next step: Produce Test Documentation and the Runbook in parallel with implementation.*
+
+*Clarity Framework v2.0.5 – Deployment View*
