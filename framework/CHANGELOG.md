@@ -6,6 +6,37 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] – Unreleased
+
+### Added
+
+- User stories are documented as the unit of product work rather than only a requirement format.
+  `templates/02-requirements.md` gains a role table with stable role IDs, an INVEST quality bar with
+  behavior-based splitting guidance, a story lifecycle, a Definition of Ready, an epic overview, and
+  per-story status, size, and dependency fields.
+- Visual requirements views: a Mermaid story-lifecycle state diagram, a Mermaid journey diagram for
+  the story-map backbone, a release-slice story-map table, and a Mermaid traceability chain from a
+  Vision & Scope goal through epic, story, acceptance criterion, and test case to the release.
+- `templates/02-user-stories.md` for projects whose backlog outgrows the requirements document.
+  Adopt it past roughly 20 active stories or more than one backlog owner; the roles, quality bar,
+  lifecycle, story map, epic overview, priorities, and traceability stay in `02-requirements.md`.
+- `templates/plan.md` and its `skills/plan-driven-build/plan-template.md` copy gain a `Delivers`
+  field naming the story IDs a plan implements, a requirements row in “Context to read first”, a
+  Definition of Done condition citing acceptance criteria by ID, and a closeout question that writes
+  story status and traceability back before the plan is deleted. Plans cite story IDs and never copy
+  acceptance criteria, because the plan is transient and the requirements document is authoritative.
+- Role IDs in `templates/01-vision-scope.md` §3 so that stories name a role defined in scope.
+
+### Fixed
+
+- `skills/plan-driven-build/SKILL.md` looked for a plan field named `Grindprofil` with the profile
+  values `interaktiv`, `halvautomatisk`, and `obevakad`, none of which the plan template has emitted
+  since v2.0.0. The gate-profile table, the scope gate, and the commit gate now match the template's
+  `Gate profile` field and its `interactive` / `semi-automatic` / `unattended` values.
+- Swedish text left after the v2.0.0 translation: `Versionshistorik`, `Prioritet`, `Krav`,
+  `Kort storytitel`, and `Komponent i SAD` in `templates/02-requirements.md`, and the performance
+  NFR row in `templates/00-ai-context.md`.
+
 ## [2.0.5] – 2026-08-11
 
 ### Changed

@@ -66,6 +66,7 @@ Apply these conditions:
 | `docs/01-vision-scope.md` | Always |
 | `docs/00-ai-context.md` | Claude Code or Codex will be used after bootstrap |
 | `docs/02-requirements.md` | The project has a launch, users, acceptance criteria, or a team |
+| `docs/02-user-stories.md` | Only when the backlog already exceeds roughly 20 stories or several people maintain it; otherwise keep stories in `02-requirements.md` §2.6 |
 | `docs/03-sad.md` | The system has meaningful components, integrations, persistence, or deployment decisions |
 | `docs/04-data-model-api.md` | Persistent data or an API exists |
 | `docs/05-deployment-view.md` | The project is deployed outside a developer machine |

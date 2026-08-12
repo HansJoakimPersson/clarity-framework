@@ -1,6 +1,6 @@
 # The Clarity Framework Documentation Guide
 
-## Clarity Framework v2.0.5
+## Clarity Framework v2.1.0
 
 Documentation should make decisions easier, not create bureaucracy. Use the smallest coherent set of
 documents that lets the people and agents working on the product make safe, consistent decisions.
@@ -21,8 +21,8 @@ because it was once written down.
 | --- | --- | --- |
 | Personal or hobby | Vision & Scope, README | Visual Profile before UI work; AI Context when agents are used |
 | Launch-bound side project | Vision & Scope, Requirements, SAD, Test Documentation, README | Data/API, Deployment, Runbook, Visual Profile, Change Management |
-| Small team | Vision & Scope, Requirements, SAD, Test Documentation, Change Management | Data/API, Deployment, Runbook, Visual Profile |
-| Larger team | Vision & Scope, Requirements, SAD, Test Documentation, Change Management | Data/API, Deployment, Runbook, Visual Profile, stricter release controls |
+| Small team | Vision & Scope, Requirements, SAD, Test Documentation, Change Management | Data/API, Deployment, Runbook, Visual Profile, User Stories when the backlog outgrows Requirements |
+| Larger team | Vision & Scope, Requirements, SAD, Test Documentation, Change Management | Data/API, Deployment, Runbook, Visual Profile, User Stories, stricter release controls |
 
 Do not add a document because a template exists. Add it when the project has the corresponding risk,
 decision, interface, or operational responsibility.
@@ -35,6 +35,7 @@ decision, interface, or operational responsibility.
 01 Vision & Scope (approved before detailed work)
         ↓
 02 Requirements (functional requirements and NFRs)
+        ├── 02 User Stories (split out when the backlog outgrows one document)
         ↓
 03 SAD (architecture based on the NFRs)
         ↓
@@ -77,18 +78,59 @@ Requirements Documentation captures what the system must do and under which cond
 before detailed functional requirements because NFRs shape the architecture.
 
 Record measurable targets for performance, availability, scalability, maintainability, security,
-portability, and any domain-specific quality. Use user stories for ordinary behavior:
+portability, and any domain-specific quality.
+
+### 5.1 User stories are the unit of product work
+
+Use user stories for ordinary behavior:
 
 ```text
-As a [role], I want [function], so that [business value].
+As a [role], I want [capability], so that [business value].
 ```
 
-Every story needs a unique ID, priority, and acceptance criteria. Use Given/When/Then for behavior
-that benefits from explicit conditions. Use a Use Case when several actors, systems, or failure
-paths make a story too small to describe the flow.
+The story is not merely a requirement format; it is the anchor the rest of the framework points at.
+A plan declares the story IDs it delivers, a test case cites the acceptance criterion it proves, and
+the traceability table records the result. Keep that chain intact and a reader can move from a goal
+in Vision & Scope to the commit that satisfied it.
 
-Maintain traceability from requirements to architecture and tests. Priorities are decisions, not
-technical facts; record the business owner of those decisions.
+Every story names a role from the role table, which is derived from Vision & Scope. `As a user` is
+not a role when the product serves more than one kind of user; it hides the design decision the
+story exists to make.
+
+Every story needs a unique ID, a priority, a status, and acceptance criteria. Use Given/When/Then
+for behavior that benefits from explicit conditions. Use a Use Case when several actors, systems, or
+failure paths make a story too small to describe the flow.
+
+Hold stories to INVEST — independent, negotiable, valuable, estimable, small, testable — and split
+oversized stories by behavior rather than by layer. Splitting into “database”, “API”, and “UI”
+produces three fragments that deliver nothing until all three land; splitting by workflow step,
+business rule, data variant, interface, or degree of automation produces stories that each stand
+alone. A story that does not fit inside one plan and one review is not Ready.
+
+### 5.2 Make the backlog visible
+
+A wall of story blocks hides the product. Maintain a story map: a backbone of the steps a role takes
+to reach an outcome, with the supporting stories arranged underneath and grouped into release
+slices. It exposes two things a list cannot — a step with no Must-have story, which means the user
+cannot finish the journey, and a step crowded with Must-have stories, which usually means the step
+should be split. Keep an epic overview alongside it so each epic states the outcome it delivers, not
+just the stories it contains.
+
+### 5.3 Splitting the document
+
+Keep requirements in one document by default. Split the story detail into its own document when the
+backlog passes roughly 20 active stories or more than one person maintains it: NFRs are written
+once and shape the architecture, while the backlog churns continuously, and the two do not deserve
+the same file. The roles, quality bar, lifecycle, story map, epic overview, priorities, and
+traceability stay with the requirements document — they are the stable contract. Very large
+backlogs may shard further into one file per epic, with the epic overview as the index.
+
+### 5.4 Traceability and ownership
+
+Maintain traceability from requirements to architecture and tests. Retire story IDs rather than
+deleting or reusing them; a dropped story keeps its ID and its reason so that historical plans,
+commits, and test cases keep resolving. Priorities are decisions, not technical facts; record the
+business owner of those decisions.
 
 ## 6. System Architecture Document (SAD)
 
@@ -203,4 +245,4 @@ journal, and human gates for scope, merge, release, and plan deletion. See `ai-u
 
 ---
 
-*Clarity Framework v2.0.5 – Documentation Guide*
+*Clarity Framework v2.1.0 – Documentation Guide*

@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v2.0.5 |
+| **Framework version** | Clarity Framework v2.1.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -42,7 +42,7 @@
 
 | NFR | Requirement |
 | --- | --- |
-| Prestanda | [t.ex. Svarstid < 300 ms, p95] |
+| Performance | [e.g. Response time < 300 ms, p95] |
 | Availability | [e.g. 99.5% uptime] |
 | Scalability | [e.g. Handle 10x data growth without redesign] |
 | [Other critical NFR] | [Concrete requirement] |
@@ -137,4 +137,4 @@ verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separ
 
 ---
 
-*Clarity Framework v2.0.5 – AI Context Document*
+*Clarity Framework v2.1.0 – AI Context Document*

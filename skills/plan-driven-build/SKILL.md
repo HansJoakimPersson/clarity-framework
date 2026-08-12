@@ -43,13 +43,13 @@ that exceeds its budget — truncate it and say you did. If you find yourself re
 
 ## Gate profiles
 
-The plan's `Grindprofil` field decides where you stop. Default is `interaktiv`.
+The plan's `Gate profile` field decides where you stop. Default is `interactive`.
 
 | Profile | Stops at |
 | --- | --- |
-| `interaktiv` | Step 3 (scope), 6 (commit), 7 (merge), 8 (closeout) |
-| `halvautomatisk` | Step 3 and 7. Commit happens automatically, closeout is proposed |
-| `obevakad` | Step 7 only. Requires every Definition of Done condition to be command-checkable |
+| `interactive` | Step 3 (scope), 6 (commit), 7 (merge), 8 (closeout) |
+| `semi-automatic` | Step 3 and 7. Commit happens automatically, closeout is proposed |
+| `unattended` | Step 7 only. Requires every Definition of Done condition to be command-checkable |
 
 A profile never removes the merge gate. You never approve on the user's behalf.
 
@@ -149,7 +149,7 @@ docs or diffs. Briefly justify the ones you dismiss; silent dismissal hides that
 Show the user: the goal, `Included` / `Excluded`, all `BLOCKING` questions, and what the review
 changed.
 
-**Stop here** unless `Grindprofil` is `obevakad` and the scope was approved in advance. Approving
+**Stop here** unless `Gate profile` is `unattended` and the scope was approved in advance. Approving
 scope before code exists is the entire point. Blocking questions are answered by the user — not by
 you, and not by Reasoning. On go-ahead, set `Status: Approved` — not before; the field records a
 decision, not an expectation.
@@ -208,7 +208,7 @@ Taking over is the silent failure that makes the whole workflow pointless.
 Never leave the build uncommitted — a dirty tree blocks the next round and erases the boundary
 between this round's changes and the next.
 
-Under `interaktiv`, propose the commit and wait. Under `halvautomatisk` and `obevakad`, commit and
+Under `interactive`, propose the commit and wait. Under `semi-automatic` and `unattended`, commit and
 report. If the project follows Clarity Framework commit discipline, affected `docs/` files go in the
 same commit. If more rounds are needed, the plan and journal stay until everything is built.
 

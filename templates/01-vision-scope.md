@@ -40,11 +40,15 @@
 
 ## 3. Target groups and stakeholders
 
-| Role | Description | Primary/Secondary |
-| --- | --- | --- |
-| [Primary user] | The person who actively uses the system | Primary |
-| [Affected party] | The person affected by the system's output | Secondary |
-| [Technical operator] | The person who operates and maintains the system | Secondary |
+| ID | Role | Description | Primary/Secondary |
+| --- | --- | --- | --- |
+| R1 | [Primary user] | The person who actively uses the system | Primary |
+| R2 | [Affected party] | The person affected by the system's output | Secondary |
+| R3 | [Technical operator] | The person who operates and maintains the system | Secondary |
+
+> These IDs are the roles that user stories name in Requirements Documentation §2.1. Keep the two
+> tables consistent; a role that no story ever names is a sign that either the scope or the backlog
+> is incomplete.
 
 ## 4. Goals and success criteria
 

@@ -128,4 +128,4 @@ or other permanent project documents before the plan is deleted.
 
 ---
 
-*Clarity Framework v2.0.5 – AI Usage Guide*
+*Clarity Framework v2.1.0 – AI Usage Guide*

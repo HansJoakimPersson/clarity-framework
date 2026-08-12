@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 2.0.5 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 2.1.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -26,7 +26,8 @@ clarity-framework/
 ├── templates/
 │   ├── 00-ai-context.md             # Compact project context for new AI sessions
 │   ├── 01-vision-scope.md           # Product vision, users, goals, boundaries, and risks
-│   ├── 02-requirements.md           # NFRs, user stories, use cases, and traceability
+│   ├── 02-requirements.md           # NFRs, roles, story map, use cases, and traceability
+│   ├── 02-user-stories.md           # Story backlog, split out when it outgrows 02-requirements
 │   ├── 03-sad.md                    # System architecture, components, boundaries, and ADRs
 │   ├── 04-data-model-api.md         # Domain model, schema, API, security, and compatibility
 │   ├── 05-deployment-view.md        # Environments, infrastructure, CI/CD, monitoring, and rollback
@@ -129,6 +130,7 @@ plan deletion.
 01-vision-scope        ← Start here; approve before all other documents.
         ↓
 02-requirements        ← Define NFRs before functional requirements.
+02-user-stories        ← Optional; split the backlog out when it outgrows 02-requirements.
         ↓
 03-sad                 ← Architecture grounded in the NFRs.
         ↓
@@ -151,4 +153,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v2.0.5*
+*Clarity Framework v2.1.0*

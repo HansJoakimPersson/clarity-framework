@@ -2,6 +2,8 @@ Read AGENTS.md and, if it exists, the project-specific instructions in CLAUDE.md
 
 Then read {{PLAN_TEMPLATE}} and reproduce its structure exactly, filled in — do not invent a different structure. Today's date is {{DATE}}.
 
+Fill 'Delivers' with the IDs of the user stories this plan implements, read from docs/02-requirements.md or docs/02-user-stories.md. Cite the IDs only — never copy their acceptance criteria into the plan; the requirements document is the source of truth and the plan is deleted at closeout. If the task is refactoring, infrastructure or maintenance with no matching story, write 'None – <reason>' instead of inventing one.
+
 Scope: 'Included' and 'Excluded' must be concrete behaviors or surfaces, not themes; never skip 'Excluded'. Steps need real file paths and one runnable Verification command each. Flag anything unclear enough that a build would guess wrong as BLOCKING rather than assuming. Definition of Done must be checkable conditions, not judgment calls — prefer "command X exits 0" over "works well".
 
 Keep the whole plan under 200 lines. It is a work order for an agent that was not part of the planning and has no tacit context, so be more explicit than you would be writing for yourself.
