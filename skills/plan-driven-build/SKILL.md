@@ -35,7 +35,7 @@ Everything below exists to keep **your** context small. Per round you may read:
 | Verification report | One line per Definition of Done condition + 10 lines of deviations |
 | Run journal | ~30 lines, on resume |
 
-If the plan sets a `Rapportbudget` other than the default, pass it to `--max-lines` instead.
+If the plan sets a `Report budget` other than the default, pass it to `--max-lines` instead.
 
 You may **not** read: `git diff`, source files, the full build log, the prompt files, or a report
 that exceeds its budget — truncate it and say you did. If you find yourself reading the codebase
@@ -126,14 +126,14 @@ as this sentence. Build nothing in this step.
 
 ## Step 2 — Dispatch a critique of the plan
 
-A fresh, stateless invocation reading the plan cold against the code. It runs under the `granskning`
+A fresh, stateless invocation reading the plan cold against the code. It runs under the `review`
 profile — a different account from the one that drafted the plan, which removes the blind spot of a
 level reviewing itself. If that profile does not exist, `--fallback reasoning` handles it and says
 so on stdout: then it is a self-review that catches wrong paths and invented functions reliably but
 shares whatever judgment blind spots the drafting level has. Record the fallback in the journal.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --profile granskning --fallback reasoning --mode read-only \
+"$SKILLDIR/dispatch.sh" --profile review --fallback reasoning --mode read-only \
   --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
   --out "$RUN/review.md" --max-lines 40
 ```

@@ -6,6 +6,29 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] – Unreleased
+
+### Added
+
+- A sizing rule for plans: one plan is one mergeable increment — the smallest change that can merge
+  on its own without leaving the product broken or half-migrated, usually a single user story. The
+  rule, its size test, and its lower bound are stated in `templates/plan.md`, its
+  `skills/plan-driven-build/plan-template.md` copy, and `framework/ai-usage-guide.md` §9.
+  `prompts/1-plan.txt` now instructs the planning level to plan only the first increment when the
+  task spans more, and to list the rest under `Excluded` rather than compressing scope by making
+  steps vaguer. A milestone is delivered by a sequence of plans; it lives in the story map's release
+  slices and in Change Management, not in a plan.
+
+### Fixed
+
+- `skills/plan-driven-build/SKILL.md` step 2 dispatched `--profile granskning`, but `setup.md`
+  creates the account as `review`. The review level therefore never found its profile and always
+  fell back to `reasoning`, silently defeating the account separation the step exists for.
+- `skills/plan-driven-build/SKILL.md` referred to a plan field named `Rapportbudget`; the template
+  emits `Report budget`.
+- Remaining Swedish placeholders in the `templates/00-ai-context.md` technology-stack table
+  (`t.ex.` and `Databas`), missed by the v2.1.0 language sweep.
+
 ## [2.1.0] – Unreleased
 
 ### Added

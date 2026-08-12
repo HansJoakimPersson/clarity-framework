@@ -90,4 +90,4 @@ A skill that conflicts with `CLAUDE.md` or `AGENTS.md` must be adapted, not foll
 
 ---
 
-*Clarity Framework v2.1.0*
+*Clarity Framework v2.2.0*

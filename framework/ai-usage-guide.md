@@ -126,6 +126,20 @@ run journal, and stops at human approval gates. The plan is a transient work ord
 project documentation. Decisions worth keeping move into the SAD, requirements, change-management,
 or other permanent project documents before the plan is deleted.
 
+**Scope one plan as one mergeable increment.** The plan is the unit of the merge gate and the unit
+of verification: a whole diff is checked against its Definition of Done in a single bounded pass, and
+that increment is approved and merged as one. Scope it to the smallest change that can merge without
+leaving the product broken or half-migrated — usually one user story, and more than one only when
+they cannot merge separately.
+
+A milestone-sized plan fails quietly rather than loudly. It cannot state concrete steps within the
+plan's line budget, so the steps become vague to fit; verification then compares a milestone-sized
+diff against a Definition of Done it cannot cover, and reports conditions as met without real
+evidence. The milestone belongs in the story map's release slices and in Change Management, and a
+sequence of plans delivers it. At the other end, a change too small to need scope approval before
+code is written does not need this workflow at all — the dispatches and gates cost more than the
+change.
+
 ---
 
-*Clarity Framework v2.1.0 – AI Usage Guide*
+*Clarity Framework v2.2.0 – AI Usage Guide*

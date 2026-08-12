@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v2.1.0 |
+| **Framework version** | Clarity Framework v2.2.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -24,11 +24,11 @@
 
 | Component | Technology | Version |
 | --- | --- | --- |
-| Backend | [t.ex. Spring Boot] | [X.X] |
-| Frontend | [t.ex. React] | [X.X] |
-| Databas | [t.ex. PostgreSQL] | [X.X] |
-| Hosting | [t.ex. Hetzner VPS / AWS] | — |
-| CI/CD | [t.ex. GitHub Actions] | — |
+| Backend | [e.g. Spring Boot] | [X.X] |
+| Frontend | [e.g. React] | [X.X] |
+| Database | [e.g. PostgreSQL] | [X.X] |
+| Hosting | [e.g. Hetzner VPS / AWS] | — |
+| CI/CD | [e.g. GitHub Actions] | — |
 
 ---
 
@@ -137,4 +137,4 @@ verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separ
 
 ---
 
-*Clarity Framework v2.1.0 – AI Context Document*
+*Clarity Framework v2.2.0 – AI Context Document*

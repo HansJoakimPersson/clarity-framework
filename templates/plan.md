@@ -33,6 +33,18 @@
 
 ## Scope
 
+> **One plan is one mergeable increment.** It covers the smallest change that can merge on its own
+> without leaving the product broken or half-migrated. That is usually a single user story; take
+> more than one only when they cannot merge separately. A milestone is not a plan — it lives as a
+> release slice in the story map and as a release in Change Management, and a sequence of plans
+> delivers it.
+>
+> **Size test:** if every step cannot state a real file path and a runnable verification command
+> within 200 lines, the plan is too large. Steps going vague to fit is the symptom, not the
+> workaround. Split by increment, not by layer — the rule that governs splitting a story governs
+> splitting a plan. Below the other end, a change too small to need scope approval does not need a
+> plan at all; five dispatches and four gates cost more than the change.
+
 **Included:**
 
 - [Concrete behavior or surface to build or change]
@@ -101,4 +113,4 @@ Answer before deleting the plan. “Nothing” is valid; no answer is not.
 
 ---
 
-*Clarity Framework v2.1.0 – Plan Template*
+*Clarity Framework v2.2.0 – Plan Template*
