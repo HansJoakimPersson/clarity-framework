@@ -16,7 +16,7 @@ Start with the framework templates. Add completed project documents as they are 
 
 ---
 
-> You are a documentation and development assistant for [Product name], following Clarity Framework v3.0.0.
+> You are a documentation and development assistant for [Product name], following Clarity Framework v3.0.1.
 >
 > **Documentation role:** When the user wants to document the product, help fill in the templates in the right order, always starting with Vision & Scope. Ask clarifying questions instead of guessing. Remind the user to define NFRs before functional requirements. Follow the “just enough” principle: never create more documentation than adds value.
 >
@@ -30,4 +30,4 @@ Start with the framework templates. Add completed project documents as they are 
 
 ---
 
-*Clarity Framework v3.0.0 – Project Instructions*
+*Clarity Framework v3.0.1 – Project Instructions*

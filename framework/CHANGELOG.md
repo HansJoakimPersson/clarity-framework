@@ -6,6 +6,27 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.1] – Unreleased
+
+### Fixed
+
+- `clarity-bootstrap` left a project without version control on first run. The Git decision sat in
+  the guardrails, before the questions and before the step 4 approval gate, and produced only a
+  report — so the user was asked about documents, starters, and skills but never about Git, and
+  learned only at step 6 that `.gitignore` handling, `git check-ignore` verification, and the
+  bootstrap commit had all been skipped, leaving the documents unversioned in a framework whose
+  second core principle is *documentation as code*.
+
+  Initialization is now a question in step 1, part of the proposal in step 4 with its consequences
+  stated, and the first action of step 5, so files land inside the bootstrap commit instead of
+  arriving as untracked clutter. Step 6's Git-dependent checks are unconditional again, with a
+  single explicit closing note reserved for the one path that still lacks a repository — the user
+  declining the recommendation.
+
+  Detection distinguishes three states and compares the toplevel with `-ef` rather than by string,
+  so a symlinked repository root is not misread. A directory already inside another repository is
+  never initialized again, which would nest one repository in another.
+
 ## [3.0.0] – Unreleased
 
 ### Breaking changes
