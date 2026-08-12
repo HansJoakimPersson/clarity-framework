@@ -33,8 +33,10 @@ Do not carry a copy of the mapping in this file. Read it from the release you fe
 this skill follows. If it disagrees with anything below, it wins.
 
 Three rules hold throughout: **never delete project-owned content**, **never touch source code**,
-and **never overwrite `CLAUDE.md`**. The only permitted `CLAUDE.md` change is adding the exact
-`@AGENTS.md` import after the user approves it; preserve every project-specific line already there.
+and **never discard anything a project wrote in `CLAUDE.md`**. `CLAUDE.md` is framework-owned and
+must end up containing exactly `@AGENTS.md`, but any project-specific lines it currently holds are
+project-owned content: propose moving them into the `docs/` document that governs them, and reduce
+the file to the import only after the user approves that migration.
 
 Skill ownership is name-scoped, not wildcard-scoped. Only Clarity skill names listed in the
 project's `00-ai-context.md` are managed by Clarity. Skills with any other name are project- or
@@ -109,10 +111,11 @@ older version. Replace it. Do not report the difference as a conflict and do not
 anything from it. Deleting stale files is allowed only inside one of the approved managed skill
 directories, immediately before replacing that directory. Never use a wildcard over all skills.
 
-**Cross-client instructions:** `CLAUDE.md` should begin with `@AGENTS.md`. If it is missing, propose
-creating that one-line file. If it exists without the import, report the compatibility gap and
-propose inserting the import while preserving the rest. This is project-owned and therefore needs
-explicit scope approval; never replace the file.
+**Cross-client instructions:** `CLAUDE.md` must contain exactly `@AGENTS.md`. If it is missing,
+propose creating that one-line file. If it holds anything else, do not silently replace it: read
+what is there, propose a destination in `docs/` for each project-specific rule, and present that
+migration as part of the scope. Reducing the file to the import is approved together with the
+migration, never before it.
 
 **Project-owned — merge, one document at a time:**
 
@@ -140,8 +143,9 @@ Present, in this order:
 
 - Detected version → `$NEW`, and how the version was determined.
 - Framework-owned files to be replaced or added — a count and the exact managed paths, no diffs.
-- Any stale files that will be removed inside those managed paths, plus the proposed
-  `CLAUDE.md` import change if needed.
+- Any stale files that will be removed inside those managed paths, plus the proposed `CLAUDE.md`
+  change: the import when the file is missing, or the migration of its project-specific rules into
+  named `docs/` documents followed by reduction to the import.
 - Project-owned documents needing a merge, each with one line on what structurally changed.
 - New framework skills available, new templates available, and orphans.
 - Existing unrelated dirty paths that were accepted by the scope checker, explicitly saying they
@@ -156,8 +160,10 @@ not a diff — keep it short enough to actually read.
 exact target directories, recreate them from `$NEW:skills/<name>/`, then verify the copies with
 `diff -qr`. No edits, adaptation, merging, unresolved globs, or deletion outside those exact paths.
 
-For `CLAUDE.md`, perform only the import change approved in step 4. The resulting first active line
-must be `@AGENTS.md`; preserve all existing project instructions below it.
+For `CLAUDE.md`, perform only what was approved in step 4. Write the migrated rules into their
+`docs/` destinations first, then reduce `CLAUDE.md` to the single line `@AGENTS.md`. If the
+migration was not approved, leave the file untouched and report it as outstanding — an unmigrated
+rule silently deleted is the one failure this step must never produce.
 
 If `.gitignore` excludes either managed runtime path, narrow the ignore rule as approved so both
 copies are versioned. Preserve ignores for local settings, caches, credentials, and machine-only
@@ -228,5 +234,5 @@ occasionally needs undoing.
   intermediate versions re-merges the same documents several times and loses formatting each round.
 - A project that edited a framework-owned file will lose that edit here. That is the intended
   behaviour, not an accident: the framework's `README.md` states that such files are never edited in
-  a project, and `CLAUDE.md` is where a project's own rules belong. Mention it once in the report if
-  you notice it, so the user can move the content to `CLAUDE.md` before approving.
+  a project, and `docs/` is where a project's own rules belong. Mention it once in the report if you
+  notice it, so the user can move the content into the governing `docs/` document before approving.

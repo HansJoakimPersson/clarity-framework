@@ -1,13 +1,13 @@
 # AGENTS.md - Generic Application v1.0
 
 Baseline instructions for projects that do not match a more specific Clarity Framework starter.
-Project-specific rules belong in `CLAUDE.md`; keep this framework-owned file unchanged.
+Project-specific rules belong in `docs/`; keep this framework-owned file unchanged.
 
 ## How To Use
 
 - Follow these rules for every task.
 - Read build manifests and existing scripts before choosing commands or tools.
-- Local project-specific instructions in `CLAUDE.md` take precedence when present.
+- The project's documents in `docs/` take precedence over this file when they disagree.
 - Replace this starter with a stack-specific Clarity starter when one becomes available.
 
 ## Core Rules
@@ -21,7 +21,7 @@ Project-specific rules belong in `CLAUDE.md`; keep this framework-owned file unc
 
 ## Workflow
 
-1. Read `AGENTS.md` and project-specific instructions in `CLAUDE.md` before starting.
+1. Read `AGENTS.md` before starting.
 2. In a Clarity project, read `docs/00-ai-context.md` first when it exists. If it is absent, use
    `README.md` and the task-relevant numbered documents. Do not read every document speculatively.
    Read `docs/09-visual-profile.md` before visual UI work, `docs/04-data-model-api.md` before

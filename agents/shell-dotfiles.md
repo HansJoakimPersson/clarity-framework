@@ -14,7 +14,7 @@ Guidance for agents editing shell scripts, aliases, functions, and dotfiles.
 
 ## Workflow
 
-1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
+1. Read `AGENTS.md` and, when it exists, `docs/00-ai-context.md` before starting any task.
 2. In Clarity Framework projects, read `docs/00-ai-context.md` first when it exists — it is short,
    and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
    task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs

@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v2.2.0 |
+| **Framework version** | Clarity Framework v3.0.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -83,6 +83,23 @@
 
 ---
 
+## Project conventions
+
+> Rules specific to this project that override the framework-owned `AGENTS.md`. This is the home for
+> conventions with no other numbered document: everything architectural belongs in `03-sad.md`,
+> operational commands in `07-runbook.md`, test rules in `06-test-documentation.md`, and visual rules
+> in `09-visual-profile.md`. Never put project rules in `CLAUDE.md`; it contains only `@AGENTS.md`.
+>
+> Keep this list short. A convention that needs a paragraph of justification is a decision, and
+> decisions belong in an ADR in `08-change-management.md`.
+
+| Convention | Reason |
+| --- | --- |
+| [e.g. Use the project's package manager wrapper, never the global binary] | [Why it matters here] |
+| [e.g. Never modify `legacy/`; it is replaced by FR-0XX] | [Why it matters here] |
+
+---
+
 ## AI workflow
 
 [Omit this entire section if the project does not divide work among multiple agents.]
@@ -137,4 +154,4 @@ verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separ
 
 ---
 
-*Clarity Framework v2.2.0 – AI Context Document*
+*Clarity Framework v3.0.0 – AI Context Document*

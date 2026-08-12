@@ -1,4 +1,4 @@
-Read AGENTS.md, project-specific instructions in CLAUDE.md when present, {{PLAN}}, {{BUILD_LOG}}, and the diff between the current working tree and commit {{SHA}}.
+Read AGENTS.md, the project rules in docs/ that the plan cites, {{PLAN}}, {{BUILD_LOG}}, and the diff between the current working tree and commit {{SHA}}.
 
 This is a read-only verification pass. Use command results already recorded in the build log as evidence. You may run genuinely read-only checks, but do not rerun builds or tests that write caches or artifacts. If a condition has no reliable evidence in the diff or build log, mark it uncertain rather than guessing.
 

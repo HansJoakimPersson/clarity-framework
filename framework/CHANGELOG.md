@@ -6,6 +6,41 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.0] – Unreleased
+
+### Breaking changes
+
+- `CLAUDE.md` contains exactly `@AGENTS.md` and nothing else. It is a pointer that lets Claude Code
+  load what Codex reads directly; it is no longer the home for project-specific instructions.
+- Everything project-specific lives in `docs/`, routed to the document that governs it. `README.md`
+  carries the routing table: architecture to `03-sad.md` with ADRs in `08-change-management.md`,
+  behavior to `02-requirements.md`, data and interfaces to `04-data-model-api.md`, delivery to
+  `05-deployment-view.md`, test rules to `06-test-documentation.md`, operations to `07-runbook.md`,
+  visual rules to `09-visual-profile.md`, and everything else to `00-ai-context.md`.
+- Precedence changed. It was: session instruction, `CLAUDE.md`, `AGENTS.md`, skill, `docs/`. It is
+  now: session instruction, `docs/`, `AGENTS.md`, skill. `CLAUDE.md` is absent because it holds no
+  rules.
+
+**Migration.** A project with content in `CLAUDE.md` below the import must move it into the `docs/`
+document that governs each rule, then reduce `CLAUDE.md` to the single line. `framework-update`
+detects the content, proposes a destination per rule, and reduces the file only after that migration
+is approved — it never silently discards a project's rules.
+
+### Added
+
+- A `Project conventions` section in `templates/00-ai-context.md` as the home for agent-facing rules
+  that no numbered document covers, kept short and pointing decisions at ADRs.
+- An `Ownership` section in `README.md` stating what each of the three files holds, and the same
+  division in `framework/documentation-guide.md` §13.
+
+### Changed
+
+- `agents/README.md`, all eight stack starters, `skills/README.md`, both skills, `templates/plan.md`
+  with its `plan-driven-build/plan-template.md` copy, and all four dispatch prompts now point at
+  `docs/` instead of `CLAUDE.md` for project-specific rules.
+- `clarity-bootstrap` and `framework-update` treat project content found in `CLAUDE.md` as
+  project-owned: it must be migrated to `docs/` with approval before the file is reduced.
+
 ## [2.2.0] – 2026-08-12
 
 ### Added

@@ -15,8 +15,7 @@ boundary.
 - Add **Authentication** when the task involves login, token handling, session management, or protected endpoints.
 - Add **Persistence** when the task involves the server-side database (JPA, Flyway, DBI).
 - Add **Distribution** when the task involves TestFlight, App Store submission, or backend deployment.
-- Local project-specific instructions, `CLAUDE.md`, and local `AGENTS.md` files always take precedence when
-  present.
+- The project's documents in `docs/` always take precedence over this file when they disagree.
 
 ---
 
@@ -37,7 +36,7 @@ boundary.
 
 ### Workflow
 
-1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
+1. Read `AGENTS.md` and, when it exists, `docs/00-ai-context.md` before starting any task.
 2. In Clarity Framework projects, read `docs/00-ai-context.md` first when it exists — it is short,
    and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
    task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs

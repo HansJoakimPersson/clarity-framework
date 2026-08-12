@@ -1,6 +1,6 @@
 # The Clarity Framework Documentation Guide
 
-## Clarity Framework v2.2.0
+## Clarity Framework v3.0.0
 
 Documentation should make decisions easier, not create bureaucracy. Use the smallest coherent set of
 documents that lets the people and agents working on the product make safe, consistent decisions.
@@ -222,6 +222,15 @@ Agents are governed contributors, not decision owners. Use `00-ai-context.md` as
 point, keep durable state in project files, and use the four-level runtime contract when work is
 split across agents:
 
+Three files divide the responsibility and nothing crosses between them. `CLAUDE.md` contains the
+single line `@AGENTS.md` and never anything else; it exists so Claude Code loads what Codex reads
+directly. `AGENTS.md` is framework-owned, describes how an agent works in the stack, and is replaced
+wholesale on update. Everything about the project — decisions, conventions, and deviations — lives
+in `docs/`, in the document that governs it, with `00-ai-context.md` as the home for agent-facing
+conventions that no numbered document covers. A project never records its own rules in a
+framework-owned file: rules kept where the framework already governs them stay reviewed, versioned,
+and visible, and they survive every framework update.
+
 1. Orchestrator
 2. Reasoning
 3. Review (optional)
@@ -245,4 +254,4 @@ journal, and human gates for scope, merge, release, and plan deletion. See `ai-u
 
 ---
 
-*Clarity Framework v2.2.0 – Documentation Guide*
+*Clarity Framework v3.0.0 – Documentation Guide*

@@ -1,4 +1,4 @@
-Read AGENTS.md and, if it exists, the project-specific instructions in CLAUDE.md. If docs/00-ai-context.md exists, read it; otherwise use README.md as the entry point. From there read only what this task touches: {{TASK}}
+Read AGENTS.md. If docs/00-ai-context.md exists, read it; otherwise use README.md as the entry point. Project-specific rules live in docs/, never in CLAUDE.md. From there read only what this task touches: {{TASK}}
 
 Then read {{PLAN_TEMPLATE}} and reproduce its structure exactly, filled in — do not invent a different structure. Today's date is {{DATE}}.
 

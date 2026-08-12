@@ -11,7 +11,7 @@ optional profiles that match the project in front of you.
 - Add **Persistence** when the project connects to a relational database via DBI, RSQLite, RPostgres, or similar.
 - Add **Plumber** when the project exposes a REST API via the plumber package.
 - Add **Deployment** when the project deploys to shinyapps.io, Posit Connect, Shiny Server, or Docker.
-- Local project-specific instructions, `CLAUDE.md`, and local `AGENTS.md` files always take precedence when present.
+- The project's documents in `docs/` always take precedence over this file when they disagree.
 
 ## Core Rules
 
@@ -27,7 +27,7 @@ optional profiles that match the project in front of you.
 
 ### Workflow
 
-1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
+1. Read `AGENTS.md` and, when it exists, `docs/00-ai-context.md` before starting any task.
 2. In Clarity Framework projects, read `docs/00-ai-context.md` first when it exists — it is short,
    and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
    task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs

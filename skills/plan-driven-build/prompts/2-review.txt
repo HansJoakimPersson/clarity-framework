@@ -1,4 +1,4 @@
-Read AGENTS.md, project-specific instructions in CLAUDE.md when present, and {{PLAN}}. Review the plan against the actual code. Build nothing and change no files.
+Read AGENTS.md, the project rules in docs/ that the plan cites, and {{PLAN}}. Review the plan against the actual code. Build nothing and change no files.
 
 Answer these, in order:
 - Do the file paths in the plan exist as written?

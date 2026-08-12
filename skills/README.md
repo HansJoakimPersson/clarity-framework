@@ -5,7 +5,8 @@ This directory contains ready-made skills to copy into a project when a workflow
 A copied skill **belongs to the framework and must not be edited in the project**. It is replaced
 wholesale when the project updates to a new framework release. Only Clarity skill names listed in
 `00-ai-context.md` are managed; local and third-party skills are never touched. Project-specific
-workflow differences belong in `CLAUDE.md`. See the ownership table in the framework `README.md`.
+workflow differences belong in `docs/00-ai-context.md`. See the ownership table in the framework
+`README.md`.
 
 ## What is a skill?
 
@@ -54,8 +55,9 @@ commit using an explicit path list.
 3. Invoke it in Claude Code with `/plan-driven-build`, or in Codex with `$plan-driven-build` or through
    `/skills`.
 
-Step 2 concerns the machine, not the copied files. Project deviations belong in `CLAUDE.md`; leave
-the copied files unchanged so they can be replaced at the next framework update.
+Step 2 concerns the machine, not the copied files. Project deviations belong in
+`docs/00-ai-context.md`; leave the copied files unchanged so they can be replaced at the next
+framework update.
 
 ### What the files in `plan-driven-build/` do
 
@@ -81,13 +83,14 @@ shared `SKILL.md` frontend.
 ## Precedence
 
 1. An explicit user instruction in the session
-2. Project-specific rules in `CLAUDE.md` after the `@AGENTS.md` import
-3. The project's framework-owned `AGENTS.md`
+2. The project's `docs/` — its decisions, conventions, and deviations
+3. The project's framework-owned `AGENTS.md` — how to work where `docs/` is silent
 4. The skill's `SKILL.md`
-5. The project's `docs/`
 
-A skill that conflicts with `CLAUDE.md` or `AGENTS.md` must be adapted, not followed blindly.
+`CLAUDE.md` is absent from this order deliberately: it contains only `@AGENTS.md` and carries no
+rules of its own. A skill that conflicts with `docs/` or `AGENTS.md` must be adapted, not followed
+blindly.
 
 ---
 
-*Clarity Framework v2.2.0*
+*Clarity Framework v3.0.0*

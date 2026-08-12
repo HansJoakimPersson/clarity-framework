@@ -1,4 +1,4 @@
-Read AGENTS.md, project-specific instructions in CLAUDE.md when present, and {{PLAN}}, in that order. Build the plan.
+Read AGENTS.md, the project rules in docs/ that the plan cites, and {{PLAN}}, in that order. Build the plan.
 
 The plan's scope section is authoritative. Do not re-plan, and build nothing that is not listed under 'Included'. If the plan turns out wrong or incomplete: stop and report what you found. Do not improvise past it — you do not know why the plan looks the way it does, and the person who does is waiting for exactly that report.
 

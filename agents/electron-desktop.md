@@ -16,7 +16,7 @@ like a website in a window" as a defect, not a starting point.
 - Add **Auto Update** when the app ships updates to users outside an app store.
 - Add **Packaging and Distribution** when the project produces installers or signed artifacts.
 - Add **Native Modules** when the project depends on compiled Node addons.
-- Local project-specific instructions, `CLAUDE.md`, and local `AGENTS.md` files always take precedence when present.
+- The project's documents in `docs/` always take precedence over this file when they disagree.
 
 ## Core Rules
 
@@ -33,7 +33,7 @@ like a website in a window" as a defect, not a starting point.
 
 ### Workflow
 
-1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
+1. Read `AGENTS.md` and, when it exists, `docs/00-ai-context.md` before starting any task.
 2. In Clarity Framework projects, read `docs/00-ai-context.md` first when it exists — it is short,
    and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
    task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs
@@ -191,8 +191,8 @@ This section is what separates a native-feeling app from a website in a frame. A
   established equivalent — so a single `npm run dev` starts the renderer with HMR and launches Electron against it.
 - Renderer changes hot-reload. Main and preload changes require an Electron restart; the toolchain should do this
   automatically. Do not add manual restart steps to the workflow.
-- Read the project's scripts before running anything. If the run model is not documented in `CLAUDE.md`,
-  `AGENTS.md`, or `docs/03-sad.md`, ask before assuming.
+- Read the project's scripts before running anything. If the run model is not documented in
+  `AGENTS.md`, `docs/00-ai-context.md`, or `docs/03-sad.md`, ask before assuming.
 - Never run a production build to test a code change during normal development.
 
 ### Configuration

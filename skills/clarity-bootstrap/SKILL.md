@@ -94,8 +94,9 @@ Show:
 - selected starter;
 - selected skills and both installation paths;
 - existing files that need a merge rather than a copy;
-- an existing `AGENTS.md` whose project-specific content must be preserved in `CLAUDE.md` before
-  the selected starter can replace it;
+- an existing `AGENTS.md` or `CLAUDE.md` whose project-specific content must be moved into the
+  governing `docs/` document before the selected starter can replace it, naming the target document
+  for each piece;
 - unresolved decisions.
 
 Stop for approval. Do not write before the user approves this scope.
@@ -110,10 +111,12 @@ After approval:
    placeholders for unknown decisions.
 3. Never overwrite an existing project document. Merge the approved template structure around its
    content, or stop and ask if the mapping is ambiguous.
-4. If `AGENTS.md` already contains project-specific instructions, move them to `CLAUDE.md` only as
-   approved. Then copy the selected starter verbatim to `AGENTS.md`.
-5. Ensure `CLAUDE.md` has `@AGENTS.md` as its first active line. Create the one-line file when it
-   is absent; otherwise preserve all existing instructions below the import.
+4. If `AGENTS.md` or `CLAUDE.md` already contains project-specific instructions, move them into the
+   `docs/` document that governs each one, only as approved. Then copy the selected starter verbatim
+   to `AGENTS.md`.
+5. Write `CLAUDE.md` containing exactly `@AGENTS.md` and nothing else. Never reduce an existing
+   `CLAUDE.md` to the import until its content has been migrated under step 4; losing a project's
+   own rules is worse than leaving the file inconsistent for one more round.
 6. For each selected skill, replace only its exact Clarity-managed target directory under both
    runtime roots with the release copy. Verify every pair using `diff -qr`.
 7. Ensure `.gitignore` does not exclude the selected `.agents/skills/` or `.claude/skills/` files.
@@ -121,8 +124,8 @@ After approval:
 8. Add `docs/plans/.runs/` to `.gitignore` when `plan-driven-build` is selected. Preserve all
    existing ignore rules.
 
-Do not edit the copied `AGENTS.md` or skill files. Project-specific deviations belong in
-`CLAUDE.md`.
+Do not edit the copied `AGENTS.md` or skill files, and never add rules to `CLAUDE.md`.
+Project-specific deviations belong in `docs/`, in the document that governs them.
 
 ## Step 6 — Stamp and verify
 
@@ -138,7 +141,7 @@ skill-paths: .agents/skills, .claude/skills
 
 Verify:
 
-- `CLAUDE.md` imports `AGENTS.md`;
+- `CLAUDE.md` contains `@AGENTS.md` and nothing else;
 - every selected document exists exactly once at its standard `docs/NN-*.md` path;
 - both runtime copies of each managed skill are identical;
 - `git check-ignore` confirms that neither managed skill copy is excluded when the project uses Git;

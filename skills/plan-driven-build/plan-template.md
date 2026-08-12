@@ -63,7 +63,7 @@
 | Document | Why |
 | --- | --- |
 | `AGENTS.md` | Applies in full: style, security, and test requirements |
-| `CLAUDE.md` | Project-specific deviations after the `@AGENTS.md` import, if present |
+| `docs/00-ai-context.md` | Project orientation, runtime contract, and deviations from framework defaults |
 | `docs/02-requirements.md` § [story IDs] | Acceptance criteria for the stories in **Delivers**; authoritative over this plan |
 | `docs/03-sad.md` § [section] | Architecture decision governing this change |
 | `docs/04-data-model-api.md` | When the change concerns data models or API contracts |
@@ -113,4 +113,4 @@ Answer before deleting the plan. “Nothing” is valid; no answer is not.
 
 ---
 
-*Clarity Framework v2.2.0 – Plan Template*
+*Clarity Framework v3.0.0 – Plan Template*

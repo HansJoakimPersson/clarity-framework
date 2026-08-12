@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 2.2.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 3.0.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -81,13 +81,42 @@ my-project/
 ├── .agents/skills/                 # Codex copies of selected Clarity skills
 ├── .claude/skills/                 # Claude Code copies of selected Clarity skills
 ├── AGENTS.md                       # Unedited framework-owned stack starter
-├── CLAUDE.md                       # @AGENTS.md plus project-specific rules
+├── CLAUDE.md                       # Exactly one line: @AGENTS.md
 └── …
 ```
 
 Framework-owned files are replaced wholesale during updates. Project-owned documents preserve their
-content while their structure is lifted to the current template. Project-specific rules belong in
-`CLAUDE.md`; never edit a copied framework-owned file to add them.
+content while their structure is lifted to the current template.
+
+## Ownership
+
+Three files carry three distinct responsibilities, and nothing crosses between them:
+
+| File | Owner | Contains |
+| --- | --- | --- |
+| `CLAUDE.md` | Framework | The single line `@AGENTS.md`, and nothing else — ever |
+| `AGENTS.md` | Framework | How an agent works in this stack; replaced wholesale on update |
+| `docs/` | Project | Everything about this project: decisions, conventions, and deviations |
+
+**`CLAUDE.md` is a pointer, not a rulebook.** It exists only so Claude Code loads the same
+instructions Codex reads directly. It never holds project-specific instructions.
+
+**Everything project-specific lives in `docs/`,** routed to the document that governs it:
+
+| Project-specific content | Document |
+| --- | --- |
+| Architecture, boundaries, technology choices | `docs/03-sad.md`, with ADRs in `docs/08-change-management.md` |
+| Behavior, acceptance criteria, priorities | `docs/02-requirements.md` |
+| Data models and interface contracts | `docs/04-data-model-api.md` |
+| Build, environments, delivery | `docs/05-deployment-view.md` |
+| Test conventions and Definition of Done | `docs/06-test-documentation.md` |
+| Commands, operations, recovery | `docs/07-runbook.md` |
+| Visual rules and design tokens | `docs/09-visual-profile.md` |
+| Agent orientation, runtime contract, boundaries, and anything without a numbered home | `docs/00-ai-context.md` |
+
+A project never edits a framework-owned file to record its own rules. A convention worth enforcing
+is worth documenting where the framework already governs it — that keeps it reviewed, versioned, and
+visible to every contributor rather than buried in a side file.
 
 There is no required `docs/.clarity-version` file. The update skill reads version markers already
 present in project documents, especially `docs/00-ai-context.md`, and compares them with the stable
@@ -153,4 +182,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v2.2.0*
+*Clarity Framework v3.0.0*

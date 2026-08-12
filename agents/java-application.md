@@ -18,7 +18,7 @@ optional profiles that match the project in front of you.
   distribution.
 - Add **MCP Server** when the project exposes tools, resources, or prompts to AI clients via the Model Context
   Protocol.
-- Local project-specific instructions, `CLAUDE.md`, and local `AGENTS.md` files always take precedence when present.
+- The project's documents in `docs/` always take precedence over this file when they disagree.
 
 ## Core Rules
 
@@ -34,7 +34,7 @@ optional profiles that match the project in front of you.
 
 ### Workflow
 
-1. Read local project instructions before starting any task. If `CLAUDE.md` or `AGENTS.md` exists, read it.
+1. Read `AGENTS.md` and, when it exists, `docs/00-ai-context.md` before starting any task.
 2. In Clarity Framework projects, read `docs/00-ai-context.md` first when it exists — it is short,
    and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
    task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs
@@ -442,7 +442,7 @@ Use this profile when the repository includes browser UI code.
 ### Development Run Model
 
 Before starting any server or running any build command, determine which run model the project uses. If it is not
-documented in `CLAUDE.md`, `AGENTS.md`, or `docs/03-sad.md`, ask before assuming.
+documented in `AGENTS.md`, `docs/00-ai-context.md`, or `docs/03-sad.md`, ask before assuming.
 
 **Embedded (most common):** The frontend is built as a static artifact and consumed by Maven or Gradle packaging.
 The Java process serves everything — there is no separate frontend server in production or in normal development.
@@ -459,7 +459,7 @@ The Java process serves everything — there is no separate frontend server in p
 
 **Standalone:** The frontend is a separately deployed application with its own server and lifecycle.
 
-- This model requires explicit documentation in `CLAUDE.md` or `docs/03-sad.md`, including how CORS is configured
+- This model requires explicit documentation in `docs/03-sad.md`, including how CORS is configured
   and which port each process uses.
 - Start both processes only when the project documentation instructs it.
 
