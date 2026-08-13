@@ -117,4 +117,4 @@ scans support but do not replace human inspection.
 
 ---
 
-*Clarity Framework v3.1.0 – Visual Profile & Design Tokens*
+*Clarity Framework v3.2.0 – Visual Profile & Design Tokens*

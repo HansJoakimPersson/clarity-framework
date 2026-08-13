@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v3.1.0 |
+| **Framework version** | Clarity Framework v3.2.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -108,12 +108,17 @@ This section is the project's **runtime contract**: it states which agent fills 
 which account, and with which permissions. It is the single source for this information; a skill or
 script can be replaced without redefining the workflow.
 
+> **The account column is the level-to-subscription binding** that `plan-driven-build` reads at
+> step 0. Name the project's real aimux accounts here — they are subscriptions, not roles, so any
+> account may fill any level and one account may fill several. Changing which subscription pays for
+> a level is an edit to this table and nothing else.
+
 | Level | Agent / account | Sandbox + approval | Responsibility |
 | --- | --- | --- | --- |
 | Orchestrator | [e.g. Claude Code or Codex] | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, owns gates, and maintains the run journal. Does not read the codebase or diff itself. |
-| Reasoning | [e.g. Codex, account `reasoning`] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different account from the Orchestrator. |
-| Review *(optional)* | [e.g. Codex, account `review`] | `read-only` + approval `never` | Reviews the plan cold against the code. Uses a different account from Reasoning. |
-| Implementation | [e.g. Codex, account `implementation`] | `workspace-write` + approval `never` | Builds the approved plan. Does not re-plan; stops on a blocking question. |
+| Reasoning | [e.g. Codex, account `[your-subscription]`] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different account from the Orchestrator. |
+| Review *(optional)* | [e.g. Codex, account `[another-subscription]`] | `read-only` + approval `never` | Reviews the plan cold against the code. Uses a different account from Reasoning. |
+| Implementation | [e.g. Codex, account `[a-third-subscription]`] | `workspace-write` + approval `never` | Builds the approved plan. Does not re-plan; stops on a blocking question. |
 
 > Sandbox and approval are independent settings. If only the sandbox is set, approval remains at its
 > default and an unattended run may stop to ask. Always set both.
@@ -154,4 +159,4 @@ verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separ
 
 ---
 
-*Clarity Framework v3.1.0 – AI Context Document*
+*Clarity Framework v3.2.0 – AI Context Document*

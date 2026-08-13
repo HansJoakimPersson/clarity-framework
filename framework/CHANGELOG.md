@@ -6,6 +6,36 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [3.2.0] – Unreleased
+
+### Changed
+
+- Levels are bound to aimux accounts through the project's runtime contract instead of by name.
+  `setup.md` previously told projects to create accounts called `reasoning`, `implementation`, and
+  `review`, which contradicted the framework's own doctrine that an aimux account selects which
+  subscription pays and is not a persona. An account is a subscription; naming one after a level
+  collapses the two and makes that subscription unusable for any other level.
+
+  The `Agent / account` column in `templates/00-ai-context.md` is now the mapping. Step 0 of
+  `plan-driven-build` reads it into `ACCT_REASONING` / `ACCT_IMPLEMENTATION` / `ACCT_REVIEW`, and
+  the dispatch commands pass those variables. Any account may fill any level, one account may fill
+  several, and a project may hold any number of subscriptions — changing which one pays for a level
+  is an edit to that table and nothing else. `dispatch.sh` is unchanged; it already took
+  `--account NAME` generically.
+
+- Step 0 verifies each mapped account's directory exists and prints `ok` or `MISSING` per level,
+  replacing a prerequisite that asked the reader to eyeball `aimux profile list`. A level whose
+  account is missing runs on the logged-in account with cost unseparated — previously visible only
+  as a `FALLBACK:` line per dispatch, which is easy to scroll past and gives no signal until a usage
+  report weeks later shows every session attributed to one account.
+
+- The run journal records the account that actually paid for each step, rather than a level name
+  that says nothing about which subscription was billed.
+
+- `setup.md` states that spreading load across subscriptions is a change to the mapping between
+  runs, not a rotation within one: rotating per dispatch starts every dispatch on a cold prompt
+  cache and can land the review on the subscription that drafted the plan.
+
 ## [3.1.0] – Unreleased
 
 ### Changed

@@ -73,10 +73,12 @@ Check, and if anything is missing: report it and stop.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
   into the working tree; if it is dirty you can no longer tell its changes from what was there.
   Report what is uncommitted and let the user decide — never commit, stash or reset for them.
-- `aimux profile list` shows one account per level — aimux names the subcommand `profile`, but an
-  account only selects which subscription pays; it is not a persona. Without them cost is not
-  separated, only context. `dispatch.sh` detects this and prints a `FALLBACK:` line — pass it on to the user and
-  record it in the journal rather than letting it scroll past.
+- `docs/00-ai-context.md` names an aimux account for each level, and `aimux profile list` shows
+  those accounts. **Account names are subscriptions, not roles** — whatever the project calls its
+  subscriptions is what goes in both places, and the same account may fill several levels. Step 0
+  verifies the mapping; without it cost is not separated, only context. `dispatch.sh` also prints a
+  `FALLBACK:` line per dispatch — pass it on to the user and record it in the journal rather than
+  letting it scroll past.
 
 Templates: `plan-template.md` and `journal-template.md` in this skill's directory. Copy them, never edit them in
 place. Do not look for `templates/` — that path exists in the framework repo, not in projects.
@@ -101,6 +103,25 @@ RUN=docs/plans/.runs/$ID
 mkdir -p "$RUN" && cp "$SKILLDIR/journal-template.md" "$JOURNAL"
 ```
 
+Then bind each level to an account. **The account names are the project's own aimux subscriptions**
+— read them from the runtime contract in `docs/00-ai-context.md` and set them here. They are not
+role names, and the skill has no defaults to fall back on:
+
+```bash
+ACCT_REASONING=<account from docs/00-ai-context.md>
+ACCT_IMPLEMENTATION=<account from docs/00-ai-context.md>
+ACCT_REVIEW=<account from docs/00-ai-context.md, or the reasoning account>
+
+for a in "$ACCT_REASONING" "$ACCT_IMPLEMENTATION" "$ACCT_REVIEW"; do
+  [ -d "$HOME/.aimux/profiles/$a" ] && printf 'ok       %s\n' "$a" || printf 'MISSING  %s\n' "$a"
+done
+```
+
+Any `MISSING` line means that level will run on the logged-in account and its cost will not be
+separated. Report it before dispatching rather than discovering it in the usage report weeks later.
+Which subscription fills which level is the project's decision — one account may fill several
+levels, and any account may fill any level.
+
 Every dispatch goes through `$SKILLDIR/dispatch.sh`, which takes its instructions from
 `$SKILLDIR/prompts/`. **Do not read the prompt files** — keeping roughly a thousand words of
 instruction text out of your context is the point of them living in files. You fill their
@@ -124,7 +145,7 @@ Do not read the project's documents or code beyond what you need to state the ta
 read what it needs — that is the context you are not paying for twice.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account reasoning --mode read-only \
+"$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" --mode read-only \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<one or two sentences: what should be true when this is done>" \
   --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
@@ -137,14 +158,15 @@ as this sentence. Build nothing in this step.
 
 ## Step 2 — Dispatch a critique of the plan
 
-A fresh, stateless invocation reading the plan cold against the code. It runs under the `review`
-account — a different subscription from the one that drafted the plan, which removes the blind spot
-of a level reviewing itself. If that account does not exist, `--fallback reasoning` handles it and says
+A fresh, stateless invocation reading the plan cold against the code. It runs under the account the
+contract binds to Review — a different subscription from the one that drafted the plan, which
+removes the blind spot of a level reviewing itself. If that account does not exist, the fallback to
+the Reasoning account handles it and says
 so on stdout: then it is a self-review that catches wrong paths and invented functions reliably but
 shares whatever judgment blind spots the drafting level has. Record the fallback in the journal.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account review --fallback reasoning --mode read-only \
+"$SKILLDIR/dispatch.sh" --account "$ACCT_REVIEW" --fallback "$ACCT_REASONING" --mode read-only \
   --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
   --out "$RUN/review.md" --max-lines 40
 ```
@@ -180,7 +202,7 @@ will answer. `--network` sets the sandbox's `network_access` for that one dispat
 read-only levels keep the default and the account's stored configuration is untouched.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account implementation --mode workspace-write --background --network \
+"$SKILLDIR/dispatch.sh" --account "$ACCT_IMPLEMENTATION" --mode workspace-write --background --network \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
   --log "$RUN/build.log"
 ```
@@ -240,7 +262,7 @@ stop and report rather than improvising a fix mid-build.
 Do not read the diff yourself.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account reasoning --mode read-only \
+"$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" --mode read-only \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
   --var PLAN="$PLAN" --var SHA="<approval SHA from the journal>" \
   --var BUILD_LOG="$RUN/build.log" \

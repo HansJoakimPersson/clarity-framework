@@ -39,18 +39,31 @@ not an agent persona or a behavioral profile. aimux names its own subcommand `pr
 else this skill says **account**, to keep it apart from a Codex profile and from the plan's gate
 profile. `dispatch.sh` takes `--account` for the same reason.
 
+**Name each aimux account after the subscription it is, not after the level it will fill.** aimux
+manages subscriptions; the framework binds levels to them. Naming a subscription `implementation`
+collapses the two and makes the account unusable for any other level:
+
 ```bash
-aimux profile add reasoning      --cli codex && aimux auth login reasoning
-aimux profile add implementation --cli codex && aimux auth login implementation
-aimux profile add review         --cli codex && aimux auth login review         # optional
+aimux profile add <your-subscription-name> --cli codex && aimux auth login <your-subscription-name>
 aimux profile list
 ```
 
-Each account can use its own model: `aimux profile update implementation -m <model>`. The build is
+Then record which account fills which level in the project's runtime contract,
+`docs/00-ai-context.md`. That table is the mapping — step 0 of `SKILL.md` reads it and verifies the
+accounts exist. The binding is arbitrary and project-owned: any account may fill any level, one
+account may fill several, and adding a subscription is an edit to that table, not a rename.
+
+Each account can use its own model: `aimux profile update <account> -m <model>`. The build is
 usually the longest run and may justify a faster or cheaper model once scope is approved.
 
-`review` is optional. When present, step 2 runs under a different account from the plan author. If
-it is missing, fall back to `reasoning` and record that fact in the run journal.
+A separate review account is optional. When the contract names one, step 2 runs under a different
+account from the plan author. When it names the same account as Reasoning — or none — step 2 falls
+back and that fact is recorded in the run journal.
+
+**Spreading load across subscriptions is a mapping change, not a per-dispatch rotation.** Rotating
+accounts inside a run would start every dispatch on a cold prompt cache and could land the review on
+the same subscription that drafted the plan. Change the binding between runs instead: the caches
+stay warm within each run, and the level separation holds.
 
 The skill's dispatch commands set `CODEX_HOME="$HOME/.aimux/profiles/<account>"` directly instead of
 using `aimux run`, so they compose with background execution. This is aimux's own mechanism: one

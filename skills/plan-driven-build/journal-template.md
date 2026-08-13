@@ -22,13 +22,13 @@
 
 ## Steps
 
-| # | Step | Status | Level / account | Artifact |
+| # | Step | Status | Level — account used | Artifact |
 | --- | --- | --- | --- | --- |
-| 1 | Plan | ☐ | reasoning | `<plan>` |
-| 2 | Review | ☐ | review / reasoning | `.runs/.../review.md` |
-| 3 | Revision + scope gate | ☐ | orchestrator | — |
-| 4 | Build | ☐ | implementation | `.runs/.../build.log` |
-| 5 | Verification | ☐ | reasoning | `.runs/.../verification.md` |
+| 1 | Plan | ☐ | Reasoning — `[account]` | `<plan>` |
+| 2 | Review | ☐ | Review — `[account]` | `.runs/.../review.md` |
+| 3 | Revision + scope gate | ☐ | Orchestrator | — |
+| 4 | Build | ☐ | Implementation — `[account]` | `.runs/.../build.log` |
+| 5 | Verification | ☐ | Reasoning — `[account]` | `.runs/.../verification.md` |
 | 6 | Commit | ☐ | orchestrator | — |
 | 7 | Merge gate | ☐ | human | — |
 | 8 | Closeout | ☐ | orchestrator | — |
@@ -51,8 +51,9 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
 ## Deviations
 
 - [What went wrong, at which step, and what was done. Empty is valid.]
-- [Record every fallback: `codex exec` without an account, `reasoning` instead of `review`, or an
-  `aimux handoff`. An unrecorded fallback looks like successful account separation.]
+- [Record every fallback: a dispatch that ran on the logged-in account because the mapped one was
+  missing, the Reasoning account standing in for Review, or an `aimux handoff`. Name the account
+  that actually paid — an unrecorded fallback looks like successful account separation.]
 
 ---
 
