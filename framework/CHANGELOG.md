@@ -6,7 +6,7 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
-## [3.2.0] – Unreleased
+## [3.2.0] – 2026-08-13
 
 ### Added
 
