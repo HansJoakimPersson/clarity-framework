@@ -222,6 +222,8 @@ normal verification.
 - Prefer stable, widely used libraries when a new dependency is genuinely needed.
 - Preserve Surefire/Failsafe or unit/integration-test separation when present.
 - Do not add repositories unless unavoidable; use HTTPS only.
+- When the project has a fixed Java baseline, prefer a build-level guard such as Maven Enforcer
+  `requireJavaVersion`; local shell or agent bootstrap is convenience, not the source of truth.
 
 ## Optional Profile: Gradle
 

@@ -11,7 +11,15 @@ mkdir -p "$TEST_ROOT/bin" "$TEST_ROOT/out"
 cat > "$TEST_ROOT/bin/codex" <<'FAKE_CODEX'
 #!/usr/bin/env sh
 
-[ "$1" = "-a" ] && [ "$2" = "never" ] && [ "$3" = "exec" ] || exit 64
+[ "$1" = "-a" ] && [ "$2" = "never" ] || exit 64
+shift 2
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -c) shift 2 ;;
+    exec) shift; break ;;
+    *) exit 64 ;;
+  esac
+done
 
 out=''
 while [ "$#" -gt 0 ]; do
@@ -25,7 +33,7 @@ if [ "${CF_TEST_FAIL:-0}" -eq 1 ]; then
   exit 17
 fi
 
-[ -z "$out" ] || printf 'ok\n' > "$out"
+[ -z "$out" ] || printf 'ok%s\n' "${CF_ENV_SEEN:+:$CF_ENV_SEEN}" > "$out"
 FAKE_CODEX
 chmod +x "$TEST_ROOT/bin/codex"
 
@@ -35,6 +43,11 @@ export PATH
 "$SCRIPT_DIR/dispatch.sh" --profile clarity-dispatch-regression --mode read-only --prompt test \
   --out "$TEST_ROOT/out/report.md" >/dev/null
 test "$(cat "$TEST_ROOT/out/report.md")" = 'ok'
+
+printf '%s\n' 'export CF_ENV_SEEN=env-file' > "$TEST_ROOT/build-env.sh"
+"$SCRIPT_DIR/dispatch.sh" --profile clarity-dispatch-regression --mode read-only --prompt test \
+  --env-file "$TEST_ROOT/build-env.sh" --out "$TEST_ROOT/out/env-report.md" >/dev/null
+test "$(cat "$TEST_ROOT/out/env-report.md")" = 'ok:env-file'
 
 CF_TEST_FAIL=1
 export CF_TEST_FAIL

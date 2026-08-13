@@ -114,6 +114,51 @@ They are complementary.
 `danger-full-access` solves the same problem more bluntly by removing the sandbox entirely. Do not
 use it as the default; unattended implementation should still run inside a sandbox.
 
+### Implementation and the build environment
+
+Codex uses local binaries, but a sandboxed non-interactive dispatch may not see the same login-shell
+environment as an interactive terminal. Version managers and shell startup files can therefore make
+`java`, `node`, `go`, or another tool resolve differently inside step 4 than they do in a normal
+shell.
+
+Keep the dispatcher language-agnostic. Put project-specific build bootstrap in an explicit env file
+instead:
+
+```text
+.agents/build-env.sh        # committed when it is portable for the project
+.agents/build-env.local.sh  # gitignored machine-specific override
+```
+
+For example, a Java 21 project on macOS might use:
+
+```sh
+if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+  JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+  PATH="$JAVA_HOME/bin:$PATH"
+  export JAVA_HOME PATH
+fi
+
+# Keep Maven artifact writes inside the workspace sandbox instead of ~/.m2.
+MAVEN_OPTS="${MAVEN_OPTS:-} -Dmaven.repo.local=$PWD/.m2/repository"
+export MAVEN_OPTS
+```
+
+Step 4 passes the selected file with `dispatch.sh --env-file FILE`. The file is sourced before
+`codex exec`, so Codex and every build command it starts inherit the same environment. Use the
+project's own build verification as the hard guard: Maven Enforcer, package-manager `engines`,
+`go.mod`, CI images, or equivalent should fail clearly when the wrong runtime is active.
+
+Dependency caches should follow the same rule: keep build writes inside the workspace unless there
+is a deliberate reason to grant access elsewhere. For Maven, prefer `maven.repo.local` under the
+project, such as `.m2/repository`, and gitignore it. For other ecosystems, use the equivalent
+workspace-local cache when the tool supports one. Granting `~/.m2`, package-manager home caches, or
+other user-level directories to the implementation sandbox is a larger exception and should be
+journaled as such.
+
+An orchestrator may correct the env file during a run when the sandbox sees the wrong local
+toolchain. Journal the correction. Changing the project's supported runtime, dependency baseline, or
+ADR is not an environment correction; it is a scope or decision change.
+
 ### Implementation and the network
 
 The same `workspace-write` default applies to the build dispatch, where it blocks dependency
@@ -126,7 +171,8 @@ So step 4 passes `--network`, which sets `sandbox_workspace_write.network_access
 dispatch:
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account implementation --mode workspace-write --background --network …
+"$SKILLDIR/dispatch.sh" --account implementation --mode workspace-write --background --network \
+  --env-file .agents/build-env.sh …
 ```
 
 Per dispatch, not stored on the account: the read-only levels keep the default, and the wider

@@ -21,9 +21,9 @@
 # Usage:
 #   dispatch.sh --account NAME [--fallback NAME] --mode read-only|workspace-write
 #               --prompt-file FILE [--var KEY=VALUE ...]
-#               --out FILE [--max-lines N]
+#               --out FILE [--max-lines N] [--env-file FILE]
 #   dispatch.sh --account NAME --mode workspace-write --prompt-file FILE [--var KEY=VALUE ...]
-#               --log FILE --background [--network]
+#               --log FILE --background [--network] [--env-file FILE]
 #
 # --profile is accepted as a deprecated alias for --account so existing invocations keep working.
 #
@@ -33,12 +33,16 @@
 #
 # Background mode writes the exit code to the log path with .log replaced by .exit. Poll that
 # sentinel — never tail a running build.
+#
+# --env-file sources one project-owned shell file before launching codex. Use it for language or
+# toolchain bootstrap such as JAVA_HOME, Node version managers, or Go toolchain variables. The file
+# is explicit per dispatch so environment corrections stay visible in the run journal.
 
 set -eu
 
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
-ACCOUNT=''; FALLBACK=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''
+ACCOUNT=''; FALLBACK=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''; ENV_FILE=''
 MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''
 
 while [ $# -gt 0 ]; do
@@ -52,6 +56,7 @@ while [ $# -gt 0 ]; do
     --max-lines)   MAX_LINES="${2:-}";   shift 2 ;;
     --prompt)      PROMPT="${2:-}";      shift 2 ;;
     --prompt-file) PROMPT_FILE="${2:-}"; shift 2 ;;
+    --env-file)    ENV_FILE="${2:-}";    shift 2 ;;
     --background)  BACKGROUND=1;         shift ;;
     --network)     NETWORK=1;            shift ;;
     --var)
@@ -105,8 +110,6 @@ if [ -n "$PROMPT_FILE" ]; then
 fi
 [ -n "$PROMPT" ] || die 'dispatch.sh: --prompt or --prompt-file is required'
 
-command -v codex >/dev/null 2>&1 || die 'dispatch.sh: codex not on PATH'
-
 # Sandbox network access. codex denies it under workspace-write by default, which stops any build
 # that has to resolve a dependency. Set it per dispatch rather than widening the account's stored
 # config, so read-only levels keep the default and the wider sandbox lasts exactly one build.
@@ -129,6 +132,15 @@ else
   note="FALLBACK: no aimux account '$ACCOUNT' — ran on the logged-in account; context is isolated, cost is NOT separated"
 fi
 [ -n "$account_dir" ] && CODEX_HOME="$account_dir" && export CODEX_HOME
+
+if [ -n "$ENV_FILE" ]; then
+  [ -f "$ENV_FILE" ] || die "dispatch.sh: env file not found: $ENV_FILE"
+  [ -r "$ENV_FILE" ] || die "dispatch.sh: env file not readable: $ENV_FILE"
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+fi
+
+command -v codex >/dev/null 2>&1 || die 'dispatch.sh: codex not on PATH'
 
 if [ "$BACKGROUND" -eq 1 ]; then
   exit_file="$(printf '%s' "$LOG" | sed 's/\.log$//').exit"

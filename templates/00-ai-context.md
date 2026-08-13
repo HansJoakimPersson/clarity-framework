@@ -128,6 +128,11 @@ script can be replaced without redefining the workflow.
 `/<name>`; Codex invokes `$<name>` or selects the skill through `/skills`. Internal `prompts/`
 directories are resources for the skill's scripts, not client custom-prompt directories.
 
+**Build environment:** [None, or path such as `.agents/build-env.sh`. State the required local
+runtime/toolchain versions and the project-owned verification that fails on the wrong one, e.g. Maven
+Enforcer, package-manager `engines`, `go.mod`, or CI image. State any workspace-local dependency
+cache path used by sandboxed builds, e.g. `.m2/repository`.]
+
 **Plans:** `docs/plans/YYYY-MM-DD-short-name.md` (template: framework `templates/plan.md`). The plan
 must be committed and pushed for a cloud agent to read it. Delete it when the change is merged.
 

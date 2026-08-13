@@ -195,6 +195,18 @@ in the journal — step 5 diffs against it.
 Run in the background with a sentinel, never in the foreground: a build routinely exceeds the
 foreground timeout and a killed process leaves half the change on disk.
 
+If the project has a build environment bootstrap file, pass it explicitly with `--env-file`. The
+standard committed path is `.agents/build-env.sh`; a machine-specific override may use
+`.agents/build-env.local.sh` when the project gitignores it. Use only one per dispatch. This hook is
+language-agnostic: it may set `JAVA_HOME`, activate a Node package manager, select a Go toolchain,
+put dependency caches inside the workspace, or do nothing in projects that do not need it. Prefer a
+workspace-local cache over granting the implementation sandbox write access to user-level caches
+such as `~/.m2`.
+
+Environment corrections are allowed during step 4 when the sandbox sees the wrong local toolchain.
+Record the file used and the reason in the journal. Do not use an environment correction to change a
+project runtime baseline, supported dependency line, or ADR; that is a scope or decision change.
+
 **The build needs network, so pass `--network`.** `workspace-write` denies network access by
 default, which stops any build that has to resolve a dependency — and a build cannot ask for
 permission, because `-a never` is what keeps a background dispatch from hanging on a prompt nobody
@@ -202,7 +214,12 @@ will answer. `--network` sets the sandbox's `network_access` for that one dispat
 read-only levels keep the default and the account's stored configuration is untouched.
 
 ```bash
+build_env_args=
+[ -f .agents/build-env.sh ] && build_env_args='--env-file .agents/build-env.sh'
+[ -f .agents/build-env.local.sh ] && build_env_args='--env-file .agents/build-env.local.sh'
+
 "$SKILLDIR/dispatch.sh" --account "$ACCT_IMPLEMENTATION" --mode workspace-write --background --network \
+  $build_env_args \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
   --log "$RUN/build.log"
 ```

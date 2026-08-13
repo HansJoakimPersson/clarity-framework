@@ -42,6 +42,7 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
 | | |
 | --- | --- |
 | **Approved at commit** | `[SHA]` – step 5 verifies against this |
+| **Build env file** | `[none / .agents/build-env.sh / .agents/build-env.local.sh / other]` |
 | **Build PID / exit** | `[PID]` / `[exit code, or “running”]` |
 | **Next step** | [Step number and concrete next action] |
 | **Waiting for human** | [Question, or “no”] |
@@ -54,6 +55,8 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
 - [Record every fallback: a dispatch that ran on the logged-in account because the mapped one was
   missing, the Reasoning account standing in for Review, or an `aimux handoff`. Name the account
   that actually paid — an unrecorded fallback looks like successful account separation.]
+- [Record every environment correction: env file added or changed, toolchain observed by the
+  sandbox, and why it stayed within the approved runtime baseline.]
 
 ---
 

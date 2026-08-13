@@ -8,6 +8,20 @@ All significant framework changes are recorded here. Releases follow
 
 ## [3.2.0] – Unreleased
 
+### Added
+
+- `plan-driven-build` now supports an explicit `dispatch.sh --env-file FILE` hook for project-owned
+  build environment bootstrap. The dispatcher stays language-agnostic: Java, Node, Go, and other
+  toolchains belong in the project's env file, not in the workflow infrastructure.
+- Step 4 documents the standard build-env paths, `.agents/build-env.sh` for portable committed
+  bootstrap and `.agents/build-env.local.sh` for gitignored machine-specific overrides. The run
+  journal now records which env file was used and any environment corrections made during the build.
+- `clarity-bootstrap` adds `.agents/build-env.local.sh` to `.gitignore` when `plan-driven-build` is
+  selected, matching the new local override convention.
+- The build-env guidance now covers workspace-local dependency caches, including Maven
+  `maven.repo.local` under `.m2/repository`, so dependency resolution can write inside the sandbox
+  without granting access to user-level caches such as `~/.m2`.
+
 ### Changed
 
 - Levels are bound to aimux accounts through the project's runtime contract instead of by name.
@@ -35,6 +49,12 @@ All significant framework changes are recorded here. Releases follow
 - `setup.md` states that spreading load across subscriptions is a change to the mapping between
   runs, not a rotation within one: rotating per dispatch starts every dispatch on a cold prompt
   cache and can land the review on the subscription that drafted the plan.
+
+- `docs/00-ai-context.md` now treats the build environment as part of the AI runtime contract, so a
+  project can state both the toolchain bootstrap path and the build-level guard that fails when the
+  wrong runtime is active.
+- The Java AGENTS starter now calls out build-level Java version enforcement, such as Maven Enforcer,
+  as the source of truth when a project has a fixed Java baseline.
 
 ## [3.1.0] – Unreleased
 

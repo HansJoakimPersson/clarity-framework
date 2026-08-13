@@ -148,8 +148,8 @@ After approval:
    runtime roots with the release copy. Verify every pair using `diff -qr`.
 8. Ensure `.gitignore` does not exclude the selected `.agents/skills/` or `.claude/skills/` files.
    Narrow broad runtime-directory ignores while preserving ignores for local settings and caches.
-9. Add `docs/plans/.runs/` to `.gitignore` when `plan-driven-build` is selected. Preserve all
-   existing ignore rules.
+9. Add `docs/plans/.runs/`, `.agents/build-env.local.sh`, and `.m2/` to `.gitignore` when
+   `plan-driven-build` is selected. Preserve all existing ignore rules.
 
 Do not edit the copied `AGENTS.md` or skill files, and never add rules to `CLAUDE.md`.
 Project-specific deviations belong in `docs/`, in the document that governs them.
