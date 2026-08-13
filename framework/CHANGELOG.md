@@ -29,11 +29,13 @@ All significant framework changes are recorded here. Releases follow
   distinguishes three outcomes: sentinel written, process still alive, and process gone without a
   sentinel. The last case is a killed build leaving a partial tree; without the `kill -0` check it
   was indistinguishable from a slow build, so waiting on it never ended.
-- The build sandbox's lack of network access was documented only for the orchestrator, framed as a
-  permissions complaint. Implementation runs under the same `workspace-write` default and hits it
-  when resolving dependencies. Prerequisites now require an offline-resolvable dependency cache,
-  step 4 states the constraint, and `setup.md` explains why Implementation keeps network closed and
-  how to open it deliberately when a project genuinely cannot resolve offline.
+- The build dispatch could not resolve dependencies. `workspace-write` denies network access by
+  default, and `-a never` — which is what stops a background dispatch from hanging on a prompt
+  nobody answers — leaves the build no way to ask for it, so any download failed the run. Step 4
+  now passes a new `dispatch.sh --network` flag that sets `sandbox_workspace_write.network_access`
+  for that single dispatch. The read-only levels keep the default, the account's stored
+  configuration is untouched, and the sandbox still confines writes to the workspace. `--network`
+  is rejected for any mode other than `workspace-write`.
 
 ## [3.0.1] – Unreleased
 

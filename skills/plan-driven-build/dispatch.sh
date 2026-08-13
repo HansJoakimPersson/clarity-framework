@@ -23,7 +23,7 @@
 #               --prompt-file FILE [--var KEY=VALUE ...]
 #               --out FILE [--max-lines N]
 #   dispatch.sh --account NAME --mode workspace-write --prompt-file FILE [--var KEY=VALUE ...]
-#               --log FILE --background
+#               --log FILE --background [--network]
 #
 # --profile is accepted as a deprecated alias for --account so existing invocations keep working.
 #
@@ -39,7 +39,7 @@ set -eu
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
 ACCOUNT=''; FALLBACK=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''
-MAX_LINES=''; BACKGROUND=0; KEYS=''
+MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -53,6 +53,7 @@ while [ $# -gt 0 ]; do
     --prompt)      PROMPT="${2:-}";      shift 2 ;;
     --prompt-file) PROMPT_FILE="${2:-}"; shift 2 ;;
     --background)  BACKGROUND=1;         shift ;;
+    --network)     NETWORK=1;            shift ;;
     --var)
       pair="${2:-}"
       key="${pair%%=*}"; val="${pair#*=}"
@@ -74,6 +75,9 @@ if [ "$BACKGROUND" -eq 1 ]; then
   [ -n "$LOG" ] || die 'dispatch.sh: --background requires --log'
 else
   [ -n "$OUT" ] || die 'dispatch.sh: --out is required unless --background'
+fi
+if [ "$NETWORK" -eq 1 ] && [ "$MODE" != workspace-write ]; then
+  die 'dispatch.sh: --network applies to --mode workspace-write only'
 fi
 
 # Render the prompt.
@@ -103,6 +107,14 @@ fi
 
 command -v codex >/dev/null 2>&1 || die 'dispatch.sh: codex not on PATH'
 
+# Sandbox network access. codex denies it under workspace-write by default, which stops any build
+# that has to resolve a dependency. Set it per dispatch rather than widening the account's stored
+# config, so read-only levels keep the default and the wider sandbox lasts exactly one build.
+set --
+if [ "$NETWORK" -eq 1 ]; then
+  set -- -c 'sandbox_workspace_write.network_access=true'
+fi
+
 # Resolve the account. aimux keeps one config directory per account (its own CLI calls the
 # subcommand `profile`); pointing CODEX_HOME at it is what actually separates the subscription,
 # not just the process.
@@ -123,7 +135,7 @@ if [ "$BACKGROUND" -eq 1 ]; then
   rm -f "$exit_file"
   (
     status=0
-    codex -a never exec -s "$MODE" "$PROMPT" || status=$?
+    codex -a never "$@" exec -s "$MODE" "$PROMPT" || status=$?
     printf '%s\n' "$status" > "$exit_file"
     exit "$status"
   ) > "$LOG" 2>&1 &
@@ -134,7 +146,7 @@ if [ "$BACKGROUND" -eq 1 ]; then
 fi
 
 status=0
-codex -a never exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 || status=$?
+codex -a never "$@" exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 || status=$?
 
 lines=0
 [ -f "$OUT" ] && lines=$(wc -l < "$OUT" | tr -d ' ')

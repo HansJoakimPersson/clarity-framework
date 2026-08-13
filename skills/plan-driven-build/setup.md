@@ -103,20 +103,30 @@ use it as the default; unattended implementation should still run inside a sandb
 
 ### Implementation and the network
 
-The same `workspace-write` default applies to the build dispatch, and there it is a feature. The
-orchestrator needs network only to reach the model API; Implementation would use it to fetch
-whatever a build script asks for, while writing to the tree unattended. That is the widest blast
-radius in the workflow, so leave it closed.
+The same `workspace-write` default applies to the build dispatch, where it blocks dependency
+resolution: Maven reaching Central, npm reaching the registry, Go reaching a module proxy. The build
+cannot negotiate its way past it either, because `dispatch.sh` runs `-a never` — approval prompts
+and background execution do not compose, and a build that stops to ask is a build that hangs until
+someone notices.
 
-The cost is that dependency resolution must happen before the dispatch, not inside it. Warm the
-cache from a normal shell — `mvn dependency:go-offline`, `npm ci`, `go mod download`, `uv sync` —
-and a build that stops on a download becomes a prerequisite you fix once rather than a sandbox you
-open permanently.
+So step 4 passes `--network`, which sets `sandbox_workspace_write.network_access` for that single
+dispatch:
 
-If a project genuinely cannot resolve offline, grant network to the implementation account
-deliberately and narrowly, the same way as above but under its own profile, and record the decision
-in `docs/00-ai-context.md` so the next contributor knows the sandbox is wider than the default.
-Never reach for `danger-full-access` to solve a missing dependency.
+```bash
+"$SKILLDIR/dispatch.sh" --account implementation --mode workspace-write --background --network …
+```
+
+Per dispatch, not stored on the account: the read-only levels keep the default, and the wider
+sandbox lasts one build rather than becoming the machine's permanent posture. The sandbox still
+confines writes to the workspace — network access changes what the build can reach, not what it can
+overwrite.
+
+Pre-fetching dependencies from a normal shell (`mvn dependency:go-offline`, `npm ci`,
+`go mod download`) still works and is a reasonable habit for slow or flaky registries. It is a
+convenience, not a prerequisite; the build no longer depends on a warm cache.
+
+`danger-full-access` is still the wrong tool here. It removes the sandbox altogether, which is a
+much larger grant than the one thing a build actually needs.
 
 Codex reads the shared skill from `.agents/skills/plan-driven-build/SKILL.md`. Start the orchestrator
 profile and select `$plan-driven-build`; no separate prompt installation is needed.

@@ -73,9 +73,6 @@ Check, and if anything is missing: report it and stop.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
   into the working tree; if it is dirty you can no longer tell its changes from what was there.
   Report what is uncommitted and let the user decide — never commit, stash or reset for them.
-- The project's dependencies resolve offline. The build sandbox has no network, so a cold cache
-  stops the build partway through and leaves the tree half-built. Warm it first with the project's
-  own command — `mvn dependency:go-offline`, `npm ci`, `go mod download`, `uv sync`, or equivalent.
 - `aimux profile list` shows one account per level — aimux names the subcommand `profile`, but an
   account only selects which subscription pays; it is not a persona. Without them cost is not
   separated, only context. `dispatch.sh` detects this and prints a `FALLBACK:` line — pass it on to the user and
@@ -176,18 +173,21 @@ in the journal — step 5 diffs against it.
 Run in the background with a sentinel, never in the foreground: a build routinely exceeds the
 foreground timeout and a killed process leaves half the change on disk.
 
-**The build sandbox has no network.** `workspace-write` denies network access by default, and
-Implementation deliberately keeps it that way — it is the one level that writes to the tree
-unattended, so it is the worst place to widen the blast radius. Any dependency the build needs must
-already be in the local cache before you dispatch. If the build stops on a download, that is an
-environment gap, not a plan error: warm the cache from your own shell, then re-dispatch. Do not
-reach for a network-enabled sandbox as the first move.
+**The build needs network, so pass `--network`.** `workspace-write` denies network access by
+default, which stops any build that has to resolve a dependency — and a build cannot ask for
+permission, because `-a never` is what keeps a background dispatch from hanging on a prompt nobody
+will answer. `--network` sets the sandbox's `network_access` for that one dispatch only; the
+read-only levels keep the default and the account's stored configuration is untouched.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account implementation --mode workspace-write --background \
+"$SKILLDIR/dispatch.sh" --account implementation --mode workspace-write --background --network \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
   --log "$RUN/build.log"
 ```
+
+The sandbox still confines writes to the workspace. Network access widens what the build can reach,
+not what it can overwrite, which is why it is granted per dispatch rather than stored on the
+account.
 
 The command returns immediately and prints the PID and the sentinel path. Write both in the journal.
 
