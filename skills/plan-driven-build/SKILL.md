@@ -43,13 +43,23 @@ that exceeds its budget — truncate it and say you did. If you find yourself re
 
 ## Gate profiles
 
-The plan's `Gate profile` field decides where you stop. Default is `interactive`.
+The plan's `Gate profile` field decides where you stop. Default is `semi-automatic`.
 
 | Profile | Stops at |
 | --- | --- |
-| `interactive` | Step 3 (scope), 6 (commit), 7 (merge), 8 (closeout) |
-| `semi-automatic` | Step 3 and 7. Commit happens automatically, closeout is proposed |
+| `semi-automatic` *(default)* | Step 3 (scope) and 7 (merge). Commit happens automatically, closeout is proposed |
+| `interactive` | Step 3, 6 (commit), 7, and 8 (closeout) |
 | `unattended` | Step 7 only. Requires every Definition of Done condition to be command-checkable |
+
+A gate exists where a decision is the user's and hard to walk back: **scope**, before any code
+exists, and **merge**, before the work reaches the shared branch. Everything between those two is
+execution against a scope the user already approved. A commit inside a round is reversible and
+touches nobody else, so stopping there buys a confirmation rather than a decision — it interrupts
+the user without giving them anything they could not still change at the merge gate.
+
+Choose `interactive` when the extra stop earns something concrete: unfamiliar territory, a risky
+migration, or a first run in a new project where you want to see the shape of a commit before it
+lands. Choose by risk, not by nerves.
 
 A profile never removes the merge gate. You never approve on the user's behalf.
 
@@ -63,8 +73,12 @@ Check, and if anything is missing: report it and stop.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
   into the working tree; if it is dirty you can no longer tell its changes from what was there.
   Report what is uncommitted and let the user decide — never commit, stash or reset for them.
-- `aimux profile list` shows profiles for the levels. Without them cost is not separated, only
-  context. `dispatch.sh` detects this and prints a `FALLBACK:` line — pass it on to the user and
+- The project's dependencies resolve offline. The build sandbox has no network, so a cold cache
+  stops the build partway through and leaves the tree half-built. Warm it first with the project's
+  own command — `mvn dependency:go-offline`, `npm ci`, `go mod download`, `uv sync`, or equivalent.
+- `aimux profile list` shows one account per level — aimux names the subcommand `profile`, but an
+  account only selects which subscription pays; it is not a persona. Without them cost is not
+  separated, only context. `dispatch.sh` detects this and prints a `FALLBACK:` line — pass it on to the user and
   record it in the journal rather than letting it scroll past.
 
 Templates: `plan-template.md` and `journal-template.md` in this skill's directory. Copy them, never edit them in
@@ -95,8 +109,8 @@ Every dispatch goes through `$SKILLDIR/dispatch.sh`, which takes its instruction
 instruction text out of your context is the point of them living in files. You fill their
 placeholders with `--var` and never see the rest.
 
-The script also sets sandbox and approval policy together, reports a fallback when an account
-profile is missing instead of silently landing on the logged-in account, and prints the report's
+The script also sets sandbox and approval policy together, reports a fallback when an aimux account
+is missing instead of silently landing on the logged-in account, and prints the report's
 line count against its budget so you know whether a report fits before opening it. Calling `codex`
 directly loses all four.
 
@@ -113,7 +127,7 @@ Do not read the project's documents or code beyond what you need to state the ta
 read what it needs — that is the context you are not paying for twice.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --profile reasoning --mode read-only \
+"$SKILLDIR/dispatch.sh" --account reasoning --mode read-only \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<one or two sentences: what should be true when this is done>" \
   --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
@@ -127,13 +141,13 @@ as this sentence. Build nothing in this step.
 ## Step 2 — Dispatch a critique of the plan
 
 A fresh, stateless invocation reading the plan cold against the code. It runs under the `review`
-profile — a different account from the one that drafted the plan, which removes the blind spot of a
-level reviewing itself. If that profile does not exist, `--fallback reasoning` handles it and says
+account — a different subscription from the one that drafted the plan, which removes the blind spot
+of a level reviewing itself. If that account does not exist, `--fallback reasoning` handles it and says
 so on stdout: then it is a self-review that catches wrong paths and invented functions reliably but
 shares whatever judgment blind spots the drafting level has. Record the fallback in the journal.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --profile review --fallback reasoning --mode read-only \
+"$SKILLDIR/dispatch.sh" --account review --fallback reasoning --mode read-only \
   --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
   --out "$RUN/review.md" --max-lines 40
 ```
@@ -162,24 +176,61 @@ in the journal — step 5 diffs against it.
 Run in the background with a sentinel, never in the foreground: a build routinely exceeds the
 foreground timeout and a killed process leaves half the change on disk.
 
+**The build sandbox has no network.** `workspace-write` denies network access by default, and
+Implementation deliberately keeps it that way — it is the one level that writes to the tree
+unattended, so it is the worst place to widen the blast radius. Any dependency the build needs must
+already be in the local cache before you dispatch. If the build stops on a download, that is an
+environment gap, not a plan error: warm the cache from your own shell, then re-dispatch. Do not
+reach for a network-enabled sandbox as the first move.
+
 ```bash
-"$SKILLDIR/dispatch.sh" --profile implementation --mode workspace-write --background \
+"$SKILLDIR/dispatch.sh" --account implementation --mode workspace-write --background \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
   --log "$RUN/build.log"
 ```
 
 The command returns immediately and prints the PID and the sentinel path. Write both in the journal.
 
-Poll the sentinel, not the log: `test -f "$RUN/build.exit" && cat "$RUN/build.exit"`. Read
-`tail -30 "$RUN/build.log"` only when the exit code is non-zero. Tailing a running build is the
-unbounded read this workflow exists to avoid.
+Poll the sentinel, not the log. Read `tail -30 "$RUN/build.log"` only when the exit code is
+non-zero. Tailing a running build is the unbounded read this workflow exists to avoid.
 
 Because the sentinel is a file, a build survives you: if your session hits a usage limit while it
 runs, the build finishes anyway and whoever resumes reads the exit code.
 
+### Wait for the build — do not end your turn
+
+The dispatch returns immediately; the build does not. Waiting is your job, not the user's. Run the
+wait as one bounded blocking call and let it return on its own:
+
+```bash
+BUILD_PID=<pid printed by the dispatch>
+deadline=$(( $(date +%s) + 3600 ))
+while [ ! -f "$RUN/build.exit" ] && [ "$(date +%s)" -lt "$deadline" ]; do sleep 20; done
+
+if [ -f "$RUN/build.exit" ]; then
+  printf 'BUILD finished exit=%s\n' "$(cat "$RUN/build.exit")"
+elif kill -0 "$BUILD_PID" 2>/dev/null; then
+  printf 'BUILD still running after 60 min, pid %s alive\n' "$BUILD_PID"
+else
+  printf 'BUILD process gone, no sentinel written\n'
+fi
+```
+
+Three outcomes, three different actions. A sentinel means go to step 5. Still alive means report the
+elapsed time and wait again — a long build is not a stuck build. **Gone with no sentinel means the
+process was killed** before it could write an exit code: say so and stop, because the working tree
+now holds a partial build that no exit code describes. Without the `kill -0` check that case is
+indistinguishable from a slow build, and waiting on it is waiting forever.
+
+**Never end your turn with a dispatch in flight.** "I will report back when it finishes" is not a
+mechanism — nothing wakes you up, so the run stalls until the user thinks to ask, which is precisely
+the interruption this workflow exists to spare them. If your runtime genuinely cannot block for the
+wait, do not pretend to watch: say you are stopping, and give the user the exact sentinel command to
+run so they can restart you with the answer.
+
 ### If a dispatched call hits a usage limit mid-run
 
-Stop, write it in the journal, report to the user. `aimux handoff <sessionId> --to <profile>` can
+Stop, write it in the journal, report to the user. `aimux handoff <sessionId> --to <account>` can
 continue the same session under another account via a lossy summary — re-check its grasp of scope
 and Definition of Done before trusting it unattended. Untested end-to-end here; if it misbehaves,
 stop and report rather than improvising a fix mid-build.
@@ -189,7 +240,7 @@ stop and report rather than improvising a fix mid-build.
 Do not read the diff yourself.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --profile reasoning --mode read-only \
+"$SKILLDIR/dispatch.sh" --account reasoning --mode read-only \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
   --var PLAN="$PLAN" --var SHA="<approval SHA from the journal>" \
   --var BUILD_LOG="$RUN/build.log" \
@@ -249,7 +300,7 @@ step the journal records as done, and do not reconstruct context by reading code
   small and moving the expensive reading onto accounts you are not metered against. For a change the
   user can review in five minutes this is not worth it; say so instead of running it.
 - To swap tools, only `dispatch.sh` and `prompts/` change. The levels, plan, journal, budget and
-  gates are tool-independent. `docs/00-ai-context.md` records which CLI and profile fills each level.
+  gates are tool-independent. `docs/00-ai-context.md` records which CLI and account fills each level.
 - The rationale behind all of this — why cost separation and not just context isolation, why the
   gates sit where they do — is in the framework's `ai-usage-guide.md` § 5. It is not needed to run
   the workflow, which is why it is not here.

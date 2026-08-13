@@ -5,8 +5,11 @@
 #   1. The prompt lives in prompts/*.txt, not in SKILL.md. That keeps roughly a thousand words of
 #      instruction text out of the orchestrator's context entirely — the orchestrator names a
 #      prompt file and fills its placeholders, it never reads the prompt.
-#   2. Account separation is verified, not assumed — a missing aimux profile is reported as a
+#   2. Account separation is verified, not assumed — a missing aimux account is reported as a
 #      fallback instead of silently landing on whatever account is logged in on this machine.
+#      An aimux account selects which subscription pays. It is not a persona and it does not change
+#      how an agent behaves; aimux names its own subcommand `profile`, this script says `account` to
+#      keep it distinct from a Codex profile and from the plan's gate profile.
 #   3. Sandbox and approval policy are always set together. Setting only the sandbox leaves the
 #      approval policy at its default, which is what makes an unattended dispatch stop and ask.
 #   4. The orchestrator gets a one-line result with a line count measured against the budget, so it
@@ -16,11 +19,13 @@
 # env-prefixed, backgrounded compound command is not.
 #
 # Usage:
-#   dispatch.sh --profile NAME [--fallback NAME] --mode read-only|workspace-write
+#   dispatch.sh --account NAME [--fallback NAME] --mode read-only|workspace-write
 #               --prompt-file FILE [--var KEY=VALUE ...]
 #               --out FILE [--max-lines N]
-#   dispatch.sh --profile NAME --mode workspace-write --prompt-file FILE [--var KEY=VALUE ...]
+#   dispatch.sh --account NAME --mode workspace-write --prompt-file FILE [--var KEY=VALUE ...]
 #               --log FILE --background
+#
+# --profile is accepted as a deprecated alias for --account so existing invocations keep working.
 #
 # --prompt TEXT still works for an ad-hoc dispatch. Placeholders in a prompt file are written
 # {{KEY}}; every placeholder must be supplied with --var or the dispatch aborts. Values are
@@ -33,12 +38,13 @@ set -eu
 
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
-PROFILE=''; FALLBACK=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''
+ACCOUNT=''; FALLBACK=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''
 MAX_LINES=''; BACKGROUND=0; KEYS=''
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --profile)     PROFILE="${2:-}";     shift 2 ;;
+    --account)     ACCOUNT="${2:-}";     shift 2 ;;
+    --profile)     ACCOUNT="${2:-}";     shift 2 ;;  # deprecated alias for --account
     --fallback)    FALLBACK="${2:-}";    shift 2 ;;
     --mode)        MODE="${2:-}";        shift 2 ;;
     --out)         OUT="${2:-}";         shift 2 ;;
@@ -59,7 +65,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -n "$PROFILE" ] || die 'dispatch.sh: --profile is required'
+[ -n "$ACCOUNT" ] || die 'dispatch.sh: --account is required'
 case "$MODE" in
   read-only|workspace-write) ;;
   *) die "dispatch.sh: --mode must be read-only or workspace-write (got '$MODE')" ;;
@@ -97,19 +103,20 @@ fi
 
 command -v codex >/dev/null 2>&1 || die 'dispatch.sh: codex not on PATH'
 
-# Resolve the account. aimux keeps one config directory per profile; pointing CODEX_HOME at it is
-# what actually separates the subscription, not just the process.
-profile_dir=''; used=''; note=''
-if [ -d "$HOME/.aimux/profiles/$PROFILE" ]; then
-  profile_dir="$HOME/.aimux/profiles/$PROFILE"; used="$PROFILE"
+# Resolve the account. aimux keeps one config directory per account (its own CLI calls the
+# subcommand `profile`); pointing CODEX_HOME at it is what actually separates the subscription,
+# not just the process.
+account_dir=''; used=''; note=''
+if [ -d "$HOME/.aimux/profiles/$ACCOUNT" ]; then
+  account_dir="$HOME/.aimux/profiles/$ACCOUNT"; used="$ACCOUNT"
 elif [ -n "$FALLBACK" ] && [ -d "$HOME/.aimux/profiles/$FALLBACK" ]; then
-  profile_dir="$HOME/.aimux/profiles/$FALLBACK"; used="$FALLBACK"
-  note="FALLBACK: profile '$PROFILE' missing, ran as '$FALLBACK'"
+  account_dir="$HOME/.aimux/profiles/$FALLBACK"; used="$FALLBACK"
+  note="FALLBACK: no aimux account '$ACCOUNT', billed to account '$FALLBACK' instead"
 else
   used='(logged-in account)'
-  note="FALLBACK: no aimux profile for '$PROFILE' — context is isolated, cost is NOT separated"
+  note="FALLBACK: no aimux account '$ACCOUNT' — ran on the logged-in account; context is isolated, cost is NOT separated"
 fi
-[ -n "$profile_dir" ] && CODEX_HOME="$profile_dir" && export CODEX_HOME
+[ -n "$account_dir" ] && CODEX_HOME="$account_dir" && export CODEX_HOME
 
 if [ "$BACKGROUND" -eq 1 ]; then
   exit_file="$(printf '%s' "$LOG" | sed 's/\.log$//').exit"
@@ -120,7 +127,7 @@ if [ "$BACKGROUND" -eq 1 ]; then
     printf '%s\n' "$status" > "$exit_file"
     exit "$status"
   ) > "$LOG" 2>&1 &
-  printf 'DISPATCH started  profile=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
+  printf 'DISPATCH started  account=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
     "$used" "$MODE" "$!" "$LOG" "$exit_file"
   [ -n "$note" ] && printf '%s\n' "$note"
   exit 0
@@ -141,7 +148,7 @@ if [ -n "$MAX_LINES" ]; then
   fi
 fi
 
-printf 'DISPATCH exit=%s  profile=%s  mode=%s  out=%s  lines=%s  budget=%s\n' \
+printf 'DISPATCH exit=%s  account=%s  mode=%s  out=%s  lines=%s  budget=%s\n' \
   "$status" "$used" "$MODE" "$OUT" "$lines" "$budget"
 [ -n "$note" ] && printf '%s\n' "$note"
 exit "$status"

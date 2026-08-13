@@ -6,6 +6,35 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [3.1.0] – Unreleased
+
+### Changed
+
+- The default gate profile is `semi-automatic` instead of `interactive`. A gate belongs where a
+  decision is the user's and hard to walk back — scope, before any code exists, and merge, before
+  the work reaches the shared branch. A commit inside a round is reversible and touches nobody else,
+  so stopping there bought a confirmation rather than a decision. `interactive` stays available for
+  unfamiliar or risky work. `templates/plan.md` and its copy state the reasoning.
+- `dispatch.sh` takes `--account` rather than `--profile`, and reports `account=` and
+  "no aimux account 'implementation'" rather than "no aimux profile". `--profile` is kept as a
+  deprecated alias, so existing invocations and the regression test still pass. An aimux account
+  selects which subscription pays; naming it a profile suggested a missing behavioral persona and
+  collided with both the Codex profile and the plan's gate profile.
+
+### Fixed
+
+- The build dispatch had no waiting mechanism. Step 4 said to poll the sentinel but never said when,
+  how often, or that the orchestrator must block — so it announced it was watching, ended its turn,
+  and the run stalled until the user asked about it. Step 4 now carries a bounded blocking wait that
+  distinguishes three outcomes: sentinel written, process still alive, and process gone without a
+  sentinel. The last case is a killed build leaving a partial tree; without the `kill -0` check it
+  was indistinguishable from a slow build, so waiting on it never ended.
+- The build sandbox's lack of network access was documented only for the orchestrator, framed as a
+  permissions complaint. Implementation runs under the same `workspace-write` default and hits it
+  when resolving dependencies. Prerequisites now require an offline-resolvable dependency cache,
+  step 4 states the constraint, and `setup.md` explains why Implementation keeps network closed and
+  how to open it deliberately when a project genuinely cannot resolve offline.
+
 ## [3.0.1] – Unreleased
 
 ### Fixed

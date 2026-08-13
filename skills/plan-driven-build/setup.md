@@ -34,8 +34,10 @@ they are not custom prompts for either client.
 
 The purpose of the level split is to move token usage away from the interactive session. This
 requires **separate subscriptions or accounts**, not merely separate processes. aimux is a multiplexer
-for accounts within the same LLM provider; its profiles select credentials and token allowances,
-not agent personas or behavioral profiles.
+for accounts within the same LLM provider; an account selects credentials and a token allowance,
+not an agent persona or a behavioral profile. aimux names its own subcommand `profile`; everywhere
+else this skill says **account**, to keep it apart from a Codex profile and from the plan's gate
+profile. `dispatch.sh` takes `--account` for the same reason.
 
 ```bash
 aimux profile add reasoning      --cli codex && aimux auth login reasoning
@@ -98,6 +100,23 @@ They are complementary.
 
 `danger-full-access` solves the same problem more bluntly by removing the sandbox entirely. Do not
 use it as the default; unattended implementation should still run inside a sandbox.
+
+### Implementation and the network
+
+The same `workspace-write` default applies to the build dispatch, and there it is a feature. The
+orchestrator needs network only to reach the model API; Implementation would use it to fetch
+whatever a build script asks for, while writing to the tree unattended. That is the widest blast
+radius in the workflow, so leave it closed.
+
+The cost is that dependency resolution must happen before the dispatch, not inside it. Warm the
+cache from a normal shell — `mvn dependency:go-offline`, `npm ci`, `go mod download`, `uv sync` —
+and a build that stops on a download becomes a prerequisite you fix once rather than a sandbox you
+open permanently.
+
+If a project genuinely cannot resolve offline, grant network to the implementation account
+deliberately and narrowly, the same way as above but under its own profile, and record the decision
+in `docs/00-ai-context.md` so the next contributor knows the sandbox is wider than the default.
+Never reach for `danger-full-access` to solve a missing dependency.
 
 Codex reads the shared skill from `.agents/skills/plan-driven-build/SKILL.md`. Start the orchestrator
 profile and select `$plan-driven-build`; no separate prompt installation is needed.

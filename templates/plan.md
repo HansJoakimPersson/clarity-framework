@@ -10,13 +10,14 @@
 | **Branch** | `[branch-name]` |
 | **Delivers** | FR-[ID], FR-[ID] — or `None – [reason]` |
 | **Status** | Draft / Approved / Building / Complete |
-| **Gate profile** | interactive / semi-automatic / unattended |
+| **Gate profile** | semi-automatic *(default)* / interactive / unattended |
 | **Report budget** | Review 40 lines · Verification: one answer per DoD condition + 10 deviation lines |
 | **Run journal** | `docs/plans/YYYY-MM-DD-short-name.run.md` (when an automated workflow is used) |
 
-> **Gate profile** determines where the workflow stops for you. `interactive` stops at scope,
-> commit, merge, and closeout. `semi-automatic` stops at scope and merge. `unattended` stops only
-> at merge and requires every Definition of Done condition to be command-checkable. The merge gate
+> **Gate profile** determines where the workflow stops for you. `semi-automatic`, the default, stops
+> at scope and merge — the two decisions that are yours and hard to walk back. `interactive` adds
+> stops at commit and closeout, worth it for unfamiliar or risky work. `unattended` stops only at
+> merge and requires every Definition of Done condition to be command-checkable. The merge gate
 > exists in all three. Choose by risk, not impatience.
 >
 > **Delivers** names the user stories this plan implements. Cite the IDs; never copy their
@@ -113,4 +114,4 @@ Answer before deleting the plan. “Nothing” is valid; no answer is not.
 
 ---
 
-*Clarity Framework v3.0.1 – Plan Template*
+*Clarity Framework v3.1.0 – Plan Template*
