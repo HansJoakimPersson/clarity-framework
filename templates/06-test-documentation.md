@@ -288,4 +288,4 @@ negatives. Do not hide them in CI configuration without recording the risk.
 
 *Next step: Produce the Runbook when the system is ready for its first deployment to staging.*
 
-*Clarity Framework v3.2.1 – Test Documentation*
+*Clarity Framework v3.2.2 – Test Documentation*

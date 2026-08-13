@@ -269,6 +269,23 @@ the interruption this workflow exists to spare them. If your runtime genuinely c
 wait, do not pretend to watch: say you are stopping, and give the user the exact sentinel command to
 run so they can restart you with the answer.
 
+### If Implementation stops because the plan is wrong
+
+Implementation owns execution, not diagnosis of scope. When it stops because the approved plan is
+internally inconsistent, omits a file authorization needed by another step, cites a missing document,
+or forbids the only bounded change that satisfies the plan, do not hand the problem back as an open
+choice.
+
+Classify it as a scope correction. Propose the smallest concrete plan edit that resolves the
+contradiction, explain why it changes scope, and stop for scope approval. After approval, patch the
+plan yourself, update the journal with the approved correction, and re-dispatch Implementation.
+
+Keep the correction narrow. It may authorize the minimum file, query, command, or document handling
+needed to make the existing plan coherent. It may not change a requirement, ADR, runtime baseline,
+excluded area, or product behavior without presenting that as a blocking scope question. If partial
+work already exists, state whether it falls inside the corrected scope; do not revert or bless it
+silently.
+
 ### If a dispatched call hits a usage limit mid-run
 
 Stop, write it in the journal, report to the user. `aimux handoff <sessionId> --to <account>` can

@@ -345,4 +345,4 @@ result in Change Management and open a follow-up action for the cause of the fai
 
 *Next step: Produce Test Documentation and the Runbook in parallel with implementation.*
 
-*Clarity Framework v3.2.1 – Deployment View*
+*Clarity Framework v3.2.2 – Deployment View*

@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v3.2.1 |
+| **Framework version** | Clarity Framework v3.2.2 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -164,4 +164,4 @@ verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separ
 
 ---
 
-*Clarity Framework v3.2.1 – AI Context Document*
+*Clarity Framework v3.2.2 – AI Context Document*

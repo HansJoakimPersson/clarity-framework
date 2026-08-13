@@ -6,6 +6,15 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [3.2.2] – Unreleased
+
+### Fixed
+
+- `plan-driven-build` now tells the orchestrator how to handle an Implementation stop caused by an
+  internally inconsistent plan. It must propose the smallest concrete scope correction, stop for
+  approval, patch the plan and journal after approval, and then re-dispatch instead of handing the
+  diagnosis back to the user as an open-ended choice.
+
 ## [3.2.1] – Unreleased
 
 ### Fixed
