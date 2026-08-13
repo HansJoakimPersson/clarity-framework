@@ -6,6 +6,15 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [3.2.1] – Unreleased
+
+### Fixed
+
+- `dispatch.sh --background` now starts the build child through `nohup` and writes a
+  `DISPATCH child started` marker to the log. Some CLI harnesses can clean up ordinary background
+  children when the short-lived wrapper command exits; the symptom is a vanished PID, empty log, and
+  no sentinel. The marker makes that failure distinguishable from a build that started and failed.
+
 ## [3.2.0] – 2026-08-13
 
 ### Added

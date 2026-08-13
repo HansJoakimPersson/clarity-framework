@@ -93,4 +93,4 @@ blindly.
 
 ---
 
-*Clarity Framework v3.2.0*
+*Clarity Framework v3.2.1*

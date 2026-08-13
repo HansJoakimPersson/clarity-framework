@@ -11,7 +11,7 @@ governed by documented decisions, verification gates, and human accountability.
 
 **Three core principles:** Just enough documentation · Documentation as code · Clarity over completeness
 
-**Current version:** 3.2.0
+**Current version:** 3.2.1
 
 **Repository structure:**
 
@@ -96,4 +96,4 @@ The tag is the only source read by `skills/framework-update/`. A project never u
 
 ---
 
-*Clarity Framework v3.2.0*
+*Clarity Framework v3.2.1*

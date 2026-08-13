@@ -194,6 +194,8 @@ in the journal — step 5 diffs against it.
 
 Run in the background with a sentinel, never in the foreground: a build routinely exceeds the
 foreground timeout and a killed process leaves half the change on disk.
+`dispatch.sh --background` detaches the child with `nohup`; a log that remains empty and has no
+sentinel after the PID is gone is still a wrapper failure, not a successful build.
 
 If the project has a build environment bootstrap file, pass it explicitly with `--env-file`. The
 standard committed path is `.agents/build-env.sh`; a machine-specific override may use

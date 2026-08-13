@@ -62,5 +62,6 @@ done
 
 test -f "$TEST_ROOT/out/build.exit"
 test "$(cat "$TEST_ROOT/out/build.exit")" = '17'
+grep -F 'DISPATCH child started' "$TEST_ROOT/out/build.log" >/dev/null
 
 printf 'dispatch-test: ok\n'

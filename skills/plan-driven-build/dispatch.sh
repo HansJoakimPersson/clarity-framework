@@ -33,6 +33,9 @@
 #
 # Background mode writes the exit code to the log path with .log replaced by .exit. Poll that
 # sentinel — never tail a running build.
+# Background mode uses `nohup` so the build is not tied to the short-lived shell process that
+# launched it. Some CLI harnesses clean up ordinary background children as soon as the command that
+# spawned them returns; that leaves an empty log and no sentinel.
 #
 # --env-file sources one project-owned shell file before launching codex. Use it for language or
 # toolchain bootstrap such as JAVA_HOME, Node version managers, or Go toolchain variables. The file
@@ -145,12 +148,17 @@ command -v codex >/dev/null 2>&1 || die 'dispatch.sh: codex not on PATH'
 if [ "$BACKGROUND" -eq 1 ]; then
   exit_file="$(printf '%s' "$LOG" | sed 's/\.log$//').exit"
   rm -f "$exit_file"
-  (
+  CFD_MODE=$MODE
+  CFD_PROMPT=$PROMPT
+  CFD_EXIT_FILE=$exit_file
+  export CFD_MODE CFD_PROMPT CFD_EXIT_FILE
+  nohup sh -c '
+    printf "%s\n" "DISPATCH child started"
     status=0
-    codex -a never "$@" exec -s "$MODE" "$PROMPT" || status=$?
-    printf '%s\n' "$status" > "$exit_file"
+    codex -a never "$@" exec -s "$CFD_MODE" "$CFD_PROMPT" || status=$?
+    printf "%s\n" "$status" > "$CFD_EXIT_FILE"
     exit "$status"
-  ) > "$LOG" 2>&1 &
+  ' dispatch-bg "$@" > "$LOG" 2>&1 < /dev/null &
   printf 'DISPATCH started  account=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
     "$used" "$MODE" "$!" "$LOG" "$exit_file"
   [ -n "$note" ] && printf '%s\n' "$note"

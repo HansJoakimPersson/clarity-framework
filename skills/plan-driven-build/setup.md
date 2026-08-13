@@ -184,6 +184,11 @@ Pre-fetching dependencies from a normal shell (`mvn dependency:go-offline`, `npm
 `go mod download`) still works and is a reasonable habit for slow or flaky registries. It is a
 convenience, not a prerequisite; the build no longer depends on a warm cache.
 
+`dispatch.sh --background` uses `nohup` to keep the child alive after the short-lived dispatch
+command returns. If a build PID disappears with an empty log and no sentinel, treat that as a
+wrapper or host-process cleanup failure and debug the dispatch path before continuing to
+verification.
+
 `danger-full-access` is still the wrong tool here. It removes the sandbox altogether, which is a
 much larger grant than the one thing a build actually needs.
 
