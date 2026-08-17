@@ -62,9 +62,7 @@ account; reach for `--model` when it has a pool.
 
 Review does not need a separate account. What keeps it from repeating the drafting level's blind
 spots is a different prompt file (`prompts/2-review.txt` vs `prompts/1-plan.txt`), not a different
-subscription — an earlier version of this skill required a distinct Review account, which
-conflated "different judgment" with "different billing" for no real benefit. `$ACCT_REVIEW` may
-equal `$ACCT_REASONING`.
+subscription. `$ACCT_REVIEW` may equal `$ACCT_REASONING`.
 
 **A level's pool is resolved once per run, not rotated between runs by hand.** `docs/00-ai-context.md`
 names an ordered, comma-separated pool per level — for example `codework1,codework2,codework3` for
@@ -90,8 +88,8 @@ inside a sandbox and should proceed without asking. A workflow that stops to ask
 
 ### Codex – always set both dimensions
 
-Sandbox and approval are independent settings. The dispatcher previously set only the sandbox and
-left approval at its default, a common reason for an unattended dispatch to stop and ask questions.
+Sandbox and approval are independent settings. Set both explicitly, or an unattended dispatch can
+stop to ask a question that never gets answered.
 
 | Level | Flags |
 | --- | --- |

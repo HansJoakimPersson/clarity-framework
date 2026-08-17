@@ -76,8 +76,10 @@ The following four levels are the only AI runtime model in Clarity Framework:
 | **Review** *(optional)* | Reviews the plan cold against the code before implementation | Write the plan it reviews |
 | **Implementation** | Builds the approved plan in full and reports verification | Re-plan; stop on a blocking question |
 
-A single agent may fill multiple levels, but the contracts and approval boundaries still apply. The
-level that reviews a plan should use a different account from the level that authored it when practical.
+A single agent may fill multiple levels, but the contracts and approval boundaries still apply.
+Review does not need a different account from the level that authored the plan: what keeps a review
+from repeating the author's blind spots is a different prompt and a stateless invocation, not a
+different subscription. Accounts distribute cost; prompts distribute judgment.
 
 ## 6. Context and budget boundaries
 
@@ -114,6 +116,11 @@ Moving token usage away from an interactive session requires separate subscripti
 merely separate processes. If [aimux](https://github.com/Digital-Threads/aimux) is installed, it can
 multiplex multiple subscriptions or accounts within the same LLM provider. Each account retains its
 own authentication and token allowance. aimux does not create agent personas or behavioral profiles.
+
+A level may be bound to a **pool** of interchangeable accounts rather than a single one — an ordered,
+comma-separated list in the runtime contract, tried in priority order. A pool spreads load across
+subscriptions; it does not give a level an identity. Name accounts after the subscriptions they are,
+never after the level they happen to fill, or the account becomes unusable for any other level.
 
 If a run reaches a subscription or token limit, an aimux handoff may continue it under another account.
 The handoff summary is lossy; the committed run journal is the authoritative handover artifact.

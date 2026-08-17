@@ -156,15 +156,22 @@ Project-specific deviations belong in `docs/`, in the document that governs them
 
 ## Step 6 — Stamp and verify
 
-Write:
+Write the marker into `docs/00-ai-context.md` — the **Clarity-managed setup** block under its AI
+workflow section. That document is where `framework-update` looks for both the framework version and
+the list of Clarity-managed skill names, so a marker written anywhere else leaves the next update
+unable to tell a Clarity skill from a third-party one. There is no separate version file.
 
 ```text
 version: X.Y.Z
 updated: YYYY-MM-DD
-agents-starter: <starter name without .md, or inga>
+agents-starter: <starter name without .md, or none>
 skills: <comma-separated Clarity-managed names>
 skill-paths: .agents/skills, .claude/skills
 ```
+
+When `00-ai-context.md` was not selected in step 3 — no agent will work on the project — skip the
+marker and say so in the report. Nothing reads it in that case, and `framework-update` falls back to
+the version footers in the other documents.
 
 Verify:
 

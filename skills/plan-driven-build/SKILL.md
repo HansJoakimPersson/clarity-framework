@@ -362,7 +362,7 @@ no merge was required. Do not enter step 8 until one of those states is recorded
 
 ## Step 8 — Close out
 
-After the merge transition recorded in step 7, go through the plan's **Vid avslut** section with
+After the merge transition recorded in step 7, go through the plan's **At closeout** section with
 the user. The answers drive real changes: if an architectural decision belongs in
 `docs/03-sad.md`, write it there now. "Nothing" is
 a valid answer to every question, but do not skip a question because the answer seems obvious —

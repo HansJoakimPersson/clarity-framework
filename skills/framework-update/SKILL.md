@@ -38,10 +38,12 @@ must end up containing exactly `@AGENTS.md`, but any project-specific lines it c
 project-owned content: propose moving them into the `docs/` document that governs them, and reduce
 the file to the import only after the user approves that migration.
 
-Skill ownership is name-scoped, not wildcard-scoped. Only Clarity skill names listed in the
-project's `00-ai-context.md` are managed by Clarity. Skills with any other name are project- or
-third-party-owned and must remain untouched. If no list exists, propose managed skills explicitly
-and ask the user to confirm them before replacing anything.
+Skill ownership is name-scoped, not wildcard-scoped. Only Clarity skill names listed on the `skills:`
+line of the **Clarity-managed setup** block in the project's `docs/00-ai-context.md` are managed by
+Clarity. Skills with any other name are project- or third-party-owned and must remain untouched. If
+no block or list exists, propose managed skills explicitly and ask the user to confirm them before
+replacing anything — then write the confirmed list into that block so the next run does not have to
+ask again.
 
 ## Preconditions
 
@@ -210,6 +212,10 @@ a hand-written command.
 Then update the Framework version markers already present in the project's files, including the
 version field in `docs/00-ai-context.md` and any `*Clarity Framework vX.Y.Z*` footers. A stale
 marker left behind makes the next run report the wrong starting point.
+
+Refresh the **Clarity-managed setup** block in `docs/00-ai-context.md` too: `version`, `updated`, and
+the `skills:` list when this run added or removed a managed skill. That block is what the next run
+reads to tell a Clarity skill from a third-party one.
 
 ## Step 7 — Hand back
 

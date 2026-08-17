@@ -132,6 +132,21 @@ script can be replaced without redefining the workflow.
 `/<name>`; Codex invokes `$<name>` or selects the skill through `/skills`. Internal `prompts/`
 directories are resources for the skill's scripts, not client custom-prompt directories.
 
+**Clarity-managed setup:** written by `clarity-bootstrap` and refreshed by `framework-update`.
+
+```text
+version: [X.Y.Z]
+updated: [YYYY-MM-DD]
+agents-starter: [starter name without .md, or none]
+skills: [comma-separated Clarity-managed skill names]
+skill-paths: .agents/skills, .claude/skills
+```
+
+The `skills:` line is the ownership boundary `framework-update` reads: those names are replaced
+wholesale on update, and every other skill in the runtime roots is left untouched. A skill missing
+from this list is treated as project- or third-party-owned, so adding a Clarity skill later means
+adding it here too.
+
 **Build environment:** [None, or path such as `.agents/build-env.sh`. State the required local
 runtime/toolchain versions and the project-owned verification that fails on the wrong one, e.g. Maven
 Enforcer, package-manager `engines`, `go.mod`, or CI image. State any workspace-local dependency

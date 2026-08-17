@@ -6,14 +6,40 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+A dated heading corresponds to an annotated Git tag. A version that was superseded before it was
+ever tagged is folded into the release that shipped it rather than left as a heading pointing at a
+tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
+tag, so an untagged heading here is a version no project can reach.
+
 ## [3.3.0] – Unreleased
 
 ### Fixed
 
+- `ai-usage-guide.md` § 5 still required the review level to use a different account from the plan's
+  author, contradicting the rule stated everywhere else in this release. Accounts distribute cost;
+  prompts distribute judgment.
+- `plan-driven-build/SKILL.md` step 8 referred to the plan's `Vid avslut` section, a heading that no
+  longer exists — the template names it `At closeout`. An orchestrator following the instruction
+  literally looked for a section that was not there.
+- `clarity-bootstrap` step 6 described a marker block without naming the file it belongs in, and its
+  `agents-starter` placeholder still read `inga`. The marker now has a named destination and the
+  placeholder is English.
+- The `skills:` ownership list `framework-update` depends on had no home in
+  `templates/00-ai-context.md`, so it could never exist in practice and every update fell back to
+  asking the user which skills were Clarity-owned.
 - `setup.md` § "Implementation and the network" used `--account implementation` as its example,
   contradicting § 1's own rule against naming or using a subscription after the level it fills. Now
   reads `--account "$ACCT_IMPLEMENTATION"`, matching `SKILL.md`. The § 4 setup-verification example
   had the same problem with a literal `reasoning` account name; replaced with a placeholder.
+- `plan-driven-build` now tells the orchestrator how to handle an Implementation stop caused by an
+  internally inconsistent plan. It must propose the smallest concrete scope correction, stop for
+  approval, patch the plan and journal after approval, and then re-dispatch instead of handing the
+  diagnosis back to the user as an open-ended choice. *(Was 3.2.2, never tagged.)*
+- `dispatch.sh --background` now starts the build child through `nohup` and writes a
+  `DISPATCH child started` marker to the log. Some CLI harnesses can clean up ordinary background
+  children when the short-lived wrapper command exits; the symptom is a vanished PID, empty log, and
+  no sentinel. The marker makes that failure distinguishable from a build that started and failed.
+  *(Was 3.2.1, never tagged.)*
 
 ### Added
 
@@ -32,6 +58,10 @@ All significant framework changes are recorded here. Releases follow
   `codex exec --help` first, per the skill's existing setup convention for unverified flags.
 - `tests/dispatch-test.sh`: coverage for pool retry on `read-only` failure, no retry on
   `workspace-write` failure, the logged-in-account fallback message, and `--model` pass-through.
+- A **Clarity-managed setup** block in `templates/00-ai-context.md` holding `version`, `updated`,
+  `agents-starter`, `skills`, and `skill-paths`. `clarity-bootstrap` writes it and `framework-update`
+  reads and refreshes it; its `skills:` line is the ownership boundary that separates a Clarity skill
+  from a project- or third-party-owned one.
 
 ### Changed
 
@@ -41,24 +71,9 @@ All significant framework changes are recorded here. Releases follow
   for no real benefit. `SKILL.md`, `setup.md`, and `templates/00-ai-context.md`'s runtime contract
   table updated accordingly; the table also gained a Model column, independent of the account pool
   column.
-
-## [3.2.2] – Unreleased
-
-### Fixed
-
-- `plan-driven-build` now tells the orchestrator how to handle an Implementation stop caused by an
-  internally inconsistent plan. It must propose the smallest concrete scope correction, stop for
-  approval, patch the plan and journal after approval, and then re-dispatch instead of handing the
-  diagnosis back to the user as an open-ended choice.
-
-## [3.2.1] – Unreleased
-
-### Fixed
-
-- `dispatch.sh --background` now starts the build child through `nohup` and writes a
-  `DISPATCH child started` marker to the log. Some CLI harnesses can clean up ordinary background
-  children when the short-lived wrapper command exits; the symptom is a vanished PID, empty log, and
-  no sentinel. The marker makes that failure distinguishable from a build that started and failed.
+- `setup.md` no longer narrates prior skill behavior ("an earlier version of this skill required a
+  distinct Review account", "the dispatcher previously set only the sandbox") — it states the
+  current rule only. The history stays in this changelog, not in the living documentation.
 
 ## [3.2.0] – 2026-08-13
 
@@ -110,7 +125,7 @@ All significant framework changes are recorded here. Releases follow
 - The Java AGENTS starter now calls out build-level Java version enforcement, such as Maven Enforcer,
   as the source of truth when a project has a fixed Java baseline.
 
-## [3.1.0] – Unreleased
+## [3.1.0] – 2026-08-13 *(never tagged; shipped in v3.2.0)*
 
 ### Changed
 
@@ -141,7 +156,7 @@ All significant framework changes are recorded here. Releases follow
   configuration is untouched, and the sandbox still confines writes to the workspace. `--network`
   is rejected for any mode other than `workspace-write`.
 
-## [3.0.1] – Unreleased
+## [3.0.1] – 2026-08-13 *(never tagged; shipped in v3.2.0)*
 
 ### Fixed
 
@@ -162,7 +177,7 @@ All significant framework changes are recorded here. Releases follow
   so a symlinked repository root is not misread. A directory already inside another repository is
   never initialized again, which would nest one repository in another.
 
-## [3.0.0] – Unreleased
+## [3.0.0] – 2026-08-13 *(never tagged; shipped in v3.2.0)*
 
 ### Breaking changes
 
@@ -220,7 +235,7 @@ is approved — it never silently discards a project's rules.
 - Remaining Swedish placeholders in the `templates/00-ai-context.md` technology-stack table
   (`t.ex.` and `Databas`), missed by the v2.1.0 language sweep.
 
-## [2.1.0] – Unreleased
+## [2.1.0] – 2026-08-12 *(never tagged; shipped in v2.2.0)*
 
 ### Added
 
@@ -260,7 +275,7 @@ is approved — it never silently discards a project's rules.
 - Restored detailed runbook guidance, including operational ownership, lifecycle commands, release
   procedures, backup and restore, troubleshooting, incident response, and smoke tests.
 
-## [2.0.4] – Unreleased
+## [2.0.4] – 2026-08-11 *(never tagged; shipped in v2.0.5)*
 
 ### Changed
 
@@ -268,7 +283,7 @@ is approved — it never silently discards a project's rules.
   configuration, secrets, CI/CD stages, release traceability, observability, backups, recovery,
   rollback, and production UX verification.
 
-## [2.0.3] – Unreleased
+## [2.0.3] – 2026-08-11 *(never tagged; shipped in v2.0.5)*
 
 ### Changed
 
@@ -276,7 +291,7 @@ is approved — it never silently discards a project's rules.
   physical schema examples, migration strategy, endpoint examples, error registry, and security
   and compatibility rules.
 
-## [2.0.2] – Unreleased
+## [2.0.2] – 2026-08-11 *(never tagged; shipped in v2.0.5)*
 
 ### Changed
 
@@ -285,13 +300,13 @@ is approved — it never silently discards a project's rules.
 - Restored the detailed architecture-template guidance, including context, component, data-flow,
   technology-choice, ADR, quality-attribute, and technical-debt sections.
 
-## [2.0.1] – Unreleased
+## [2.0.1] – 2026-08-11 *(never tagged; shipped in v2.0.5)*
 
 ### Changed
 
 - Replaced the AI runtime-model section in `AGENTS.md` with the normative release strategy.
 
-## [2.0.0] – Unreleased
+## [2.0.0] – 2026-08-11 *(never tagged; shipped in v2.0.5)*
 
 ### Breaking changes
 
