@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v3.2.2 |
+| **Framework version** | Clarity Framework v3.3.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -108,17 +108,21 @@ This section is the project's **runtime contract**: it states which agent fills 
 which account, and with which permissions. It is the single source for this information; a skill or
 script can be replaced without redefining the workflow.
 
-> **The account column is the level-to-subscription binding** that `plan-driven-build` reads at
+> **The account pool column is the level-to-subscription binding** that `plan-driven-build` reads at
 > step 0. Name the project's real aimux accounts here — they are subscriptions, not roles, so any
-> account may fill any level and one account may fill several. Changing which subscription pays for
-> a level is an edit to this table and nothing else.
+> account may fill any level, one account may fill several, and a pool (comma-separated, priority
+> order) exists to spread load across interchangeable subscriptions, not to give a level its own
+> identity. Changing which subscription pays for a level, or adding one to spread load further, is
+> an edit to this table and nothing else. The model column is independent of the pool — it overrides
+> the model for a dispatch regardless of which pool member ends up running it, which matters once a
+> pool has more than one account.
 
-| Level | Agent / account | Sandbox + approval | Responsibility |
-| --- | --- | --- | --- |
-| Orchestrator | [e.g. Claude Code or Codex] | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, owns gates, and maintains the run journal. Does not read the codebase or diff itself. |
-| Reasoning | [e.g. Codex, account `[your-subscription]`] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different account from the Orchestrator. |
-| Review *(optional)* | [e.g. Codex, account `[another-subscription]`] | `read-only` + approval `never` | Reviews the plan cold against the code. Uses a different account from Reasoning. |
-| Implementation | [e.g. Codex, account `[a-third-subscription]`] | `workspace-write` + approval `never` | Builds the approved plan. Does not re-plan; stops on a blocking question. |
+| Level | Agent / account pool | Model | Sandbox + approval | Responsibility |
+| --- | --- | --- | --- | --- |
+| Orchestrator | [e.g. Claude Code or Codex] | — | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, owns gates, and maintains the run journal. Does not read the codebase or diff itself. |
+| Reasoning | [e.g. Codex, pool `codework1,codework2`] | [leave empty for the account's own default] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different account pool from the Orchestrator. |
+| Review *(optional)* | [e.g. reuse Reasoning's pool, or its own] | [optional] | `read-only` + approval `never` | Reviews the plan cold against the code, from a different prompt file than Reasoning's. Does not need a different account — the prompt is what separates it. |
+| Implementation | [e.g. Codex, pool `codework3,codework4`] | [e.g. a faster/cheaper model once scope is approved] | `workspace-write` + approval `never` | Builds the approved plan. Does not re-plan; stops on a blocking question. |
 
 > Sandbox and approval are independent settings. If only the sandbox is set, approval remains at its
 > default and an unattended run may stop to ask. Always set both.
@@ -164,4 +168,4 @@ verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separ
 
 ---
 
-*Clarity Framework v3.2.2 – AI Context Document*
+*Clarity Framework v3.3.0 – AI Context Document*

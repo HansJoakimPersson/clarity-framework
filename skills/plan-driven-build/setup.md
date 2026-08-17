@@ -53,17 +53,27 @@ Then record which account fills which level in the project's runtime contract,
 accounts exist. The binding is arbitrary and project-owned: any account may fill any level, one
 account may fill several, and adding a subscription is an edit to that table, not a rename.
 
-Each account can use its own model: `aimux profile update <account> -m <model>`. The build is
-usually the longest run and may justify a faster or cheaper model once scope is approved.
+Each account can use its own model: `aimux profile update <account> -m <model>`. That is fine for a
+single fixed account per level. It stops working once a level is bound to a **pool** of several
+interchangeable accounts, because the pool members may not share a model config — `dispatch.sh
+--model NAME` exists for that case: it overrides the model for one dispatch regardless of which
+pool member ends up running it. Prefer the account's own config when a level has exactly one
+account; reach for `--model` when it has a pool.
 
-A separate review account is optional. When the contract names one, step 2 runs under a different
-account from the plan author. When it names the same account as Reasoning — or none — step 2 falls
-back and that fact is recorded in the run journal.
+Review does not need a separate account. What keeps it from repeating the drafting level's blind
+spots is a different prompt file (`prompts/2-review.txt` vs `prompts/1-plan.txt`), not a different
+subscription — an earlier version of this skill required a distinct Review account, which
+conflated "different judgment" with "different billing" for no real benefit. `$ACCT_REVIEW` may
+equal `$ACCT_REASONING`.
 
-**Spreading load across subscriptions is a mapping change, not a per-dispatch rotation.** Rotating
-accounts inside a run would start every dispatch on a cold prompt cache and could land the review on
-the same subscription that drafted the plan. Change the binding between runs instead: the caches
-stay warm within each run, and the level separation holds.
+**A level's pool is resolved once per run, not rotated between runs by hand.** `docs/00-ai-context.md`
+names an ordered, comma-separated pool per level — for example `codework1,codework2,codework3` for
+Implementation. Within a single dispatch, `dispatch.sh` tries the pool in that order and, for
+read-only dispatches only, moves to the next account automatically if one fails; a `workspace-write`
+dispatch picks the first available account and does not retry after it starts, because a failed
+build cannot be safely resumed on a different account without knowing what it already wrote. Put the
+accounts you want tried first at the front of the pool; changing the order is an edit to
+`docs/00-ai-context.md`, not a runtime rotation the skill has to manage.
 
 The skill's dispatch commands set `CODEX_HOME="$HOME/.aimux/profiles/<account>"` directly instead of
 using `aimux run`, so they compose with background execution. This is aimux's own mechanism: one
@@ -171,9 +181,13 @@ So step 4 passes `--network`, which sets `sandbox_workspace_write.network_access
 dispatch:
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account implementation --mode workspace-write --background --network \
+"$SKILLDIR/dispatch.sh" --account "$ACCT_IMPLEMENTATION" --mode workspace-write --background --network \
   --env-file .agents/build-env.sh …
 ```
+
+`$ACCT_IMPLEMENTATION` is the shell variable `SKILL.md` step 0 binds from the runtime contract — not
+a literal account name. Writing `--account implementation` here, even as a placeholder, contradicts
+§ 1's own rule against naming or using a subscription after the level it fills.
 
 Per dispatch, not stored on the account: the read-only levels keep the default, and the wider
 sandbox lasts one build rather than becoming the machine's permanent posture. The sandbox still
@@ -247,7 +261,7 @@ what has been pushed.
 
 ```bash
 aimux profile list
-CODEX_HOME="$HOME/.aimux/profiles/reasoning" codex -a never exec -s read-only \
+CODEX_HOME="$HOME/.aimux/profiles/<one of your subscription names>" codex -a never exec -s read-only \
   "Answer with one word: ok"
 ```
 

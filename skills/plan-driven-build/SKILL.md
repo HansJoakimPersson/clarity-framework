@@ -17,7 +17,10 @@ full diff — you read bounded distillates produced by agents that did that read
 
 Reasoning and Implementation must run under **a different CLI or account than you**. That is the
 point of the workflow: not context isolation, but moving token spend off the metered interactive
-session. A Claude subagent shares your account and does not achieve this.
+session. A Claude subagent shares your account and does not achieve this. An account may be one
+subscription or a prioritized pool of interchangeable ones — see Step 0. Review does not need a
+different account from Reasoning; what keeps it from repeating Reasoning's blind spots is a
+different prompt file, not a different subscription.
 
 Setup — accounts, sandbox and approval flags, permission allowlist — is in `setup.md`.
 Read it only if a prerequisite check fails.
@@ -73,12 +76,13 @@ Check, and if anything is missing: report it and stop.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
   into the working tree; if it is dirty you can no longer tell its changes from what was there.
   Report what is uncommitted and let the user decide — never commit, stash or reset for them.
-- `docs/00-ai-context.md` names an aimux account for each level, and `aimux profile list` shows
-  those accounts. **Account names are subscriptions, not roles** — whatever the project calls its
-  subscriptions is what goes in both places, and the same account may fill several levels. Step 0
-  verifies the mapping; without it cost is not separated, only context. `dispatch.sh` also prints a
-  `FALLBACK:` line per dispatch — pass it on to the user and record it in the journal rather than
-  letting it scroll past.
+- `docs/00-ai-context.md` names an aimux account pool for each level — one subscription or several,
+  comma-separated, tried in priority order. `aimux profile list` shows the accounts that exist.
+  **Account names are subscriptions, not roles** — whatever the project calls its subscriptions is
+  what goes in both places, the same account may fill several levels or appear in several pools, and
+  Review does not need a pool distinct from Reasoning's. Step 0 verifies the mapping; without it cost
+  is not separated, only context. `dispatch.sh` also prints a `FALLBACK:` line per dispatch — pass it
+  on to the user and record it in the journal rather than letting it scroll past.
 
 Templates: `plan-template.md` and `journal-template.md` in this skill's directory. Copy them, never edit them in
 place. Do not look for `templates/` — that path exists in the framework repo, not in projects.
@@ -103,24 +107,34 @@ RUN=docs/plans/.runs/$ID
 mkdir -p "$RUN" && cp "$SKILLDIR/journal-template.md" "$JOURNAL"
 ```
 
-Then bind each level to an account. **The account names are the project's own aimux subscriptions**
-— read them from the runtime contract in `docs/00-ai-context.md` and set them here. They are not
-role names, and the skill has no defaults to fall back on:
+Then bind each level to an account pool. **The account names are the project's own aimux
+subscriptions** — read them from the runtime contract in `docs/00-ai-context.md` and set them here.
+They are not role names, a pool is one account or several comma-separated ones tried in priority
+order, and the skill has no defaults to fall back on:
 
 ```bash
-ACCT_REASONING=<account from docs/00-ai-context.md>
-ACCT_IMPLEMENTATION=<account from docs/00-ai-context.md>
-ACCT_REVIEW=<account from docs/00-ai-context.md, or the reasoning account>
+ACCT_REASONING=<account pool from docs/00-ai-context.md, e.g. codework1,codework2>
+ACCT_IMPLEMENTATION=<account pool from docs/00-ai-context.md>
+ACCT_REVIEW=<account pool from docs/00-ai-context.md, or reuse $ACCT_REASONING>
+MODEL_REASONING=<model from docs/00-ai-context.md, or leave empty for the account's own default>
+MODEL_IMPLEMENTATION=<model from docs/00-ai-context.md, or leave empty>
 
-for a in "$ACCT_REASONING" "$ACCT_IMPLEMENTATION" "$ACCT_REVIEW"; do
-  [ -d "$HOME/.aimux/profiles/$a" ] && printf 'ok       %s\n' "$a" || printf 'MISSING  %s\n' "$a"
+for pool in "$ACCT_REASONING" "$ACCT_IMPLEMENTATION" "$ACCT_REVIEW"; do
+  found=0
+  for a in $(printf '%s' "$pool" | tr ',' ' '); do
+    [ -d "$HOME/.aimux/profiles/$a" ] && { printf 'ok       %s\n' "$a"; found=1; }
+  done
+  [ "$found" -eq 1 ] || printf 'MISSING  %s\n' "$pool"
 done
 ```
 
-Any `MISSING` line means that level will run on the logged-in account and its cost will not be
-separated. Report it before dispatching rather than discovering it in the usage report weeks later.
-Which subscription fills which level is the project's decision — one account may fill several
-levels, and any account may fill any level.
+A `MISSING` line means every account in that pool is unresolved, so the level will run on the
+logged-in account and its cost will not be separated — `dispatch.sh` reports this per dispatch too,
+but check it here before the run starts. Which subscriptions fill which level, and in what order, is
+the project's decision: one account may fill several levels, any account may fill any level, and a
+pool exists to spread load across interchangeable subscriptions — not to give a level its own
+identity. Review does not need to differ from Reasoning's pool; the prompt file is what keeps a
+review from sharing the drafting level's blind spots, not the account.
 
 Every dispatch goes through `$SKILLDIR/dispatch.sh`, which takes its instructions from
 `$SKILLDIR/prompts/`. **Do not read the prompt files** — keeping roughly a thousand words of
@@ -145,7 +159,10 @@ Do not read the project's documents or code beyond what you need to state the ta
 read what it needs — that is the context you are not paying for twice.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" --mode read-only \
+model_args=''
+[ -n "$MODEL_REASONING" ] && model_args="--model $MODEL_REASONING"
+
+"$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<one or two sentences: what should be true when this is done>" \
   --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
@@ -158,12 +175,11 @@ as this sentence. Build nothing in this step.
 
 ## Step 2 — Dispatch a critique of the plan
 
-A fresh, stateless invocation reading the plan cold against the code. It runs under the account the
-contract binds to Review — a different subscription from the one that drafted the plan, which
-removes the blind spot of a level reviewing itself. If that account does not exist, the fallback to
-the Reasoning account handles it and says
-so on stdout: then it is a self-review that catches wrong paths and invented functions reliably but
-shares whatever judgment blind spots the drafting level has. Record the fallback in the journal.
+A fresh, stateless invocation reading the plan cold against the code, under a different prompt file
+from the one that drafted it. `prompts/2-review.txt` is what keeps this from repeating step 1's
+blind spots — `$ACCT_REVIEW` may be the same pool as `$ACCT_REASONING`, nothing here requires the
+account to differ. The `--fallback` still protects against `$ACCT_REVIEW` being unresolved at
+runtime; if it fires, that is recorded on stdout and belongs in the journal.
 
 ```bash
 "$SKILLDIR/dispatch.sh" --account "$ACCT_REVIEW" --fallback "$ACCT_REASONING" --mode read-only \
@@ -220,11 +236,18 @@ build_env_args=
 [ -f .agents/build-env.sh ] && build_env_args='--env-file .agents/build-env.sh'
 [ -f .agents/build-env.local.sh ] && build_env_args='--env-file .agents/build-env.local.sh'
 
-"$SKILLDIR/dispatch.sh" --account "$ACCT_IMPLEMENTATION" --mode workspace-write --background --network \
+model_args=''
+[ -n "$MODEL_IMPLEMENTATION" ] && model_args="--model $MODEL_IMPLEMENTATION"
+
+"$SKILLDIR/dispatch.sh" --account "$ACCT_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
   $build_env_args \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
   --log "$RUN/build.log"
 ```
+
+`$ACCT_IMPLEMENTATION` may be a pool. `dispatch.sh` picks the first account in it whose profile
+exists to start the build, but never retries a failed build on the next one — see `dispatch.sh`'s
+own header comment for why.
 
 The sandbox still confines writes to the workspace. Network access widens what the build can reach,
 not what it can overwrite, which is why it is granted per dispatch rather than stored on the
@@ -298,7 +321,10 @@ stop and report rather than improvising a fix mid-build.
 Do not read the diff yourself.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" --mode read-only \
+model_args=''
+[ -n "$MODEL_REASONING" ] && model_args="--model $MODEL_REASONING"
+
+"$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
   --var PLAN="$PLAN" --var SHA="<approval SHA from the journal>" \
   --var BUILD_LOG="$RUN/build.log" \

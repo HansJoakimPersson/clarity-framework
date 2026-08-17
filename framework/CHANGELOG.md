@@ -6,6 +6,42 @@ All significant framework changes are recorded here. Releases follow
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [3.3.0] – Unreleased
+
+### Fixed
+
+- `setup.md` § "Implementation and the network" used `--account implementation` as its example,
+  contradicting § 1's own rule against naming or using a subscription after the level it fills. Now
+  reads `--account "$ACCT_IMPLEMENTATION"`, matching `SKILL.md`. The § 4 setup-verification example
+  had the same problem with a literal `reasoning` account name; replaced with a placeholder.
+
+### Added
+
+- `dispatch.sh --account` now accepts a comma-separated, priority-ordered pool of aimux accounts
+  instead of a single name. Resolved once per dispatch: `read-only` dispatches retry the next
+  account in the pool automatically when one fails (side-effect-free, safe to retry);
+  `workspace-write` dispatches pick the first account whose profile exists and never retry after
+  launch, because a failed build cannot be safely resumed on a different account without knowing
+  what it already wrote. Rate-limit detection is unverified — a retry currently fires on any
+  non-zero codex exit, which may also retry a genuine task failure. Flagged in the script's own
+  header comment.
+- `dispatch.sh --model NAME`, passed straight through to codex independent of which account in a
+  pool ends up running the dispatch. Lets a pool of otherwise-interchangeable accounts share one
+  capability tier instead of requiring each account to carry its own `aimux profile update -m`
+  config. The exact codex flag is unverified against the installed CLI version — check
+  `codex exec --help` first, per the skill's existing setup convention for unverified flags.
+- `tests/dispatch-test.sh`: coverage for pool retry on `read-only` failure, no retry on
+  `workspace-write` failure, the logged-in-account fallback message, and `--model` pass-through.
+
+### Changed
+
+- Review no longer requires a different aimux account from Reasoning. What separates them is a
+  different prompt file (`prompts/2-review.txt` vs `prompts/1-plan.txt`), not a different
+  subscription — the earlier requirement conflated judgment independence with billing separation
+  for no real benefit. `SKILL.md`, `setup.md`, and `templates/00-ai-context.md`'s runtime contract
+  table updated accordingly; the table also gained a Model column, independent of the account pool
+  column.
+
 ## [3.2.2] – Unreleased
 
 ### Fixed

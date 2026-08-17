@@ -142,4 +142,4 @@ change.
 
 ---
 
-*Clarity Framework v3.2.2 – AI Usage Guide*
+*Clarity Framework v3.3.0 – AI Usage Guide*

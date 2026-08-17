@@ -19,13 +19,41 @@
 # env-prefixed, backgrounded compound command is not.
 #
 # Usage:
-#   dispatch.sh --account NAME [--fallback NAME] --mode read-only|workspace-write
-#               --prompt-file FILE [--var KEY=VALUE ...]
+#   dispatch.sh --account NAME[,NAME...] [--fallback NAME] --mode read-only|workspace-write
+#               --prompt-file FILE [--var KEY=VALUE ...] [--model NAME]
 #               --out FILE [--max-lines N] [--env-file FILE]
-#   dispatch.sh --account NAME --mode workspace-write --prompt-file FILE [--var KEY=VALUE ...]
-#               --log FILE --background [--network] [--env-file FILE]
+#   dispatch.sh --account NAME[,NAME...] --mode workspace-write --prompt-file FILE [--var KEY=VALUE ...]
+#               [--model NAME] --log FILE --background [--network] [--env-file FILE]
+#
+# --account takes an ordered, comma-separated pool of aimux account names, e.g.
+# `--account codework1,codework2,codework3`. This is priority order, resolved once per dispatch —
+# not round-robin, and not a rotation the caller has to manage between runs. It exists to spread
+# cost across interchangeable subscriptions, not to bind a level to one persona; nothing about
+# review needing a *different* account from reasoning is enforced here — separate that with the
+# prompt file's content, not the account.
+#
+# --mode read-only dispatches are side-effect-free, so a failed attempt retries the next account in
+# the pool automatically until one succeeds or the pool is exhausted. --mode workspace-write never
+# retries after launch: a build can fail partway through, and retrying it blindly on a different
+# account would compound a real failure instead of a rate limit. The pool still decides which
+# account *starts* a workspace-write dispatch — first one whose aimux profile directory exists.
+#
+# The retry-on-failure path treats any non-zero codex exit as grounds to try the next account. This
+# is unverified: it has not been checked against a real rate-limit error from codex, so it may also
+# retry a genuine prompt or task failure on a different account instead of surfacing it. Read this
+# skill's setup notes before trusting it unattended, and watch the DISPATCH summary line the first
+# few times it fires.
 #
 # --profile is accepted as a deprecated alias for --account so existing invocations keep working.
+# --fallback NAME is appended to the end of the --account pool; prefer a comma-separated --account
+# list for anything with more than one fallback.
+#
+# --model NAME is passed straight through to codex as a per-dispatch override, independent of which
+# account ends up paying for the call — this is what lets a pool of otherwise-identical accounts
+# share one capability tier. The exact flag codex expects has not been verified against the
+# installed CLI version; check `codex exec --help` before relying on it, per this skill's setup
+# notes. If the flag name is wrong, codex will fail fast with an unrecognized-argument error rather
+# than silently ignoring it.
 #
 # --prompt TEXT still works for an ad-hoc dispatch. Placeholders in a prompt file are written
 # {{KEY}}; every placeholder must be supplied with --var or the dispatch aborts. Values are
@@ -46,7 +74,7 @@ set -eu
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
 ACCOUNT=''; FALLBACK=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''; ENV_FILE=''
-MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''
+MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -54,6 +82,7 @@ while [ $# -gt 0 ]; do
     --profile)     ACCOUNT="${2:-}";     shift 2 ;;  # deprecated alias for --account
     --fallback)    FALLBACK="${2:-}";    shift 2 ;;
     --mode)        MODE="${2:-}";        shift 2 ;;
+    --model)       MODEL="${2:-}";       shift 2 ;;
     --out)         OUT="${2:-}";         shift 2 ;;
     --log)         LOG="${2:-}";         shift 2 ;;
     --max-lines)   MAX_LINES="${2:-}";   shift 2 ;;
@@ -113,28 +142,59 @@ if [ -n "$PROMPT_FILE" ]; then
 fi
 [ -n "$PROMPT" ] || die 'dispatch.sh: --prompt or --prompt-file is required'
 
-# Sandbox network access. codex denies it under workspace-write by default, which stops any build
+# Extra top-level codex flags, applied regardless of which account in the pool ends up running.
+#
+# Sandbox network access: codex denies it under workspace-write by default, which stops any build
 # that has to resolve a dependency. Set it per dispatch rather than widening the account's stored
 # config, so read-only levels keep the default and the wider sandbox lasts exactly one build.
+#
+# Model override: independent of the account, so a pool of otherwise-interchangeable accounts can
+# share one capability tier. See the --model note above — unverified flag name.
 set --
 if [ "$NETWORK" -eq 1 ]; then
   set -- -c 'sandbox_workspace_write.network_access=true'
 fi
+if [ -n "$MODEL" ]; then
+  set -- "$@" -m "$MODEL"
+fi
 
-# Resolve the account. aimux keeps one config directory per account (its own CLI calls the
-# subcommand `profile`); pointing CODEX_HOME at it is what actually separates the subscription,
-# not just the process.
-account_dir=''; used=''; note=''
-if [ -d "$HOME/.aimux/profiles/$ACCOUNT" ]; then
-  account_dir="$HOME/.aimux/profiles/$ACCOUNT"; used="$ACCOUNT"
-elif [ -n "$FALLBACK" ] && [ -d "$HOME/.aimux/profiles/$FALLBACK" ]; then
-  account_dir="$HOME/.aimux/profiles/$FALLBACK"; used="$FALLBACK"
-  note="FALLBACK: no aimux account '$ACCOUNT', billed to account '$FALLBACK' instead"
+# Resolve the account pool. aimux keeps one config directory per account (its own CLI calls the
+# subcommand `profile`); pointing CODEX_HOME at it is what actually separates the subscription, not
+# just the process. --account may list several accounts, tried in the order given; --fallback, if
+# set, is appended as the last one. remaining_accounts is consumed by advance_account() below —
+# each call pops candidates off the front until it finds one with an existing profile directory.
+remaining_accounts=$(printf '%s' "$ACCOUNT" | tr ',' ' ')
+[ -n "$FALLBACK" ] && remaining_accounts="$remaining_accounts $FALLBACK"
+missing_log=''
+
+# Sets account_dir and used on success (and shrinks remaining_accounts); leaves account_dir empty
+# and returns 1 once the pool is exhausted. Every skipped candidate is recorded in missing_log.
+advance_account() {
+  account_dir=''
+  while [ -n "$remaining_accounts" ]; do
+    acct=${remaining_accounts%% *}
+    case "$remaining_accounts" in
+      *' '*) remaining_accounts=${remaining_accounts#* } ;;
+      *) remaining_accounts='' ;;
+    esac
+    [ -n "$acct" ] || continue
+    if [ -d "$HOME/.aimux/profiles/$acct" ]; then
+      account_dir="$HOME/.aimux/profiles/$acct"; used="$acct"
+      return 0
+    fi
+    missing_log="$missing_log $acct"
+  done
+  return 1
+}
+
+used=''; account_dir=''; note=''
+if advance_account; then
+  CODEX_HOME="$account_dir"; export CODEX_HOME
+  [ -n "$missing_log" ] && note="FALLBACK: account(s)$missing_log not found, used '$used' instead"
 else
   used='(logged-in account)'
-  note="FALLBACK: no aimux account '$ACCOUNT' — ran on the logged-in account; context is isolated, cost is NOT separated"
+  note="FALLBACK: no aimux account among [$ACCOUNT${FALLBACK:+,$FALLBACK}] exists — ran on the logged-in account; cost is NOT separated"
 fi
-[ -n "$account_dir" ] && CODEX_HOME="$account_dir" && export CODEX_HOME
 
 if [ -n "$ENV_FILE" ]; then
   [ -f "$ENV_FILE" ] || die "dispatch.sh: env file not found: $ENV_FILE"
@@ -146,6 +206,8 @@ fi
 command -v codex >/dev/null 2>&1 || die 'dispatch.sh: codex not on PATH'
 
 if [ "$BACKGROUND" -eq 1 ]; then
+  # No retry here even on a pool: a killed or failed build cannot be safely re-launched on another
+  # account without knowing what it already wrote. The pool only decides the starting account.
   exit_file="$(printf '%s' "$LOG" | sed 's/\.log$//').exit"
   rm -f "$exit_file"
   CFD_MODE=$MODE
@@ -167,6 +229,24 @@ fi
 
 status=0
 codex -a never "$@" exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 || status=$?
+attempt_log=" $used=exit$status"
+
+# Retry the pool only for read-only dispatch — it has no side effects, so a second attempt under a
+# different account is safe. workspace-write never reaches this loop (background exits above).
+if [ "$MODE" = read-only ]; then
+  while [ "$status" -ne 0 ] && advance_account; do
+    CODEX_HOME="$account_dir"; export CODEX_HOME
+    status=0
+    codex -a never "$@" exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 || status=$?
+    attempt_log="$attempt_log $used=exit$status"
+  done
+fi
+
+if [ "$used" = '(logged-in account)' ]; then
+  note="FALLBACK: no aimux account among [$ACCOUNT${FALLBACK:+,$FALLBACK}] worked (tried$missing_log$attempt_log) — ran on the logged-in account; cost is NOT separated"
+elif [ -n "$missing_log" ] || [ "$MODE" = read-only ] && [ "$(printf '%s' "$attempt_log" | wc -w)" -gt 1 ]; then
+  note="FALLBACK: tried$missing_log$attempt_log — used '$used'"
+fi
 
 lines=0
 [ -f "$OUT" ] && lines=$(wc -l < "$OUT" | tr -d ' ')
