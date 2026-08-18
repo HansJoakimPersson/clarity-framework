@@ -18,7 +18,7 @@ bash -n "$OUTPUT"
 grep -Fx '  .agents/skills/framework-update' "$OUTPUT" >/dev/null
 grep -Fx '  .claude/skills/framework-update' "$OUTPUT" >/dev/null
 grep -Fx 'git add -- "${UPDATE_PATHS[@]}"' "$OUTPUT" >/dev/null
-grep -Fx 'git commit --only -m "[minor] Uppdatera Clarity Framework till v1.5.2" -- "${UPDATE_PATHS[@]}"' "$OUTPUT" >/dev/null
+grep -Fx 'git commit --only -m "[minor] Update Clarity Framework to v1.5.2" -- "${UPDATE_PATHS[@]}"' "$OUTPUT" >/dev/null
 
 ARRAY_ONLY="$TEST_ROOT/array.sh"
 sed -n '/^UPDATE_PATHS=(/,/^)/p' "$OUTPUT" > "$ARRAY_ONLY"

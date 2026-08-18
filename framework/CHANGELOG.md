@@ -49,6 +49,15 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- `render-update-commit.sh` emitted its commit message in Swedish — `"[minor] Uppdatera Clarity
+  Framework till vX.Y.Z"` — so every project that ran `framework-update` got a Swedish commit in its
+  history, against the repository rule that all framework content is English. Its regression test
+  asserted the Swedish string, so the suite stayed green while the output was wrong.
+- `AGENTS.md` never told anyone to run the three shipped regression tests. Commit discipline required
+  a CHANGELOG entry, consistent guides, and updated version markers, but said nothing about tests —
+  which is how the defect above survived. Running them is now part of a complete commit when a
+  shipped script changes, with a note that a green assertion can lock in a defect just as easily as
+  it can catch one.
 - Nothing stated plainly that `plan-driven-build` requires a second AI CLI. `dispatch.sh` stops hard
   without one, but `README.md` and `skills/README.md` described dispatch to "other CLIs or accounts"
   as though a single-CLI project could still run the workflow. Both now say it outright, as does the

@@ -40,8 +40,21 @@ Work directly on `main`. One commit is one meaningful, complete unit of change.
 | `chore` | Repository maintenance and script changes |
 
 A commit is incomplete when it has no CHANGELOG entry, affected guides and templates are inconsistent,
-or the version markers were not updated. Every change increments the version in the same commit;
-`docs` and `chore` changes do not increment it.
+the version markers were not updated, or a shipped script changed without its regression test being
+run. Every change increments the version in the same commit; `docs` and `chore` changes do not
+increment it.
+
+The repository ships three executable tests. Run all of them when any `*.sh` under `skills/` changes:
+
+```bash
+sh   skills/plan-driven-build/tests/dispatch-test.sh
+bash skills/framework-update/tests/check-update-scope-test.sh
+bash skills/framework-update/tests/render-update-commit-test.sh
+```
+
+A green test is necessary, not sufficient: a test that asserts the current output will happily lock
+in a defect. When a script's *output* changes — a commit message, a report line, a flag name — read
+the assertion as well and confirm it still encodes the rule you meant, not just the behavior you got.
 
 Update all files carrying a framework version:
 
@@ -57,6 +70,7 @@ git grep -lE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+|Current version:|\*\*Ver
 | Template change | Template and any affected guide |
 | `templates/plan.md` | Identical `skills/plan-driven-build/plan-template.md`; verify with `diff` |
 | Dispatch prompt change | The matching prompt and `SKILL.md` when placeholders change |
+| Shipped script change | The script and its test under the same skill's `tests/` |
 | New template | New file, README, and CHANGELOG entry |
 | Framework guideline change | Guide and affected templates |
 | Release | CHANGELOG, version markers, and annotated Git tag |

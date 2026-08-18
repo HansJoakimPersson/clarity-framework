@@ -32,5 +32,5 @@ done
 printf '%s\n\n' ')'
 printf '%s\n' 'git add -- "${UPDATE_PATHS[@]}"'
 printf '%s\n' 'git diff --cached --name-only -- "${UPDATE_PATHS[@]}"'
-printf 'git commit --only -m "[minor] Uppdatera Clarity Framework till v%s" -- "${UPDATE_PATHS[@]}"\n' \
+printf 'git commit --only -m "[minor] Update Clarity Framework to v%s" -- "${UPDATE_PATHS[@]}"\n' \
   "$VERSION"
