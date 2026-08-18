@@ -132,11 +132,11 @@ script can be replaced without redefining the workflow.
 `/<name>`; Codex invokes `$<name>` or selects the skill through `/skills`. Internal `prompts/`
 directories are resources for the skill's scripts, not client custom-prompt directories.
 
-**Clarity-managed setup:** written by `clarity-bootstrap` and refreshed by `framework-update`.
+**Clarity-managed setup:** written by `clarity-bootstrap` and refreshed by `framework-update`. The
+framework version and date are not repeated here — they live in this document's header table, and a
+second copy would only drift from it.
 
 ```text
-version: [X.Y.Z]
-updated: [YYYY-MM-DD]
 agents-starter: [starter name without .md, or none]
 skills: [comma-separated Clarity-managed skill names]
 skill-paths: .agents/skills, .claude/skills

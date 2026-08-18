@@ -182,7 +182,10 @@ account to differ. The `--fallback` still protects against `$ACCT_REVIEW` being 
 runtime; if it fires, that is recorded on stdout and belongs in the journal.
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account "$ACCT_REVIEW" --fallback "$ACCT_REASONING" --mode read-only \
+model_args=''
+[ -n "$MODEL_REASONING" ] && model_args="--model $MODEL_REASONING"
+
+"$SKILLDIR/dispatch.sh" --account "$ACCT_REVIEW" --fallback "$ACCT_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
   --out "$RUN/review.md" --max-lines 40
 ```

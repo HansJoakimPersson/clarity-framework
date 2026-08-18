@@ -27,6 +27,20 @@ tag, so an untagged heading here is a version no project can reach.
 - The `skills:` ownership list `framework-update` depends on had no home in
   `templates/00-ai-context.md`, so it could never exist in practice and every update fell back to
   asking the user which skills were Clarity-owned.
+- `documentation-guide.md` § 13 introduced the four-level runtime contract with a colon, then placed
+  two paragraphs on file ownership before the list that answered it.
+- The review dispatch in `plan-driven-build` step 2 took no model override while steps 1, 4, and 5
+  did, so a project setting a reasoning model got it everywhere except the review.
+- `settings.example.json` anchored its patterns on literal paths (`mkdir -p docs/plans/`,
+  `cp .agents/skills/plan-driven-build/`) while `SKILL.md` runs those commands through variables
+  (`mkdir -p "$RUN"`). Permission patterns match the command text before expansion, so the file
+  prompted for exactly the commands it was meant to pre-approve. The patterns are now the plain
+  verbs, and `setup.md` explains the matching rule and states which half of the file is load-bearing:
+  `deny` mechanizes the reading budget, `allow` is adjustable convenience.
+- `agents/README.md` prescribed a heading structure only one of eight starters followed. It now
+  requires the three sections all of them share — Workflow, When You Are a Dispatched Agent, and
+  Definition of Done — plus an opening rules section under either accepted name, and leaves the rest
+  to the stack. A starter for shell scripts and one for a Java build do not have the same shape.
 - `setup.md` § "Implementation and the network" used `--account implementation` as its example,
   contradicting § 1's own rule against naming or using a subscription after the level it fills. Now
   reads `--account "$ACCT_IMPLEMENTATION"`, matching `SKILL.md`. The § 4 setup-verification example

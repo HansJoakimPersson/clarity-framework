@@ -216,9 +216,22 @@ continues from the journal's next step.
 Copy `settings.example.json` to the project's `.claude/settings.json` (or merge it with an existing
 file) so the workflow's own commands are not gated one by one.
 
+**The two halves of the file are not equally important.** The `deny` list is the reason the file
+exists: it turns the reading budget from an instruction into a mechanism. The `allow` list is
+convenience — it removes permission prompts for the commands this workflow runs anyway, and a
+project that prefers to approve them interactively can drop it entirely without weakening anything.
+Treat `allow` as a starting point to adjust per project; treat `deny` as the part to keep.
+
 The `allow` list covers dispatch, the Git commands the workflow actually runs, and reading the plan
 directory. Routing every dispatch through `dispatch.sh` makes it matchable: a background command
 with environment prefixes is difficult to describe reliably, while a stable script path is not.
+
+Its patterns match the literal command text, before the shell expands anything. `SKILL.md` step 0
+runs `mkdir -p "$RUN"` and `cp "$SKILLDIR/journal-template.md" …`, so a pattern anchored on
+`mkdir -p docs/plans/` never matches and the command prompts anyway. That is why the shipped
+patterns are the plain verbs — `Bash(mkdir -p:*)`, `Bash(cp:*)`, `Bash(test:*)` — rather than
+path-anchored ones. Narrow them if a project wants tighter control, but verify against the commands
+as written in `SKILL.md`, not as they look after expansion.
 
 The `deny` list is the important half. It turns the reading budget into a mechanism rather than a
 matter of discipline:

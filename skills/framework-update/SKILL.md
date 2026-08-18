@@ -213,9 +213,9 @@ Then update the Framework version markers already present in the project's files
 version field in `docs/00-ai-context.md` and any `*Clarity Framework vX.Y.Z*` footers. A stale
 marker left behind makes the next run report the wrong starting point.
 
-Refresh the **Clarity-managed setup** block in `docs/00-ai-context.md` too: `version`, `updated`, and
-the `skills:` list when this run added or removed a managed skill. That block is what the next run
-reads to tell a Clarity skill from a third-party one.
+Refresh the **Clarity-managed setup** block in `docs/00-ai-context.md` when this run added or removed
+a managed skill or replaced the starter. The block holds no version or date of its own — those are
+the header-table fields above — so an unchanged skill set means an unchanged block.
 
 ## Step 7 — Hand back
 

@@ -69,11 +69,20 @@ lets Claude Code read the same `AGENTS.md` Codex reads.
 ## Adding a new starter
 
 1. Name the file `[stack].md` using lowercase letters and hyphens.
-2. Follow the same structure: *How To Use*, *Core Rules*, optional profiles, and *Definition of Done*.
-3. Refer to Clarity Framework documents in the Workflow section.
-4. Include *When You Are a Dispatched Agent*; it keeps an agent within the approved plan's scope.
+2. Include the three sections every starter must have, whatever the stack:
+   - **Workflow** — the order of work, referring to the Clarity Framework documents by path.
+   - **When You Are a Dispatched Agent** — keeps an agent inside an approved plan's scope.
+   - **Definition of Done** — what "finished" means here, in checkable terms.
+3. Open with a section stating the rules that always apply — *Core Rules* or *Core Principles*,
+   whichever fits the stack's vocabulary.
+4. Everything else is stack-dependent. A starter for a language with build profiles needs optional
+   profile sections; one for shell scripts needs formatting and quoting rules instead. Do not add a
+   section to match another starter's shape when the stack has nothing to put in it.
 5. Add a row to the table above.
 6. Add an entry to `framework/CHANGELOG.md`.
+
+Starters differ because the stacks differ. The three required sections are the contract the rest of
+the framework relies on; heading order and depth below them are the author's call.
 
 ---
 

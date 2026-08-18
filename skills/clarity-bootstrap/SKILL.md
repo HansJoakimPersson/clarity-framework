@@ -162,12 +162,13 @@ the list of Clarity-managed skill names, so a marker written anywhere else leave
 unable to tell a Clarity skill from a third-party one. There is no separate version file.
 
 ```text
-version: X.Y.Z
-updated: YYYY-MM-DD
 agents-starter: <starter name without .md, or none>
 skills: <comma-separated Clarity-managed names>
 skill-paths: .agents/skills, .claude/skills
 ```
+
+Set the framework version and date in the document's header table (**Framework version** and
+**Last updated**), not in the block. One fact, one place.
 
 When `00-ai-context.md` was not selected in step 3 — no agent will work on the project — skip the
 marker and say so in the report. Nothing reads it in that case, and `framework-update` falls back to

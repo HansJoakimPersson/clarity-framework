@@ -220,7 +220,7 @@ and have a human review visual differences. A successful build is not visual val
 
 Agents are governed contributors, not decision owners. Use `00-ai-context.md` as the compact starting
 point, keep durable state in project files, and use the four-level runtime contract when work is
-split across agents:
+split across agents.
 
 Three files divide the responsibility and nothing crosses between them. `CLAUDE.md` contains the
 single line `@AGENTS.md` and never anything else; it exists so Claude Code loads what Codex reads
@@ -230,6 +230,8 @@ in `docs/`, in the document that governs it, with `00-ai-context.md` as the home
 conventions that no numbered document covers. A project never records its own rules in a
 framework-owned file: rules kept where the framework already governs them stay reviewed, versioned,
 and visible, and they survive every framework update.
+
+The four levels, in the order a task passes through them:
 
 1. Orchestrator
 2. Reasoning
