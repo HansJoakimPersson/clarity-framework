@@ -49,6 +49,11 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- `README.md`'s Ownership table covered only `CLAUDE.md`, `AGENTS.md`, and `docs/` — but
+  `framework-update` declares that section normative and reads it to decide what it may replace, and
+  the paths with the most delicate rule were missing from it: the managed skill directories, whose
+  ownership is name-scoped rather than wildcard-scoped. The rule existed in `skills/README.md` and in
+  the update skill's own prose, just not in the place both point at. The table now carries it.
 - Five templates carried no `*Clarity Framework vX.Y.Z*` footer: `01-vision-scope.md`,
   `02-requirements.md`, `02-user-stories.md`, `03-sad.md`, and `08-change-management.md`, which also
   ended mid-table with no closing separator. `framework-update` step 2 falls back to that footer to

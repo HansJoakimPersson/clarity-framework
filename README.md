@@ -92,13 +92,19 @@ content while their structure is lifted to the current template.
 
 ## Ownership
 
-Three files carry three distinct responsibilities, and nothing crosses between them:
+Every path has exactly one owner, and nothing crosses between them. This table is normative:
+`framework-update` reads it to decide what it may replace.
 
-| File | Owner | Contains |
+| Path | Owner | Contains |
 | --- | --- | --- |
 | `CLAUDE.md` | Framework | The single line `@AGENTS.md`, and nothing else — ever |
 | `AGENTS.md` | Framework | How an agent works in this stack; replaced wholesale on update |
+| `.agents/skills/<name>/`, `.claude/skills/<name>/` | Framework, **per name** | Copies of Clarity skills, replaced wholesale. Ownership is name-scoped: only the names on the `skills:` line of `docs/00-ai-context.md` are Clarity's. A skill with any other name is project- or third-party-owned and is never touched |
 | `docs/` | Project | Everything about this project: decisions, conventions, and deviations |
+
+**Skill ownership is name-scoped, never wildcard-scoped.** An update replaces the two directories
+belonging to each managed name and nothing else — not `.claude/` broadly, not every skill it finds.
+That is what makes it safe to keep your own skills beside Clarity's.
 
 **`CLAUDE.md` is a pointer, not a rulebook.** It exists only so Claude Code loads the same
 instructions Codex reads directly. It never holds project-specific instructions.
