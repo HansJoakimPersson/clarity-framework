@@ -73,9 +73,23 @@ build cannot be safely resumed on a different account without knowing what it al
 accounts you want tried first at the front of the pool; changing the order is an edit to
 `docs/00-ai-context.md`, not a runtime rotation the skill has to manage.
 
-The skill's dispatch commands set `CODEX_HOME="$HOME/.aimux/profiles/<account>"` directly instead of
-using `aimux run`, so they compose with background execution. This is aimux's own mechanism: one
-configuration-directory variable per CLI (`CLAUDE_CONFIG_DIR` / `CODEX_HOME` / `GEMINI_CLI_HOME`).
+`dispatch.sh` points the CLI's configuration-directory variable at `$HOME/.aimux/profiles/<account>`
+directly instead of using `aimux run`, so it composes with background execution. This is aimux's own
+mechanism: one such variable per CLI (`CLAUDE_CONFIG_DIR` / `CODEX_HOME` / `GEMINI_CLI_HOME`). Which
+variable to set is part of the CLI adapter, not something a project configures.
+
+### Which CLI runs a dispatch
+
+`dispatch.sh --cli NAME` selects the adapter and defaults to `codex`, the only one implemented. The
+adapter is the one place that knows a tool's grammar: its binary name, how sandbox, approval,
+output-file, network and model are spelled, and which configuration-directory variable it reads.
+Everything else in the dispatcher — account pools, budgets, sentinels, retries, prompts — is the
+same whatever runs underneath.
+
+That boundary matters for ownership. A project changes tools by passing `--cli`, never by editing
+this skill: the copied skill is framework-owned and is replaced wholesale at the next update, so an
+edit here would be silently reverted. Supporting a new CLI is a framework change — two case branches
+in `dispatch.sh` — and it leaves the levels, plan, journal, budgets and gates untouched.
 
 ---
 

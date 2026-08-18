@@ -122,4 +122,18 @@ printf '%s\n' "$out" | grep -F 'cost is NOT separated' >/dev/null
   --model test-model-x --out "$TEST_ROOT/out/model-report.md" >/dev/null
 test "$(cat "$TEST_ROOT/out/model-report.md")" = 'ok:model=test-model-x'
 
+# --- CLI adapter: codex is the default, and naming it explicitly changes nothing ---
+"$SCRIPT_DIR/dispatch.sh" --cli codex --profile clarity-dispatch-regression --mode read-only \
+  --prompt test --out "$TEST_ROOT/out/cli-report.md" >/dev/null
+test "$(cat "$TEST_ROOT/out/cli-report.md")" = 'ok'
+
+# --- CLI adapter: an unimplemented adapter fails before dispatching, not halfway through ---
+if "$SCRIPT_DIR/dispatch.sh" --cli gemini --profile clarity-dispatch-regression --mode read-only \
+  --prompt test --out "$TEST_ROOT/out/unsupported.md" 2>"$TEST_ROOT/out/unsupported.err"; then
+  printf 'dispatch-test: unsupported --cli should have failed\n' >&2
+  exit 1
+fi
+grep -F "unsupported --cli 'gemini'" "$TEST_ROOT/out/unsupported.err" >/dev/null
+test ! -f "$TEST_ROOT/out/unsupported.md"
+
 printf 'dispatch-test: ok\n'

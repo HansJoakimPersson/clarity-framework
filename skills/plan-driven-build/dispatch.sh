@@ -19,11 +19,19 @@
 # env-prefixed, backgrounded compound command is not.
 #
 # Usage:
-#   dispatch.sh --account NAME[,NAME...] [--fallback NAME] --mode read-only|workspace-write
+#   dispatch.sh [--cli NAME] --account NAME[,NAME...] [--fallback NAME]
+#               --mode read-only|workspace-write
 #               --prompt-file FILE [--var KEY=VALUE ...] [--model NAME]
 #               --out FILE [--max-lines N] [--env-file FILE]
-#   dispatch.sh --account NAME[,NAME...] --mode workspace-write --prompt-file FILE [--var KEY=VALUE ...]
-#               [--model NAME] --log FILE --background [--network] [--env-file FILE]
+#   dispatch.sh [--cli NAME] --account NAME[,NAME...] --mode workspace-write --prompt-file FILE
+#               [--var KEY=VALUE ...] [--model NAME] --log FILE --background [--network] [--env-file FILE]
+#
+# --cli selects the adapter; it defaults to `codex`, the only one implemented today. Everything
+# tool-specific is confined to the adapter block further down — the binary name, how sandbox,
+# approval, output-file, network and model are spelled, and which environment variable points at an
+# account's configuration directory. A project never edits this file to change tools: it passes
+# --cli. Supporting a new tool is a framework change, two case branches, and the levels, plan,
+# journal, budgets and gates are unaffected by it.
 #
 # --account takes an ordered, comma-separated pool of aimux account names, e.g.
 # `--account codework1,codework2,codework3`. This is priority order, resolved once per dispatch —
@@ -74,10 +82,11 @@ set -eu
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
 ACCOUNT=''; FALLBACK=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''; ENV_FILE=''
-MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''
+MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''; CLI='codex'
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    --cli)         CLI="${2:-}";         shift 2 ;;
     --account)     ACCOUNT="${2:-}";     shift 2 ;;
     --profile)     ACCOUNT="${2:-}";     shift 2 ;;  # deprecated alias for --account
     --fallback)    FALLBACK="${2:-}";    shift 2 ;;
@@ -142,7 +151,25 @@ if [ -n "$PROMPT_FILE" ]; then
 fi
 [ -n "$PROMPT" ] || die 'dispatch.sh: --prompt or --prompt-file is required'
 
-# Extra top-level codex flags, applied regardless of which account in the pool ends up running.
+# ---------------------------------------------------------------------------
+# CLI adapters
+#
+# Everything tool-specific lives in this block and in cli_exec() below: the binary name, how
+# sandbox / approval / output-file / network / model are spelled, and which environment variable
+# points at an account's configuration directory. Everything else in this script — pools, budgets,
+# sentinels, prompts, retries — is tool-independent.
+#
+# A project never edits this file to change tools. Selecting one is `--cli NAME`; adding one is a
+# framework change: a branch here and a branch in cli_exec(). That boundary is why the skill can be
+# replaced wholesale on update without a project losing its configuration.
+# ---------------------------------------------------------------------------
+
+case "$CLI" in
+  codex) CLI_BIN=codex; CLI_CONFIG_ENV=CODEX_HOME ;;
+  *) die "dispatch.sh: unsupported --cli '$CLI' (supported: codex)" ;;
+esac
+
+# Top-level flags that are grammar rather than value, built into "$@" and passed to every attempt.
 #
 # Sandbox network access: codex denies it under workspace-write by default, which stops any build
 # that has to resolve a dependency. Set it per dispatch rather than widening the account's stored
@@ -151,18 +178,31 @@ fi
 # Model override: independent of the account, so a pool of otherwise-interchangeable accounts can
 # share one capability tier. See the --model note above — unverified flag name.
 set --
-if [ "$NETWORK" -eq 1 ]; then
-  set -- -c 'sandbox_workspace_write.network_access=true'
-fi
-if [ -n "$MODEL" ]; then
-  set -- "$@" -m "$MODEL"
-fi
+case "$CLI" in
+  codex)
+    if [ "$NETWORK" -eq 1 ]; then
+      set -- -c 'sandbox_workspace_write.network_access=true'
+    fi
+    if [ -n "$MODEL" ]; then
+      set -- "$@" -m "$MODEL"
+    fi
+    ;;
+esac
+
+# One foreground attempt. Receives the top-level flags as its own "$@"; reads MODE, OUT and PROMPT
+# from the environment above.
+cli_exec() {
+  case "$CLI" in
+    codex) codex -a never "$@" exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 ;;
+  esac
+}
 
 # Resolve the account pool. aimux keeps one config directory per account (its own CLI calls the
-# subcommand `profile`); pointing CODEX_HOME at it is what actually separates the subscription, not
-# just the process. --account may list several accounts, tried in the order given; --fallback, if
-# set, is appended as the last one. remaining_accounts is consumed by advance_account() below —
-# each call pops candidates off the front until it finds one with an existing profile directory.
+# subcommand `profile`); pointing the CLI's config-dir variable at it is what actually separates the
+# subscription, not just the process. --account may list several accounts, tried in the order given;
+# --fallback, if set, is appended as the last one. remaining_accounts is consumed by
+# advance_account() below — each call pops candidates off the front until it finds one with an
+# existing profile directory.
 remaining_accounts=$(printf '%s' "$ACCOUNT" | tr ',' ' ')
 [ -n "$FALLBACK" ] && remaining_accounts="$remaining_accounts $FALLBACK"
 missing_log=''
@@ -189,7 +229,7 @@ advance_account() {
 
 used=''; account_dir=''; note=''
 if advance_account; then
-  CODEX_HOME="$account_dir"; export CODEX_HOME
+  export "$CLI_CONFIG_ENV=$account_dir"
   [ -n "$missing_log" ] && note="FALLBACK: account(s)$missing_log not found, used '$used' instead"
 else
   used='(logged-in account)'
@@ -203,21 +243,27 @@ if [ -n "$ENV_FILE" ]; then
   . "$ENV_FILE"
 fi
 
-command -v codex >/dev/null 2>&1 || die 'dispatch.sh: codex not on PATH'
+command -v "$CLI_BIN" >/dev/null 2>&1 || die "dispatch.sh: $CLI_BIN not on PATH"
 
 if [ "$BACKGROUND" -eq 1 ]; then
   # No retry here even on a pool: a killed or failed build cannot be safely re-launched on another
   # account without knowing what it already wrote. The pool only decides the starting account.
   exit_file="$(printf '%s' "$LOG" | sed 's/\.log$//').exit"
   rm -f "$exit_file"
+  CFD_CLI=$CLI
   CFD_MODE=$MODE
   CFD_PROMPT=$PROMPT
   CFD_EXIT_FILE=$exit_file
-  export CFD_MODE CFD_PROMPT CFD_EXIT_FILE
+  export CFD_CLI CFD_MODE CFD_PROMPT CFD_EXIT_FILE
+  # The child re-selects the adapter rather than inheriting a command string: a background dispatch
+  # survives this process, so the branch has to live where the command actually runs.
   nohup sh -c '
     printf "%s\n" "DISPATCH child started"
     status=0
-    codex -a never "$@" exec -s "$CFD_MODE" "$CFD_PROMPT" || status=$?
+    case "$CFD_CLI" in
+      codex) codex -a never "$@" exec -s "$CFD_MODE" "$CFD_PROMPT" || status=$? ;;
+      *) printf "%s\n" "dispatch child: unsupported CLI $CFD_CLI" >&2; status=2 ;;
+    esac
     printf "%s\n" "$status" > "$CFD_EXIT_FILE"
     exit "$status"
   ' dispatch-bg "$@" > "$LOG" 2>&1 < /dev/null &
@@ -228,16 +274,16 @@ if [ "$BACKGROUND" -eq 1 ]; then
 fi
 
 status=0
-codex -a never "$@" exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 || status=$?
+cli_exec "$@" || status=$?
 attempt_log=" $used=exit$status"
 
 # Retry the pool only for read-only dispatch — it has no side effects, so a second attempt under a
 # different account is safe. workspace-write never reaches this loop (background exits above).
 if [ "$MODE" = read-only ]; then
   while [ "$status" -ne 0 ] && advance_account; do
-    CODEX_HOME="$account_dir"; export CODEX_HOME
+    export "$CLI_CONFIG_ENV=$account_dir"
     status=0
-    codex -a never "$@" exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 || status=$?
+    cli_exec "$@" || status=$?
     attempt_log="$attempt_log $used=exit$status"
   done
 fi

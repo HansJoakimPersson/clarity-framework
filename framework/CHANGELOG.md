@@ -49,6 +49,11 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- Nothing stated plainly that `plan-driven-build` requires a second AI CLI. `dispatch.sh` stops hard
+  without one, but `README.md` and `skills/README.md` described dispatch to "other CLIs or accounts"
+  as though a single-CLI project could still run the workflow. Both now say it outright, as does the
+  skill's prerequisite list.
+- `README.md`'s repository structure omitted the framework repo's own `AGENTS.md` and `CLAUDE.md`.
 - `agents/java-application.md`, `agents/macos-swift.md`, and `agents/r-shiny.md` still routed ADRs to
   `docs/08-change-management.md` after the ADR home was settled, so a starter contradicted the guide
   it points at. They now name `03-sad.md` §6 as where an ADR is written and describe `08` as the
@@ -93,6 +98,14 @@ tag, so an untagged heading here is a version no project can reach.
 
 ### Added
 
+- `dispatch.sh --cli NAME` selects a CLI adapter, defaulting to `codex`. Everything tool-specific —
+  binary name, how sandbox, approval, output-file, network and model are spelled, and which
+  configuration-directory variable the account pool sets — is confined to one adapter block and one
+  `cli_exec` branch. Previously `SKILL.md` told a project to change tools by editing `dispatch.sh`
+  and `prompts/`, which contradicts the rule that a copied skill is framework-owned, must not be
+  edited, and is replaced wholesale on update: the edit would have been reverted at the next
+  `framework-update`. Selecting a tool is now a flag; supporting a new one is a framework change.
+  `codex` remains the only adapter implemented.
 - `dispatch.sh --account` now accepts a comma-separated, priority-ordered pool of aimux accounts
   instead of a single name. Resolved once per dispatch: `read-only` dispatches retry the next
   account in the pool automatically when one fails (side-effect-free, safe to retry);

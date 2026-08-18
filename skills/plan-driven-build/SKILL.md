@@ -70,7 +70,9 @@ A profile never removes the merge gate. You never approve on the user's behalf.
 
 Check, and if anything is missing: report it and stop.
 
-- `command -v codex` and `AGENTS.md` in the project root.
+- `command -v codex` and `AGENTS.md` in the project root. **This workflow needs a second CLI**: the
+  orchestrator dispatches to it, so a project with only one AI CLI installed cannot run it. `codex`
+  is the only dispatch adapter implemented; `dispatch.sh --cli` exists for future ones.
 - This skill exists at `.agents/skills/plan-driven-build/` or `.claude/skills/plan-driven-build/`.
   Install it in both locations when both Codex and Claude Code are used. The copies must be identical.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
@@ -386,8 +388,12 @@ step the journal records as done, and do not reconstruct context by reading code
 - The four runtime levels may be assigned to one or more agents. The point is not fewer total tokens — it is keeping your session
   small and moving the expensive reading onto accounts you are not metered against. For a change the
   user can review in five minutes this is not worth it; say so instead of running it.
-- To swap tools, only `dispatch.sh` and `prompts/` change. The levels, plan, journal, budget and
-  gates are tool-independent. `docs/00-ai-context.md` records which CLI and account fills each level.
+- The levels, plan, journal, budgets and gates are tool-independent; only `dispatch.sh` knows how a
+  given CLI spells sandbox, approval, output and config directory, and it keeps that in one adapter
+  block. Selecting a tool is `dispatch.sh --cli NAME`, which defaults to `codex` — a project never
+  edits this skill to change tools. `codex` is the only adapter implemented today; adding another is
+  a framework change, not a project one. `docs/00-ai-context.md` records which CLI and account pool
+  fills each level.
 - The rationale behind all of this — why cost separation and not just context isolation, why the
   gates sit where they do — is in the framework's `ai-usage-guide.md` § 5. It is not needed to run
   the workflow, which is why it is not here.

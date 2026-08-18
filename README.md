@@ -66,6 +66,8 @@ clarity-framework/
 │       ├── setup.md                 # One-time account, sandbox, and permissions setup
 │       └── settings.example.json    # Claude Code permissions example
 │
+├── AGENTS.md                       # How an agent works in this repository
+├── CLAUDE.md                       # Exactly one line: @AGENTS.md
 └── README.md                       # This file
 ```
 
@@ -150,6 +152,10 @@ When a task is large enough to need scope approval, install `skills/plan-driven-
 runtime roots. It uses the four-level runtime contract, separate accounts or subscriptions where
 available, bounded reports, a committed run journal, and human gates for scope, merge, release, and
 plan deletion.
+
+It requires a second AI CLI, because the orchestrator dispatches the work instead of doing it.
+`codex` is the dispatch adapter implemented today; a project selects one with `dispatch.sh --cli`
+and never edits the skill to do so.
 
 ## Documentation flow
 

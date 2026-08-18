@@ -26,7 +26,7 @@ answers a different question from the other Clarity documents:
 | Directory | Use when… |
 | --- | --- |
 | `clarity-bootstrap/` | A new or unmanaged project needs the smallest relevant document set, stack starter, and skills for both clients |
-| `plan-driven-build/` | The task is large enough to require scope approval before code is written, with planning, review, and implementation dispatched to other CLIs or accounts |
+| `plan-driven-build/` | The task is large enough to require scope approval before code is written, with planning, review, and implementation dispatched to other CLIs or accounts. Requires a second AI CLI — `codex` today — since the orchestrator dispatches rather than builds |
 | `framework-update/` | A project on an older framework version must be upgraded without losing completed work |
 
 The three skills are independent. `clarity-bootstrap/` sets up an unmanaged project, while
