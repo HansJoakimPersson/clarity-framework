@@ -472,7 +472,7 @@ Notes and evidence: _______________________________
 
 ---
 
-## 11. Definition of Done
+## 11. Document completeness
 
 - [ ] A new operator can access the system, deploy, verify, and roll back from this document.
 - [ ] System ownership, topology, paths, dashboards, and escalation contacts are documented.

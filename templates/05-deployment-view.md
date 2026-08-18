@@ -330,7 +330,7 @@ result in Change Management and open a follow-up action for the cause of the fai
 
 ---
 
-## 9. Definition of Done
+## 9. Document completeness
 
 - [ ] Environments, topology, capacity, access, and trust boundaries are documented.
 - [ ] Container or service configuration, health checks, volumes, and resource limits are versioned.

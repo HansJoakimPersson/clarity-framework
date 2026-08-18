@@ -37,6 +37,35 @@ tag, so an untagged heading here is a version no project can reach.
   prompted for exactly the commands it was meant to pre-approve. The patterns are now the plain
   verbs, and `setup.md` explains the matching rule and states which half of the file is load-bearing:
   `deny` mechanizes the reading budget, `allow` is adjustable convenience.
+- `templates/08-change-management.md` was titled "Change Log & Technical Debt" while every reference
+  to it — the README ownership table, `documentation-guide.md` §11, the plan template's closeout
+  questions — calls it Change Management. It also lacked the `Status` field and the `Version history`
+  section every other document-style template carries; `09-visual-profile.md` lacked the same
+  section.
+- `templates/08-change-management.md` §4 sent full post-mortems to `/docs/incidents/`, a path the
+  framework defines nowhere: no template, no entry in the README project structure, and nothing
+  selectable in `clarity-bootstrap`. The incident table is the record; a project that writes longer
+  post-mortems links to them from it and chooses where they live.
+- `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
+  while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
+  traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- ADRs had three homes described across the framework, and `README.md` contradicted itself in one
+  file: line 31 placed them in `03-sad.md`, line 108 in `08-change-management.md`. The templates
+  already implemented a coherent split that none of the prose described. Confirmed and written down:
+  ADRs are authored in `03-sad.md` §6, next to the architecture they explain, and
+  `08-change-management.md` §2 is an index of which ones were superseded so the history survives a
+  SAD rewrite. `README.md`, `documentation-guide.md` §3/§6/§11, `templates/00-ai-context.md`, and
+  both templates now say the same thing.
+- "Definition of Done" named four different things: a document-completeness checklist in four
+  templates, the project's story-level DoD in `06-test-documentation.md`, the plan's own DoD, and a
+  framework-level checklist in the documentation guide. `plan-driven-build` step 5 verifies "each
+  condition under Definition of Done", so the collision was operational, not just editorial. The
+  document-completeness checklists in `04`, `05`, `07`, and `09` are now **Document completeness**,
+  the guide's §14 is **Documentation completeness checklist**, and *Definition of Done* means only
+  the project's DoD and a plan's DoD.
+- `README.md` described `framework/PROJECT-INSTRUCTIONS.md` as a template for Claude Code and Codex.
+  Its content is for chat-based projects — project knowledge plus custom instructions — while
+  `AGENTS.md` is what governs the CLI clients.
 - `agents/README.md` prescribed a heading structure only one of eight starters followed. It now
   requires the three sections all of them share — Workflow, When You Are a Dispatched Agent, and
   Definition of Done — plus an opening rules section under either accepted name, and leaves the rest

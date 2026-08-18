@@ -93,7 +93,7 @@ no mapped test or if evidence is missing.
 
 ## 3. Test case template
 
-### TC-001 · FR-001 – [Story title]
+### TC-FR001-001 · FR-001 – [Story title]
 
 **Traceability:** AC-001-1
 **Type:** Unit / Integration / API / End-to-end
@@ -116,7 +116,7 @@ no mapped test or if evidence is missing.
 **Failure evidence:**
 [Link to report, screenshot, trace, log, or issue.]
 
-### TC-001-2 · FR-001 – [Negative or alternative scenario]
+### TC-FR001-002 · FR-001 – [Negative or alternative scenario]
 
 **Traceability:** AC-001-2
 **Type:** Unit / Integration / API / End-to-end

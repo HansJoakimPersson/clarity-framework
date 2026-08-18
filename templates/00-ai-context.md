@@ -91,7 +91,7 @@
 > in `09-visual-profile.md`. Never put project rules in `CLAUDE.md`; it contains only `@AGENTS.md`.
 >
 > Keep this list short. A convention that needs a paragraph of justification is a decision, and
-> decisions belong in an ADR in `08-change-management.md`.
+> decisions belong in an ADR in `03-sad.md` §6.
 
 | Convention | Reason |
 | --- | --- |

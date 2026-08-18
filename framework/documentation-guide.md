@@ -47,7 +47,7 @@ decision, interface, or operational responsibility.
         ↓
 07 Runbook (operation and recovery)
         ↓
-08 Change Management (releases, ADRs, and technical debt)
+08 Change Management (releases, superseded decisions, and technical debt)
         ↘
 09 Visual Profile (required when the product has a visual UI)
 ```
@@ -144,7 +144,7 @@ Cover:
 - data flows and important boundaries;
 - deployment-relevant topology;
 - quality attributes and the tactics that satisfy them;
-- key decisions and rejected alternatives;
+- key decisions and rejected alternatives, written as ADRs in §6 of the document;
 - security, observability, and failure behavior.
 
 Connect each important NFR to an architectural tactic. Update the SAD when a decision changes a
@@ -203,7 +203,10 @@ Record releases, superseded decisions, incidents, and deliberate technical debt.
 the relevant issue, story, ADR, commit, release, or post-mortem.
 
 Use ADRs for decisions that affect architecture, interfaces, security, operations, or future change
-cost. Do not delete superseded ADRs; mark them superseded and preserve the reasoning.
+cost. **Write them in the SAD**, next to the architecture they explain — `03-sad.md` §6 holds the
+decision, its context, consequences, and the alternatives that were rejected. Change Management
+records only which ADRs were superseded and by what, so the supersession history survives even as
+the SAD is rewritten. Do not delete a superseded ADR; mark it superseded and preserve the reasoning.
 
 ## 12. Visual Profile & Design Tokens
 
@@ -242,7 +245,7 @@ The plan-driven workflow uses explicit scope, report budgets, account separation
 journal, and human gates for scope, merge, release, and plan deletion. See `ai-usage-guide.md` and
 `skills/plan-driven-build/` for the executable procedure.
 
-## 14. Definition of Done checklist
+## 14. Documentation completeness checklist
 
 - Vision and scope are approved.
 - Requirements and NFRs are measurable and traceable.

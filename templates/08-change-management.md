@@ -1,12 +1,19 @@
-# Change Log & Technical Debt
+# Change Management
 
 ## [Product name]
 
 | | |
 | --- | --- |
 | **Version** | 0.1 |
+| **Status** | Draft / Under review / Approved |
 | **Date** | YYYY-MM-DD |
 | **Author** | [Name] |
+
+### Version history
+
+| Version | Date | Change | Author |
+| --- | --- | --- | --- |
+| 0.1 | YYYY-MM-DD | Initial version | [Name] |
 
 ---
 
@@ -24,7 +31,8 @@
 
 ## 2. Superseded decisions
 
-> ADRs replaced by newer decisions. Never delete them; the history has value.
+> An index of ADRs replaced by newer decisions. The ADRs themselves live in `docs/03-sad.md` §6 and
+> are never deleted; this table is what keeps a supersession findable after the SAD is rewritten.
 
 | ADR ID | Title | Superseded by | Date |
 | --- | --- | --- | --- |
@@ -47,7 +55,8 @@
 
 ## 4. Incident log
 
-> Short summaries of incidents. Full post-mortems belong in `/docs/incidents/`.
+> Short summaries of incidents. This table is the record; if an incident warrants a longer
+> post-mortem, link to it here rather than assuming a location the framework does not define.
 
 | Date | Severity | Description | Root cause | Resolved |
 | --- | --- | --- | --- | --- |

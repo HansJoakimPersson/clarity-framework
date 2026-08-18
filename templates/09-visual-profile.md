@@ -10,6 +10,14 @@
 | **Author** | [Name] |
 | **Token file** | `design/tokens.json` |
 
+### Version history
+
+| Version | Date | Change | Author |
+| --- | --- | --- | --- |
+| 0.1 | YYYY-MM-DD | Initial version | [Name] |
+
+---
+
 ## 1. Brand foundations
 
 ### Logo
@@ -108,7 +116,7 @@ Attach screenshots or an equivalent rendered comparison for every changed surfac
 device/browser, date, journey, reviewer, and unresolved differences. Automated tests and accessibility
 scans support but do not replace human inspection.
 
-## 7. Definition of Done
+## 7. Document completeness
 
 - [ ] Visual profile is approved before UI implementation.
 - [ ] Tokens are the source of truth and generated outputs are reproducible.

@@ -302,7 +302,7 @@ tokens, or personal data in this document.
 
 ---
 
-## 6. Definition of Done
+## 6. Document completeness
 
 - [ ] Domain invariants and relationships are documented in plain language.
 - [ ] The physical model, migrations, indexes, and lifecycle rules are explicit.

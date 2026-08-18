@@ -20,7 +20,7 @@ clarity-framework/
 ├── framework/
 │   ├── documentation-guide.md       # Main guide for all document types and lifecycle rules
 │   ├── ai-usage-guide.md            # Governed AI-agent workflow, runtime contract, and safeguards
-│   ├── PROJECT-INSTRUCTIONS.md      # Project instruction template for Claude Code and Codex
+│   ├── PROJECT-INSTRUCTIONS.md      # Custom-instruction template for chat-based projects
 │   └── CHANGELOG.md                 # Framework version history and release notes
 │
 ├── templates/
@@ -105,7 +105,7 @@ instructions Codex reads directly. It never holds project-specific instructions.
 
 | Project-specific content | Document |
 | --- | --- |
-| Architecture, boundaries, technology choices | `docs/03-sad.md`, with ADRs in `docs/08-change-management.md` |
+| Architecture, boundaries, technology choices | `docs/03-sad.md`, where ADRs are written; `docs/08-change-management.md` records which ones were superseded |
 | Behavior, acceptance criteria, priorities | `docs/02-requirements.md` |
 | Data models and interface contracts | `docs/04-data-model-api.md` |
 | Build, environments, delivery | `docs/05-deployment-view.md` |
