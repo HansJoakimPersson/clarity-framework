@@ -69,6 +69,7 @@ git grep -lE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+|Current version:|\*\*Ver
 | --- | --- |
 | Template change | Template and any affected guide |
 | `templates/plan.md` | Identical `skills/plan-driven-build/plan-template.md`; verify with `diff` |
+| Story block in `templates/02-requirements.md` §2.6 | The same block in `templates/02-user-stories.md`. Splitting the backlog moves stories between them, so a field added to one and not the other silently disappears on the move |
 | Dispatch prompt change | The matching prompt and `SKILL.md` when placeholders change |
 | Shipped script change | The script and its test under the same skill's `tests/` |
 | New template | New file, README, and CHANGELOG entry |

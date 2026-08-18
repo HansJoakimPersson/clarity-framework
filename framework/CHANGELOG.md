@@ -49,6 +49,14 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- `clarity-bootstrap` used "roughly 20 stories" as the threshold for splitting the backlog into
+  `02-user-stories.md`, while the guide and both templates say "roughly 20 **active** stories".
+  Dropped stories keep their IDs and stay listed, so counting them would split a document earlier
+  than intended.
+- `AGENTS.md` had no rule keeping the story block in `templates/02-requirements.md` §2.6 identical to
+  the one in `templates/02-user-stories.md`. Splitting a backlog moves stories between the two, so a
+  field added to one and not the other disappears on the move — the same class of drift the existing
+  `plan.md` / `plan-template.md` row already guards against.
 - Four starters told an agent that "completion notes always include modified files", the exact
   opposite of the rule the other four and `prompts/4-build.txt` state: do not list changed files,
   the diff already shows them. `agents/macos-swift.md` carried both — the corrected rule in its
