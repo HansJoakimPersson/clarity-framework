@@ -274,11 +274,26 @@ agent that finds the copied `SKILL.md` to run the workflow itself and spawn nest
 
 ```gitignore
 docs/plans/.runs/
+.agents/build-env.local.sh
+.m2/
 ```
 
-Raw dispatch output—reviews, build logs, and verification reports—is local working material. The run
-journal (`docs/plans/*.run.md`) is committed: it is the handover surface, and a cloud agent sees only
-what has been pushed.
+`docs/plans/.runs/` is raw dispatch output — reviews, build logs, verification reports — and is local
+working material. The run journal (`docs/plans/*.run.md`) is committed: it is the handover surface,
+and a cloud agent sees only what has been pushed.
+
+`.agents/build-env.local.sh` is the machine-specific override from § 2. Its committed sibling
+`.agents/build-env.sh` is versioned; the `.local` one is not, which is the entire distinction between
+them — committing it pushes one developer's toolchain paths onto everyone else.
+
+`.m2/` is the workspace-local Maven cache § 2 recommends so a sandboxed build can resolve
+dependencies without write access to `~/.m2`. Replace it with whatever workspace-local cache path
+your ecosystem uses, or drop the line for a project that has none. It is here because a dependency
+cache inside the workspace is large, machine-specific, and reproducible — three reasons never to
+commit it.
+
+`clarity-bootstrap` adds these three automatically when `plan-driven-build` is selected. Add them by
+hand when you set the workflow up yourself.
 
 ---
 

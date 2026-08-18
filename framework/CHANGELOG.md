@@ -49,6 +49,12 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- `plan-driven-build/setup.md` § 3 listed only `docs/plans/.runs/` as the project's `.gitignore`
+  entries, contradicting its own § 2 — which calls `.agents/build-env.local.sh` "gitignored
+  machine-specific override" and tells Maven projects to put the dependency cache under `.m2/` and
+  "gitignore it" — and contradicting `clarity-bootstrap`, which adds all three automatically. Anyone
+  setting the workflow up by hand therefore committed another developer's toolchain paths and a
+  dependency cache. All three are now listed, each with the reason it is excluded.
 - `README.md`'s Ownership table covered only `CLAUDE.md`, `AGENTS.md`, and `docs/` — but
   `framework-update` declares that section normative and reads it to decide what it may replace, and
   the paths with the most delicate rule were missing from it: the managed skill directories, whose
