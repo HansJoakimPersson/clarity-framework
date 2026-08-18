@@ -49,6 +49,11 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- The four dispatch blocks in `plan-driven-build/SKILL.md` tested `[ -n "$MODEL_REASONING" ]`
+  unguarded while step 0 told the orchestrator it could "leave empty" — an orchestrator that left the
+  variable unassigned rather than assigned-empty hit `parameter not set` under `set -u` instead of
+  falling back to the account's own model. The tests are now `${VAR:-}` and step 0 shows the
+  assignment explicitly.
 - `clarity-bootstrap` used "roughly 20 stories" as the threshold for splitting the backlog into
   `02-user-stories.md`, while the guide and both templates say "roughly 20 **active** stories".
   Dropped stories keep their IDs and stay listed, so counting them would split a document earlier

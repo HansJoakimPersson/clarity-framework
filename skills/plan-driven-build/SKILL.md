@@ -118,8 +118,8 @@ order, and the skill has no defaults to fall back on:
 ACCT_REASONING=<account pool from docs/00-ai-context.md, e.g. codework1,codework2>
 ACCT_IMPLEMENTATION=<account pool from docs/00-ai-context.md>
 ACCT_REVIEW=<account pool from docs/00-ai-context.md, or reuse $ACCT_REASONING>
-MODEL_REASONING=<model from docs/00-ai-context.md, or leave empty for the account's own default>
-MODEL_IMPLEMENTATION=<model from docs/00-ai-context.md, or leave empty>
+MODEL_REASONING=          # from docs/00-ai-context.md; leave assigned-but-empty for the account default
+MODEL_IMPLEMENTATION=     # same — assign the variable even when you have no model to set
 
 for pool in "$ACCT_REASONING" "$ACCT_IMPLEMENTATION" "$ACCT_REVIEW"; do
   found=0
@@ -162,7 +162,7 @@ read what it needs — that is the context you are not paying for twice.
 
 ```bash
 model_args=''
-[ -n "$MODEL_REASONING" ] && model_args="--model $MODEL_REASONING"
+[ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
 
 "$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
@@ -185,7 +185,7 @@ runtime; if it fires, that is recorded on stdout and belongs in the journal.
 
 ```bash
 model_args=''
-[ -n "$MODEL_REASONING" ] && model_args="--model $MODEL_REASONING"
+[ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
 
 "$SKILLDIR/dispatch.sh" --account "$ACCT_REVIEW" --fallback "$ACCT_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
@@ -242,7 +242,7 @@ build_env_args=
 [ -f .agents/build-env.local.sh ] && build_env_args='--env-file .agents/build-env.local.sh'
 
 model_args=''
-[ -n "$MODEL_IMPLEMENTATION" ] && model_args="--model $MODEL_IMPLEMENTATION"
+[ -n "${MODEL_IMPLEMENTATION:-}" ] && model_args="--model $MODEL_IMPLEMENTATION"
 
 "$SKILLDIR/dispatch.sh" --account "$ACCT_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
   $build_env_args \
@@ -327,7 +327,7 @@ Do not read the diff yourself.
 
 ```bash
 model_args=''
-[ -n "$MODEL_REASONING" ] && model_args="--model $MODEL_REASONING"
+[ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
 
 "$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
