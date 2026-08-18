@@ -72,7 +72,9 @@ lets Claude Code read the same `AGENTS.md` Codex reads.
 2. Include the three sections every starter must have, whatever the stack:
    - **Workflow** — the order of work, referring to the Clarity Framework documents by path.
    - **When You Are a Dispatched Agent** — keeps an agent inside an approved plan's scope.
-   - **Definition of Done** — what "finished" means here, in checkable terms.
+   - **Definition of Done** — what "finished" means here, in checkable terms. It is a stack
+     baseline, not the project's own: when `docs/06-test-documentation.md` §8 defines a Definition of
+     Done, that one is authoritative and the starter's list is the floor beneath it.
 3. Open with a section stating the rules that always apply — *Core Rules* or *Core Principles*,
    whichever fits the stack's vocabulary.
 4. Everything else is stack-dependent. A starter for a language with build profiles needs optional

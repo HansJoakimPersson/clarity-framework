@@ -176,7 +176,8 @@ says the scope is authoritative.
 - Public behavior, documentation, and configuration are aligned.
 - Relevant Clarity Framework docs are updated when their content is affected.
 - No unrelated dependency churn, formatting churn, or refactoring is included.
-- Completion notes always include modified files.
+- Completion notes state whether the task is done and what was verified. Do not list changed files —
+  the diff already shows them.
 - Completion notes always include commands executed.
 - Completion notes always include test results, including run/failure/error/skipped counts when the test runner reports
   them.

@@ -92,7 +92,8 @@ says the scope is authoritative.
 - No secrets, credentials, tokens, or personal data are committed.
 - No unrelated dependency churn, formatting churn, or refactoring is included.
 - Relevant Clarity Framework docs are updated when their content is affected.
-- Completion notes always include modified files, commands executed, and test results for both sides.
+- Completion notes state whether the task is done, the commands executed, and the test results for
+  both sides. Do not list changed files — the diff already shows them.
 - If tests or checks could not run locally, explain why and name the CI pipeline or command that should run
   instead.
 

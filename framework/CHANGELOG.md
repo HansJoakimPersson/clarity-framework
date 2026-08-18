@@ -49,6 +49,16 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- Four starters told an agent that "completion notes always include modified files", the exact
+  opposite of the rule the other four and `prompts/4-build.txt` state: do not list changed files,
+  the diff already shows them. `agents/macos-swift.md` carried both — the corrected rule in its
+  Workflow and the old one in its Definition of Done. A dispatched agent in a Java, Swift, R/Shiny,
+  or iOS project therefore received contradictory reporting instructions from `AGENTS.md` and the
+  build prompt, and spent report budget listing what the diff already showed. An earlier release
+  fixed the Workflow lines in four starters and never reached the Definition of Done lines.
+- `agents/README.md` did not say how a starter's Definition of Done relates to the project's own in
+  `docs/06-test-documentation.md` §8. Both carry the name; the starter's is the stack baseline and
+  the project's is authoritative.
 - `plan-driven-build/setup.md` § 3 listed only `docs/plans/.runs/` as the project's `.gitignore`
   entries, contradicting its own § 2 — which calls `.agents/build-env.local.sh` "gitignored
   machine-specific override" and tells Maven projects to put the dependency cache under `.m2/` and

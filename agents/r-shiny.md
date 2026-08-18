@@ -208,7 +208,8 @@ Shiny apps render as HTML in a real browser, so three complementary layers of ac
 - Public behavior, documentation, and configuration are aligned.
 - Relevant Clarity Framework docs are updated when their content is affected.
 - No unrelated dependency churn, formatting churn, or refactoring is included.
-- Completion notes always include modified files.
+- Completion notes state whether the task is done and what was verified. Do not list changed files —
+  the diff already shows them.
 - Completion notes always include commands executed.
 - Completion notes always include test results, including counts of passed/failed/skipped when the test runner reports
   them.
