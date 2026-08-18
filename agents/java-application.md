@@ -150,10 +150,11 @@ says the scope is authoritative.
 - Update README, usage docs, API docs, or release notes when user-visible behavior changes.
 - In Clarity Framework projects, update the relevant docs when their content changes:
   - `docs/02-requirements.md` — when requirements or acceptance criteria are affected
-  - `docs/03-sad.md` — when architecture, components, or key design decisions change
+  - `docs/03-sad.md` — when architecture or components change; new ADRs are written here, in §6
   - `docs/04-data-model-api.md` — when data model or API contracts change
   - `docs/06-test-documentation.md` — when testing strategy or coverage targets change
-  - `docs/08-change-management.md` — for change tracking and ADRs
+  - `docs/08-change-management.md` — for releases, technical debt, incidents, and the index of
+    superseded ADRs
   - `docs/00-ai-context.md` — when stack, status, or key context shifts significantly
 - Add Javadoc for all types and all methods — public, protected, and private — that are newly added or materially
   changed.

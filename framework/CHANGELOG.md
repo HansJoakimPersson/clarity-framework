@@ -49,6 +49,13 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- `agents/java-application.md`, `agents/macos-swift.md`, and `agents/r-shiny.md` still routed ADRs to
+  `docs/08-change-management.md` after the ADR home was settled, so a starter contradicted the guide
+  it points at. They now name `03-sad.md` §6 as where an ADR is written and describe `08` as the
+  index of superseded ones.
+- `agents/generic.md` — the neutral fallback used when no stack starter matches — never mentioned
+  `docs/03-sad.md`. Every other starter reads it; the one meant to work anywhere omitted the
+  document that answers where a change belongs.
 - ADRs had three homes described across the framework, and `README.md` contradicted itself in one
   file: line 31 placed them in `03-sad.md`, line 108 in `08-change-management.md`. The templates
   already implemented a coherent split that none of the prose described. Confirmed and written down:

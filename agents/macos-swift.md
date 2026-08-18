@@ -148,10 +148,11 @@ says the scope is authoritative.
 - Update README, usage docs, release notes, privacy notes, or design notes when user-visible behavior, permissions, or
   distribution behavior changes.
 - In Clarity Framework projects, update the relevant docs when their content changes:
-  - `docs/03-sad.md` — when architecture or key design decisions change
+  - `docs/03-sad.md` — when architecture changes; new ADRs are written here, in §6
   - `docs/05-deployment-view.md` — when distribution, packaging, signing, or App Store behavior changes
   - `docs/06-test-documentation.md` — when testing strategy or coverage targets change
-  - `docs/08-change-management.md` — for change tracking and ADRs
+  - `docs/08-change-management.md` — for releases, technical debt, incidents, and the index of
+    superseded ADRs
   - `docs/00-ai-context.md` — when stack, status, or key context shifts significantly
 - Keep generated files out of source control unless the project intentionally tracks them.
 - Do not reformat unrelated files.

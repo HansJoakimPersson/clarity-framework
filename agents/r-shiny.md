@@ -184,10 +184,11 @@ Shiny apps render as HTML in a real browser, so three complementary layers of ac
 - Update README, usage docs, or release notes when user-visible behavior changes.
 - In Clarity Framework projects, update the relevant docs when their content changes:
   - `docs/02-requirements.md` — when requirements or acceptance criteria are affected
-  - `docs/03-sad.md` — when architecture, modules, or key design decisions change
+  - `docs/03-sad.md` — when architecture or modules change; new ADRs are written here, in §6
   - `docs/04-data-model-api.md` — when data model or API contracts change
   - `docs/06-test-documentation.md` — when testing strategy or coverage targets change
-  - `docs/08-change-management.md` — for change tracking and ADRs
+  - `docs/08-change-management.md` — for releases, technical debt, incidents, and the index of
+    superseded ADRs
   - `docs/00-ai-context.md` — when stack, status, or key context shifts significantly
 - Add roxygen2 documentation for exported functions and public modules that are newly added or materially changed.
 - Document parameters, return values, reactive inputs/outputs, and side effects.
