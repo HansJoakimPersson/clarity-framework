@@ -113,3 +113,5 @@
 ---
 
 *Next step: Start requirements documentation based on this approved document.*
+
+*Clarity Framework v3.3.0 – Vision & Scope*

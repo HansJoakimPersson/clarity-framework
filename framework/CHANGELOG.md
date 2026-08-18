@@ -49,6 +49,14 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/06-test-documentation.md` §3 used `TC-001` and `TC-001-2` for its own test-case examples
   while §2 defines the format as `TC-[story-ID]-[number]` and demonstrates `TC-FR001-001`. The
   traceability table in `02-requirements.md` already followed the convention; only §3 diverged.
+- Five templates carried no `*Clarity Framework vX.Y.Z*` footer: `01-vision-scope.md`,
+  `02-requirements.md`, `02-user-stories.md`, `03-sad.md`, and `08-change-management.md`, which also
+  ended mid-table with no closing separator. `framework-update` step 2 falls back to that footer to
+  detect a project's framework version when `00-ai-context.md` is absent — and the documents that
+  lacked it are exactly the minimum set a personal or side project adopts, so the fallback failed
+  for the projects most likely to need it. The release checklist in `AGENTS.md` gained a step for
+  this: its existing check compares markers against each other and therefore cannot see a missing
+  one.
 - `render-update-commit.sh` emitted its commit message in Swedish — `"[minor] Uppdatera Clarity
   Framework till vX.Y.Z"` — so every project that ran `framework-update` got a Swedish commit in its
   history, against the repository rule that all framework content is English. Its regression test

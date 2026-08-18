@@ -61,3 +61,7 @@
 | Date | Severity | Description | Root cause | Resolved |
 | --- | --- | --- | --- | --- |
 | YYYY-MM-DD | P1 | [What happened?] | [Why?] | YYYY-MM-DD |
+
+---
+
+*Clarity Framework v3.3.0 – Change Management*

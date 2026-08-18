@@ -99,14 +99,18 @@ that already exists.
 2. Verify that the version is consistent in every tracked file carrying it:
    `git grep -hoE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+' -- '*.md' ':!framework/CHANGELOG.md' | sort -u`
    must return exactly one line.
-3. Date the pending version heading in `framework/CHANGELOG.md`. If earlier headings are still
+3. Verify that no template lost its version footer — that check finds an inconsistent marker but
+   not a missing one, and `framework-update` reads these footers to detect a project's version:
+   `ls templates/*.md | while read -r f; do grep -q '^\*Clarity Framework v' "$f" || echo "MISSING: $f"; done`
+   must print nothing.
+4. Date the pending version heading in `framework/CHANGELOG.md`. If earlier headings are still
    undated, they were superseded before they were ever tagged: fold their entries into the version
    being released rather than leaving a heading that points at a tag no project can resolve.
-   `grep -c 'Unreleased' framework/CHANGELOG.md` must return `0` before step 4.
-4. Run `git add framework/CHANGELOG.md && git commit -m "[chore] Release vX.Y.Z"`.
-5. Create an annotated tag:
+   `grep -c 'Unreleased' framework/CHANGELOG.md` must return `0` before step 5.
+5. Run `git add framework/CHANGELOG.md && git commit -m "[chore] Release vX.Y.Z"`.
+6. Create an annotated tag:
    `git tag -a vX.Y.Z -m "Clarity Framework vX.Y.Z – description"`.
-6. Push the commit and tag with `git push origin main --tags`.
+7. Push the commit and tag with `git push origin main --tags`.
 
 The tag is the only source read by `skills/framework-update/`. A project never updates from untagged
 `main`, so it does not matter that the version was incremented before the tag exists.
