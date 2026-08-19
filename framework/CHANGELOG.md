@@ -159,6 +159,15 @@ tag, so an untagged heading here is a version no project can reach.
   and a large documentation site without either carrying the other's machinery. Verification is
   Playwright against `hugo server` plus axe, matching the other web starters, with an explicit note
   that a green `hugo` build is not verification.
+- `agents/hugo-static-site.md` gained a **Third-Party Assets and Dependencies** profile, following the
+  precedent set by the Dependency Policy profile in `agents/java-application.md`: the starter carries
+  the routes and their costs, while which library a project uses is an ADR in `docs/03-sad.md` §6.
+  It names the three ways to bring an asset in — `js.Build`, vendored, CDN — and states that a CDN
+  reference sends every visitor's IP to a third party before consent, which is why self-hosting is
+  the default and why an approved CDN reference needs Subresource Integrity.
+- The Hugo Module profile was widened from themes to modules generally. A module may provide a single
+  partial, shortcode, or asset rather than a whole theme, and `module.mounts` remaps where its files
+  land — an architectural change rather than configuration tidying.
 - `dispatch.sh --cli NAME` selects a CLI adapter, defaulting to `codex`. Everything tool-specific —
   binary name, how sandbox, approval, output-file, network and model are spelled, and which
   configuration-directory variable the account pool sets — is confined to one adapter block and one

@@ -115,7 +115,8 @@ Baseline is Hugo Pipes, Hugo's built-in pipeline. See the optional profiles for 
 - Pin the Hugo version and edition the project requires. In a Clarity Framework project that uses the plan-driven
   workflow, that belongs in `.agents/build-env.sh`, so a sandboxed build sees the same toolchain a developer does.
 - Do not add a Node toolchain, bundler, or CSS framework to a site that does not already have one without explicit
-  approval. Hugo Pipes covers most needs without them.
+  approval. Hugo Pipes covers most needs without them. When a task genuinely requires a third-party library, follow
+  the Third-Party Assets and Dependencies profile.
 
 ## Development Run Model
 
@@ -173,19 +174,69 @@ Baseline is Hugo Pipes, Hugo's built-in pipeline. See the optional profiles for 
 - No theme file was edited in place; overrides live in the project's own `layouts/`.
 - Design tokens are used for visual values; nothing visual is hardcoded.
 - Playwright and axe checks pass for affected pages, or the verification gap is explained.
+- Any new third-party dependency has a stated reason and an ADR, and is self-hosted unless a CDN was explicitly
+  approved.
 - Relevant Clarity Framework docs are updated when their content is affected.
 - Completion notes state whether the task is done and what was verified. Do not list changed files — the diff
   already shows them.
 
-## Optional Profile: Theme as Hugo Module
+## Optional Profile: Hugo Modules
 
-- The theme is declared under `module.imports` in the configuration and resolved into Hugo's module cache.
-- The module cache is **not** an editable source directory. Override any template by creating the same path under
-  the project's `layouts/`; override any asset by creating the same path under `assets/`.
-- Update with `hugo mod get -u` and verify the site still builds. Treat a theme update as its own change, never as
-  part of an unrelated task.
-- Run `hugo mod tidy` after adding or removing an import, and commit `go.mod` and `go.sum` together.
-- Do not vendor the module with `hugo mod vendor` unless the project has already chosen to.
+A module may provide a whole theme or a single component — partials, shortcodes, assets, or content. The override
+rule is the same either way; what differs is how much of the site it accounts for.
+
+- Modules are declared under `module.imports` and resolved into Hugo's module cache. The cache is **not** an
+  editable source directory. Override any template by creating the same path under the project's `layouts/`, and
+  any asset by creating the same path under `assets/`.
+- A component module is not a smaller theme. It contributes files at specific paths, so a project template that
+  happens to use the same path silently replaces it. Check what a module actually mounts before overriding.
+- `module.mounts` remaps a module's directories into the site. Changing a mount changes where every file from that
+  module lands — treat it as an architectural change, not configuration tidying, and record it in `docs/03-sad.md`.
+- Update with `hugo mod get -u` and verify the site still builds. A module update is its own change, never part of
+  an unrelated task.
+- Run `hugo mod tidy` after adding or removing an import, and commit `go.mod` and `go.sum` together. A `go.sum`
+  left behind makes the next build unreproducible.
+- Do not vendor with `hugo mod vendor` unless the project has already chosen to. Vendoring changes where the build
+  reads from, so switching it on or off is a decision, not a convenience.
+- Adding a module is adding a dependency. Apply the profile below.
+
+## Optional Profile: Third-Party Assets and Dependencies
+
+Use this profile when a task calls for a JavaScript library, a CSS library, a font, or a Hugo Module. Which
+dependency a project uses is the project's decision, recorded as an ADR in `docs/03-sad.md` §6 and listed among the
+technology choices in §5. What follows is how to arrive at that decision and how to bring the dependency in.
+
+- Prefer what Hugo and the platform already provide. Most of what a static site needs — asset processing, image
+  derivatives, syntax highlighting, feeds, search indexes — exists without a dependency. Reach for a library when
+  the task genuinely needs behavior the platform lacks, not to save a few lines.
+- Prefer no JavaScript at all where the platform has an equivalent. `<details>`, `<dialog>`, CSS scroll-snap, and
+  the native form controls remove whole categories of dependency. A static site that ships a framework to toggle a
+  menu has bought a runtime it did not need.
+- State why the dependency is needed, what it replaces, and what it costs in bytes on the page. A dependency with
+  no stated reason is one nobody can remove later.
+- Prefer actively maintained libraries with a compatible licence. Record the licence when it is anything other than
+  permissive.
+
+There are three ways to bring an asset in. They are not equivalent, and the choice belongs in the ADR:
+
+| Route | Use when | Costs |
+| --- | --- | --- |
+| `js.Build` from `assets/` | The project already has, or accepts, npm for fetching packages | esbuild is built into Hugo, so bundling itself needs no extra toolchain; npm adds a lockfile and an update burden |
+| Vendored into `assets/` | One small library, rarely updated | No toolchain, but updates and security patches are manual and easy to forget — record the version and origin next to the file |
+| CDN `<script>` or `<link>` | Rarely the right answer for a site you control | See below |
+
+- **A CDN reference sends every visitor's IP address to a third party** before any consent has been obtained. For a
+  site serving EU visitors that is a data-protection question, not a performance one, and it is the reason
+  self-hosting fonts and scripts is the default. Do not add a CDN reference without explicit approval, and record
+  the decision.
+- If a CDN reference is approved, add Subresource Integrity (`integrity` plus `crossorigin`). Without it the site
+  executes whatever that host serves tomorrow.
+- Self-hosted assets go through Hugo Pipes so they are fingerprinted and cached correctly. A vendored file dropped
+  into `static/` gets neither.
+- Load a library only on the pages that use it. A dependency needed by one page does not belong in the site-wide
+  bundle or in `baseof.html`.
+- Remove a dependency when the task that motivated it removes its last use. Note the removal in
+  `docs/08-change-management.md` if it changes what the site ships.
 
 ## Optional Profile: Theme as Git Submodule
 
