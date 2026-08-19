@@ -46,6 +46,7 @@ clarity-framework/
 │   ├── macos-swift.md              # Native Swift macOS applications
 │   ├── r-shiny.md                  # R/Shiny applications and Plumber APIs
 │   ├── vanilla-web-spa.md          # Build-step-free HTML/CSS/JavaScript web applications
+│   ├── hugo-static-site.md         # Static websites built with Hugo
 │   └── shell-dotfiles.md           # Shell scripts, aliases, and dotfiles
 │
 ├── skills/

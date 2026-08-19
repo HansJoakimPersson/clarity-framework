@@ -29,6 +29,7 @@ Together they give an agent enough context to make local decisions without guess
 | `ios-springboot.md` | The project has a Spring Boot backend and a native Swift iOS/iPadOS app |
 | `r-shiny.md` | The project is an R/Shiny app, with or without a plumber API |
 | `vanilla-web-spa.md` | The project is a build-step-free HTML/CSS/JS web app |
+| `hugo-static-site.md` | The project is a static website built with Hugo |
 | `shell-dotfiles.md` | You work with shell scripts, aliases, or dotfiles |
 | `macos-swift.md` | The project is a Swift macOS app |
 | `electron-desktop.md` | The project is an Electron desktop app intended to feel native |

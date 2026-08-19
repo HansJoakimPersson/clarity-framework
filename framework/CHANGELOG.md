@@ -149,6 +149,16 @@ tag, so an untagged heading here is a version no project can reach.
 
 ### Added
 
+- `agents/hugo-static-site.md` — a starter for static websites built with Hugo. Neither
+  `vanilla-web-spa.md` nor `generic.md` fits: Hugo has a build step, a templating language, a content
+  model with two bundle types, and its own development server. The mandatory core carries the rules
+  that break Hugo projects most often — never edit a theme in place but override it from the
+  project's own `layouts/`, and know that `assets/` is processed while `static/` is copied verbatim.
+  Optional profiles cover the three theme models (project-owned layouts, Hugo Module, Git submodule),
+  Tailwind and plain CSS, multilingual sites, and deployment, so one starter serves a one-page site
+  and a large documentation site without either carrying the other's machinery. Verification is
+  Playwright against `hugo server` plus axe, matching the other web starters, with an explicit note
+  that a green `hugo` build is not verification.
 - `dispatch.sh --cli NAME` selects a CLI adapter, defaulting to `codex`. Everything tool-specific —
   binary name, how sandbox, approval, output-file, network and model are spelled, and which
   configuration-directory variable the account pool sets — is confined to one adapter block and one
