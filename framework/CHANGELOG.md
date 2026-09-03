@@ -11,6 +11,35 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## [3.4.0] – Unreleased
+
+### Added
+
+- `dispatch.sh` gained `--mode danger-full-access`, which removes codex's macOS sandbox entirely.
+  Scoped to the one case that needs it: Playwright/Chromium's Mach-port rendezvous IPC is denied
+  under `--mode workspace-write` (`bootstrap_check_in ... MachPortRendezvousServer: Permission
+  denied (1100)`), confirmed against a two-week production run where the same Chromium binary
+  launched cleanly unsandboxed on the same machine. `--network` now also applies under this mode.
+- `plan-template.md` and `templates/plan.md` (kept identical) gained guidance under `## Steps`: a
+  step whose Verification launches a real browser must be its own step, dispatched under
+  `--mode danger-full-access` instead of `workspace-write`; and a preference for `(cd dir && cmd)`
+  subshells over chaining a relative `cd` into a Verification line, after a chained `cd` left the
+  shell in the wrong directory and produced a false "JAR not found" past a successful build.
+- `plan-template.md` and `templates/plan.md` `## At closeout` gained a check for whether
+  `docs/02-requirements.md` §2.6 has passed roughly 20 active stories without being split into
+  `docs/02-user-stories.md` — observed reaching ~4x that threshold unsplit on a real backlog.
+- `templates/08-change-management.md` gained a `Decision log` section (Date / Status / Scope plus
+  prose), validated against a real project that used the same ad hoc pattern at nearly every plan
+  closeout across a two-week run — the plan template already asked "what belongs in
+  `docs/08-change-management.md`?" without the template offering a place to answer it.
+
+### Fixed
+
+- `prompts/1-plan.txt` told the planning agent to "touch no file other than the one you are writing
+  to," but that dispatch runs under `--mode read-only`, where the agent has no file-write access at
+  all — it must reply with the finished plan as its chat message, not attempt to save one. The
+  prompt now also requires verifying a cited path exists before including it in the plan.
+
 ## [3.3.0] – 2026-08-19
 
 ### Fixed

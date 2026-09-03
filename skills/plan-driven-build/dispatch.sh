@@ -20,11 +20,23 @@
 #
 # Usage:
 #   dispatch.sh [--cli NAME] --account NAME[,NAME...] [--fallback NAME]
-#               --mode read-only|workspace-write
+#               --mode read-only|workspace-write|danger-full-access
 #               --prompt-file FILE [--var KEY=VALUE ...] [--model NAME]
 #               --out FILE [--max-lines N] [--env-file FILE]
-#   dispatch.sh [--cli NAME] --account NAME[,NAME...] --mode workspace-write --prompt-file FILE
+#   dispatch.sh [--cli NAME] --account NAME[,NAME...] --mode workspace-write|danger-full-access
+#               --prompt-file FILE
 #               [--var KEY=VALUE ...] [--model NAME] --log FILE --background [--network] [--env-file FILE]
+#
+# --mode danger-full-access removes codex's macOS Seatbelt sandbox entirely (full filesystem and
+# network access, no workspace confinement). Use it ONLY for a narrowly scoped dispatch that must
+# spawn a real macOS GUI subprocess — concretely, Playwright launching Chromium. codex's
+# workspace-write sandbox denies Chromium's Mach-port rendezvous IPC (`bootstrap_check_in ...
+# MachPortRendezvousServer: Permission denied (1100)`), confirmed by running the same Chromium binary
+# unsandboxed on the same machine, which launches cleanly. There is no known `-c` config override for
+# this under workspace-write — network access has one (`sandbox_workspace_write.network_access`),
+# Mach IPC does not. Keep the danger-full-access prompt to exactly the one command that needs it
+# (e.g. `cd frontend && npm run test:e2e`) — never use it for a step that writes application code,
+# since it forfeits the workspace confinement that makes workspace-write safe to leave unattended.
 #
 # --cli selects the adapter; it defaults to `codex`, the only one implemented today. Everything
 # tool-specific is confined to the adapter block further down — the binary name, how sandbox,
@@ -114,16 +126,16 @@ done
 
 [ -n "$ACCOUNT" ] || die 'dispatch.sh: --account is required'
 case "$MODE" in
-  read-only|workspace-write) ;;
-  *) die "dispatch.sh: --mode must be read-only or workspace-write (got '$MODE')" ;;
+  read-only|workspace-write|danger-full-access) ;;
+  *) die "dispatch.sh: --mode must be read-only, workspace-write, or danger-full-access (got '$MODE')" ;;
 esac
 if [ "$BACKGROUND" -eq 1 ]; then
   [ -n "$LOG" ] || die 'dispatch.sh: --background requires --log'
 else
   [ -n "$OUT" ] || die 'dispatch.sh: --out is required unless --background'
 fi
-if [ "$NETWORK" -eq 1 ] && [ "$MODE" != workspace-write ]; then
-  die 'dispatch.sh: --network applies to --mode workspace-write only'
+if [ "$NETWORK" -eq 1 ] && [ "$MODE" = read-only ]; then
+  die 'dispatch.sh: --network applies to --mode workspace-write or danger-full-access only'
 fi
 
 # Render the prompt.

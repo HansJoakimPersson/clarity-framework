@@ -72,6 +72,27 @@
 
 ## Steps
 
+> **A step whose Verification launches a real browser (Playwright, or anything else that spawns
+> Chromium/WebKit/Firefox) must not chain that command into the same Verification line as the rest
+> of the step's build/test work.** Under this workflow's default `--mode workspace-write` dispatch,
+> codex's own sandbox denies Chromium's dynamic Mach-port service registration
+> (`bootstrap_check_in ... MachPortRendezvousServer: Permission denied (1100)`) — confirmed to be the
+> sandbox policy itself, not the project or the browser binary, by launching the same binary
+> unsandboxed on the same machine, which succeeds cleanly. Write the browser-launching command as its
+> own step (or its own final Verification line) and note in that step that the orchestrator must
+> dispatch it under `--mode danger-full-access` instead of `workspace-write`. Keep everything else —
+> writing application code, `npm run lint`, `npm run build`, the Maven/test gate — under
+> `workspace-write`; `danger-full-access` removes the sandbox entirely and must stay scoped to the one
+> command that needs it.
+>
+> **Prefer a subshell — `(cd dir && cmd)` — over chaining a relative `cd` into the rest of a
+> Verification line.** A command written as `cd frontend && npm run build && cd .. && jar tf
+> target/app.jar` leaves the shell in `frontend` if the middle command fails before the trailing `cd
+> ..` runs, so the next command in the chain (or the next step, if the shell persists) resolves paths
+> against the wrong directory and reports a false failure — observed as a spurious "JAR not found"
+> after a successful build, costing a full build cycle to diagnose. A subshell confines the directory
+> change to that command alone regardless of how it exits.
+
 1. **[What]** in `path/to/file.ext`
    [Concrete description, sufficient to build without guessing]
    Verification: `[command]`
@@ -107,6 +128,9 @@ Answer before deleting the plan. “Nothing” is valid; no answer is not.
       `docs/02-requirements.md` §5 updated to the test cases that prove them?
 - [ ] Which build decisions belong in `docs/03-sad.md`?
 - [ ] What belongs in `docs/08-change-management.md`?
+- [ ] Has `docs/02-requirements.md` §2.6 passed roughly 20 active stories without being split into
+      `docs/02-user-stories.md`? A backlog left unsplit past that threshold degrades from a document
+      into an unreadable log.
 - [ ] What was wrong with the plan? One sentence makes the next plan better.
 
 > Delete the plan here. Without these answers, the lesson is deleted with it. The story status and
@@ -114,4 +138,4 @@ Answer before deleting the plan. “Nothing” is valid; no answer is not.
 
 ---
 
-*Clarity Framework v3.3.0 – Plan Template*
+*Clarity Framework v3.4.0 – Plan Template*

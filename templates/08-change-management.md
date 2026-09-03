@@ -17,6 +17,25 @@
 
 ---
 
+## Decision log
+
+> Record a decision at the plan closeout that made it, not after the fact. Each entry is a single
+> decision with the reasoning behind it — not a technical-debt compromise (§1) and not an ADR (which
+> belongs in `docs/03-sad.md` §6); use this for the many smaller calls a build makes that are worth
+> finding later but do not rise to architecture-decision weight.
+
+### Decision record: [short topic]
+
+| Field | Value |
+| --- | --- |
+| Date | YYYY-MM-DD |
+| Status | Accepted / Superseded |
+| Scope | [Component(s) or file(s) affected] |
+
+[Prose: what was decided and why. State the alternative considered and rejected if there was one.]
+
+---
+
 ## 1. Technical debt
 
 > Document deliberate compromises. Visible technical debt is manageable. Always link to the ADR or
@@ -64,4 +83,4 @@
 
 ---
 
-*Clarity Framework v3.3.0 – Change Management*
+*Clarity Framework v3.4.0 – Change Management*

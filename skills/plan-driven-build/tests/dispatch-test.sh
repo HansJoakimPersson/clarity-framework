@@ -136,4 +136,23 @@ fi
 grep -F "unsupported --cli 'gemini'" "$TEST_ROOT/out/unsupported.err" >/dev/null
 test ! -f "$TEST_ROOT/out/unsupported.md"
 
+# --- --mode danger-full-access dispatches like any other mode ---
+"$SCRIPT_DIR/dispatch.sh" --profile clarity-dispatch-regression --mode danger-full-access \
+  --prompt test --out "$TEST_ROOT/out/danger-report.md" >/dev/null
+test "$(cat "$TEST_ROOT/out/danger-report.md")" = 'ok'
+
+# --- --network is rejected under read-only ---
+if "$SCRIPT_DIR/dispatch.sh" --profile clarity-dispatch-regression --mode read-only --network \
+  --prompt test --out "$TEST_ROOT/out/network-readonly.md" 2>"$TEST_ROOT/out/network-readonly.err"; then
+  printf 'dispatch-test: --network under read-only should have failed\n' >&2
+  exit 1
+fi
+grep -F -- '--network applies to --mode workspace-write or danger-full-access only' \
+  "$TEST_ROOT/out/network-readonly.err" >/dev/null
+
+# --- --network is accepted under danger-full-access ---
+"$SCRIPT_DIR/dispatch.sh" --profile clarity-dispatch-regression --mode danger-full-access --network \
+  --prompt test --out "$TEST_ROOT/out/network-danger.md" >/dev/null
+test "$(cat "$TEST_ROOT/out/network-danger.md")" = 'ok'
+
 printf 'dispatch-test: ok\n'

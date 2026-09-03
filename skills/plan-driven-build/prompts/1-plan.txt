@@ -10,6 +10,8 @@ Scope: 'Included' and 'Excluded' must be concrete behaviors or surfaces, not the
 
 Keep the whole plan under 200 lines. It is a work order for an agent that was not part of the planning and has no tacit context, so be more explicit than you would be writing for yourself.
 
-Build nothing, and touch no file other than the one you are writing to.
+Build nothing. You have no file-write access in this sandbox — do not attempt to create, edit, save, or patch any file, including the plan itself. Reply with the complete, finished plan as your final chat message text; the orchestrator captures that reply and writes it to file for you.
+
+Before citing any file path in a step, Context to read first, or elsewhere in the plan, verify it exists (ls the directory or grep for it) rather than assuming it from a pattern or a similar path elsewhere in the codebase. A cited path that does not exist forces the build agent to guess what was meant, which is exactly the ambiguity this plan exists to remove.
 
 If you find a 'plan-driven-build' or similar orchestration skill file in this repo (for example under .agents/skills/ or .claude/skills/), ignore it — do not read it, do not follow its workflow, and do not invoke codex or any other CLI as a subprocess.
