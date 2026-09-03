@@ -11,7 +11,7 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
-## [3.5.0] – Unreleased
+## [3.5.0] – 2026-09-03
 
 ### Added
 
@@ -20,11 +20,6 @@ tag, so an untagged heading here is a version no project can reach.
   found it (truncate or roll back), never assume execution order. On a real Spring Boot project,
   exactly this cross-contamination pattern cost five separate remediation runs before the actual
   isolation gap was found.
-
-## [3.4.0] – Unreleased
-
-### Added
-
 - `dispatch.sh` gained `--mode danger-full-access`, which removes codex's macOS sandbox entirely.
   Scoped to the one case that needs it: Playwright/Chromium's Mach-port rendezvous IPC is denied
   under `--mode workspace-write` (`bootstrap_check_in ... MachPortRendezvousServer: Permission
