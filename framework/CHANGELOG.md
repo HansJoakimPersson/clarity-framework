@@ -11,6 +11,16 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## [3.5.0] – Unreleased
+
+### Added
+
+- `agents/java-application.md` § Persistence Tests gained guidance on isolating test state when
+  test classes share one Testcontainers instance for speed: each test must leave the database as it
+  found it (truncate or roll back), never assume execution order. On a real Spring Boot project,
+  exactly this cross-contamination pattern cost five separate remediation runs before the actual
+  isolation gap was found.
+
 ## [3.4.0] – Unreleased
 
 ### Added

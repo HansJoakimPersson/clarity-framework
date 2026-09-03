@@ -424,6 +424,13 @@ database such as SQLite.
 - For PostgreSQL/MySQL-style production behavior, prefer Testcontainers when the project supports it.
 - Run migration validation in integration tests when schema changes are part of the task.
 - Use `@TempDir` or equivalent isolation for file-backed database tests.
+- When tests share one Testcontainers instance for speed (a static/singleton container reused across
+  test classes), each test must leave the database in the state it found it — truncate written tables
+  or wrap the test in a transaction that rolls back, and never assume execution order. A test that
+  reads state left behind by an earlier test passes or fails depending on what ran before it, and the
+  fix is not "run this test alone to confirm" but isolating the write. On a real Spring Boot project,
+  exactly this pattern of test cross-contamination consumed five separate remediation runs before the
+  actual isolation gap was fixed.
 
 ## Optional Profile: Dependency Policy
 
