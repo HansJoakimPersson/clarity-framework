@@ -33,6 +33,19 @@ tag, so an untagged heading here is a version no project can reach.
 - `templates/00-ai-context.md`'s `Current status` section gained a callout that it is a snapshot,
   not a log, pointing delivered-FR history to `08-change-management.md` §3 instead. A real project's
   copy of this section grew to over 60% of the document across two weeks before being pruned.
+- `framework-update/SKILL.md`'s Step 5 project-owned merge procedure now names the orphaned-content
+  heading explicitly (`## Parked content (no matching section in current template)`) and requires
+  re-attempting to place previously parked entries against the current template on every subsequent
+  run, before parking anything new. Without it, content parked once stayed parked across every later
+  release even after a matching section reappeared.
+- `plan-template.md` and `templates/plan.md` (kept identical) gained a Definition of Done note: a
+  condition that checks an **Excluded** boundary held must scan the whole diff or package, not a
+  single named file or class. A narrower check had repeatedly passed while other excluded files were
+  touched elsewhere in the same change.
+- `plan-driven-build/SKILL.md`'s background-build wait loop now compares `build.log`'s size across
+  the wait window and flags a live-but-unchanged log as a likely stall, instead of relying on `kill
+  -0` alone. A live PID proves the process exists, not that it is making progress — observed hanging
+  silently three separate times on a real project.
 
 ## [3.5.0] – 2026-09-03
 

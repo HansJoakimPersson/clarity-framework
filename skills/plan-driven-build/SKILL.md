@@ -279,13 +279,19 @@ wait as one bounded blocking call and let it return on its own:
 
 ```bash
 BUILD_PID=<pid printed by the dispatch>
+LOG_SIZE_BEFORE=$(wc -c < "$RUN/build.log" 2>/dev/null || printf 0)
 deadline=$(( $(date +%s) + 3600 ))
 while [ ! -f "$RUN/build.exit" ] && [ "$(date +%s)" -lt "$deadline" ]; do sleep 20; done
 
 if [ -f "$RUN/build.exit" ]; then
   printf 'BUILD finished exit=%s\n' "$(cat "$RUN/build.exit")"
 elif kill -0 "$BUILD_PID" 2>/dev/null; then
-  printf 'BUILD still running after 60 min, pid %s alive\n' "$BUILD_PID"
+  LOG_SIZE_AFTER=$(wc -c < "$RUN/build.log" 2>/dev/null || printf 0)
+  if [ "$LOG_SIZE_AFTER" = "$LOG_SIZE_BEFORE" ]; then
+    printf 'BUILD still running after 60 min, pid %s alive, but build.log has not grown — possible stall\n' "$BUILD_PID"
+  else
+    printf 'BUILD still running after 60 min, pid %s alive, log growing\n' "$BUILD_PID"
+  fi
 else
   printf 'BUILD process gone, no sentinel written\n'
 fi
@@ -296,6 +302,11 @@ elapsed time and wait again — a long build is not a stuck build. **Gone with n
 process was killed** before it could write an exit code: say so and stop, because the working tree
 now holds a partial build that no exit code describes. Without the `kill -0` check that case is
 indistinguishable from a slow build, and waiting on it is waiting forever.
+
+`kill -0` only proves the process exists, not that it is doing anything — a hung installer or a
+stuck network call holds a live PID indefinitely. Compare `build.log`'s size across the wait window;
+if it has not grown, treat the still-alive report as a likely stall (observed silently hanging three
+separate times on a real project) and say so instead of quietly starting another 60-minute wait.
 
 **Never end your turn with a dispatch in flight.** "I will report back when it finishes" is not a
 mechanism — nothing wakes you up, so the run stalls until the user thinks to ask, which is precisely

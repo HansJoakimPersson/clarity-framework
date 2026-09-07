@@ -179,8 +179,13 @@ state; never unignore those as a side effect.
 3. New sections the project has no content for: keep the template's placeholder text, so it is
    visible that they need filling. Do not invent content, and do not drop a section because it looks
    irrelevant — that is the user's call, and Step 6 asks them.
-4. Content with no home in the new structure: keep it under its original heading at the end of the
-   document and flag it. Losing it is worse than an untidy document.
+4. Content with no home in the new structure: keep it under a heading titled exactly
+   `## Parked content (no matching section in current template)` at the end of the document, and
+   flag it. Losing it is worse than an untidy document. If the document already carries that heading
+   from a prior run, re-attempt to place each existing parked entry into the current template's
+   structure before parking anything new — a section renamed back, or a new section added since, may
+   now give it a home — and re-park only what still has none. Left unattempted, parked content
+   accumulates under that heading indefinitely across releases.
 5. Preserve the document's front-matter table (dates, status, owner) — those are the project's, not
    the template's, except the framework version field which Step 6 rewrites.
 

@@ -126,6 +126,10 @@
 > Review each condition against the diff with concrete evidence. A condition that cannot be proven
 > by a path, symbol, or command result is an assessment, not a condition. Under `unattended`, this is
 > a hard requirement.
+>
+> A condition that checks an **Excluded** boundary held must scan the whole diff or package against
+> it, not a single named file or class — a check scoped to one file has repeatedly reported
+> "excluded surfaces untouched" while the same change touched other excluded files elsewhere.
 
 ## At closeout
 
