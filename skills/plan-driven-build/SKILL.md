@@ -181,6 +181,13 @@ model_args=''
 `TASK` is the only thing you contribute here, so make it carry the intent — the plan is only as good
 as this sentence. Build nothing in this step.
 
+When `TASK` fixes a defect, leak, or regression suspected to recur across a family of similar units
+(test classes, endpoints, migrations, and the like), run or dispatch a full diagnostic sweep of that
+family before writing `TASK`, so the plan's scope covers every affected instance up front. A `TASK`
+that only names the first instance found produces a plan that only fixes that instance — a real
+project needed five separate build-and-reverify rounds to work through five sibling classes because
+each round only surfaced the next one, when a single upfront sweep would have shown all five at once.
+
 ## Step 2 — Dispatch a critique of the plan
 
 A fresh, stateless invocation reading the plan cold against the code, under a different prompt file
@@ -223,6 +230,13 @@ Run in the background with a sentinel, never in the foreground: a build routinel
 foreground timeout and a killed process leaves half the change on disk.
 `dispatch.sh --background` detaches the child with `nohup`; a log that remains empty and has no
 sentinel after the PID is gone is still a wrapper failure, not a successful build.
+
+**Never wrap the call in your own backgrounding** (a trailing `&`, an outer `nohup`, `disown`) —
+`dispatch.sh --background` already detaches the process. A second layer of backgrounding can orphan
+it past the point where anything is still waiting on its sentinel; on a real project one such orphan
+kept running roughly 40 minutes after its round was believed done and overwrote the `--log`/`--out`
+path of a later, already-reviewed round that reused the same path, which looked like a hostile
+concurrent writer until traced.
 
 If the project has a build environment bootstrap file, pass it explicitly with `--env-file`. The
 standard committed path is `.agents/build-env.sh`; a machine-specific override may use
@@ -333,10 +347,19 @@ silently.
 
 ### If a dispatched call hits a usage limit mid-run
 
-Stop, write it in the journal, report to the user. `aimux handoff <sessionId> --to <account>` can
-continue the same session under another account via a lossy summary — re-check its grasp of scope
-and Definition of Done before trusting it unattended. Untested end-to-end here; if it misbehaves,
-stop and report rather than improvising a fix mid-build.
+If the blocked level's own account pool has an untried member, dispatch on that instead — that is
+what a pool is for. Only once the whole pool is exhausted do the options below apply.
+
+Before stopping, consider borrowing an account from a different level's pool for this one blocked
+call: dispatch it under that account instead, and record the borrow and the reason in the journal's
+Deviations. Revert to the normal split on the next dispatch — the borrow is a one-off, not a standing
+reassignment. This was needed in both directions on a real project when one level's pool ran out
+mid-plan and the other level's pool still had headroom.
+
+If no account anywhere has headroom, stop, write it in the journal, report to the user. `aimux
+handoff <sessionId> --to <account>` can continue the same session under another account via a lossy
+summary — re-check its grasp of scope and Definition of Done before trusting it unattended. Untested
+end-to-end here; if it misbehaves, stop and report rather than improvising a fix mid-build.
 
 ## Step 5 — Dispatch verification against the plan
 

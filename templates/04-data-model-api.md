@@ -118,6 +118,14 @@ Document ownership, cascade behavior, soft deletion, archival, retention, unique
 concurrency, and audit requirements. Make explicit which rules are enforced by the database and
 which are enforced by the application.
 
+> An append-only, immutable, or audit/evidence table must reference the mutable entity it observed
+> by a plain identifier column with the needed fields copied inline at write time, never by an
+> enforced foreign key. The mutable side must stay free to be corrected, replaced, or deleted without
+> the immutable side blocking it — a real project hit this twice: an enforced FK from an evidence
+> table broke every test whose fixture teardown deleted the referenced rows, and a separate leak fix
+> left rows permanently undeletable because an immutability trigger blocked the cleanup the FK's
+> cascade would otherwise have allowed.
+
 ---
 
 ## 3. API contract

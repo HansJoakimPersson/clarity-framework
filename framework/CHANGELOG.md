@@ -46,6 +46,25 @@ tag, so an untagged heading here is a version no project can reach.
   the wait window and flags a live-but-unchanged log as a likely stall, instead of relying on `kill
   -0` alone. A live PID proves the process exists, not that it is making progress — observed hanging
   silently three separate times on a real project.
+- `plan-driven-build/SKILL.md`'s Step 4 background-dispatch guidance now warns against wrapping
+  `dispatch.sh --background` in a second layer of backgrounding (`&`, an outer `nohup`, `disown`).
+  On a real project a double-backgrounded orphan outlived its own round and later overwrote another
+  round's `--log`/`--out` path, which looked like a hostile concurrent writer until traced.
+- `plan-driven-build/SKILL.md`'s usage-limit-mid-run guidance now covers borrowing an account from a
+  different level's pool for the one blocked call, logged under the journal's Deviations, before
+  falling back to stop-and-report or `aimux handoff`. A real project needed this in both directions
+  when one level's pool ran out mid-plan while the other still had headroom.
+- `plan-driven-build/SKILL.md`'s Step 1 now asks for a full diagnostic sweep before writing `TASK`
+  when the task fixes a defect suspected to recur across a family of similar units. A real project
+  needed five separate build-and-reverify rounds to work through five sibling test classes because
+  each round only surfaced the next one.
+- `plan-template.md` and `templates/plan.md` (kept identical) gained a fourth `## Steps` callout: a
+  schema-wide directive ("all N tables") must name every affected table explicitly and state what is
+  excluded and why, since a count drifts silently as the schema section is edited later.
+- `templates/04-data-model-api.md`'s "Data lifecycle and integrity" section gained a rule that an
+  append-only or immutable audit table must reference the mutable entity it observed by a plain
+  identifier column, never an enforced foreign key — an enforced FK to a mutable row blocked routine
+  cleanup and broke test teardown twice on a real project.
 
 ## [3.5.0] – 2026-09-03
 

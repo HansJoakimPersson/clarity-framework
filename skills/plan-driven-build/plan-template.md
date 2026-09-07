@@ -99,6 +99,12 @@
 > introduces fails at compilation, not just at assertion — Implementation cannot build it in
 > isolation and has no scope to improvise the missing type. Put the production symbol before, or in
 > the same step as, the test that exercises it.
+>
+> **A schema-wide directive (a trigger, constraint, index, or grant applied "to every X") must name
+> every affected table or entity explicitly, and state which related tables are excluded and why.**
+> Phrasing it as a count ("all five tables") drifts silently as the schema section is edited later
+> without the count being rechecked, and Implementation has no way to notice the mismatch except by
+> guessing or stopping mid-build.
 
 1. **[What]** in `path/to/file.ext`
    [Concrete description, sufficient to build without guessing]
