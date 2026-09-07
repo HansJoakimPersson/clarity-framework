@@ -195,4 +195,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v3.5.0*
+*Clarity Framework v3.6.0*

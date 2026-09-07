@@ -18,7 +18,8 @@
 > at scope and merge — the two decisions that are yours and hard to walk back. `interactive` adds
 > stops at commit and closeout, worth it for unfamiliar or risky work. `unattended` stops only at
 > merge and requires every Definition of Done condition to be command-checkable. The merge gate
-> exists in all three. Choose by risk, not impatience.
+> exists in all three. Choose by risk, not impatience. Check `docs/00-ai-context.md` for a
+> project-declared default before assuming `semi-automatic`.
 >
 > **Delivers** names the user stories this plan implements. Cite the IDs; never copy their
 > acceptance criteria into this plan. The plan is transient and the requirements document is the
@@ -92,6 +93,12 @@
 > against the wrong directory and reports a false failure — observed as a spurious "JAR not found"
 > after a successful build, costing a full build cycle to diagnose. A subshell confines the directory
 > change to that command alone regardless of how it exits.
+>
+> **In a whole-module compilation language (Java, C#, Go, and similar), order steps so each one
+> compiles standalone.** A step that writes a test referencing a production type another, later step
+> introduces fails at compilation, not just at assertion — Implementation cannot build it in
+> isolation and has no scope to improvise the missing type. Put the production symbol before, or in
+> the same step as, the test that exercises it.
 
 1. **[What]** in `path/to/file.ext`
    [Concrete description, sufficient to build without guessing]
@@ -138,4 +145,4 @@ Answer before deleting the plan. “Nothing” is valid; no answer is not.
 
 ---
 
-*Clarity Framework v3.5.0 – Plan Template*
+*Clarity Framework v3.6.0 – Plan Template*

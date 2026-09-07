@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v3.5.0 |
+| **Framework version** | Clarity Framework v3.6.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -50,6 +50,11 @@
 ---
 
 ## Current status
+
+> A snapshot, not a log. When an FR ships, its record moves to `08-change-management.md` §3
+> (release history); this section states only what is active now. A project observed carrying every
+> delivered FR here in reverse-chronological order for two weeks — the section had grown past 60% of
+> the document before it was pruned.
 
 **Work in progress:** [What is active now, e.g. “Implementing FR-005 through FR-009”]
 **Latest release:** [Version and date, or “Not released”]
@@ -163,6 +168,11 @@ and gitignored.
 **Orchestrator budget:** [What the orchestrator may read per round, e.g. “plan + review ≤ 40 lines +
 verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separation is illusory.]
 
+**Default gate profile:** [semi-automatic (default) / interactive / unattended — what step 1 of
+`plan-driven-build` proposes for a new plan's `Gate profile` field. Set this once the project has
+proven itself under `semi-automatic` a few rounds, instead of re-authorizing a looser profile by hand
+on every plan; a plan may still state a different profile when the change warrants it.]
+
 **Always requires a human:** [e.g. scope approval, merge, release decision, plan deletion]
 
 ---
@@ -183,4 +193,4 @@ verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separ
 
 ---
 
-*Clarity Framework v3.5.0 – AI Context Document*
+*Clarity Framework v3.6.0 – AI Context Document*

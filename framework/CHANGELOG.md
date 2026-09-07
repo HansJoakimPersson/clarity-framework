@@ -11,6 +11,29 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## [3.6.0] – Unreleased
+
+### Added
+
+- `docs/00-ai-context.md`'s AI workflow section gained a `Default gate profile` field, and
+  `plan-driven-build`'s step 1 now proposes it instead of always defaulting a new plan to
+  `semi-automatic`. On a real project the looser profile was re-authorized by hand at least 5
+  separate times over two weeks as trust in the workflow grew — a persistent per-project setting
+  captures that once.
+- `plan-template.md` and `templates/plan.md` (kept identical) gained a third `## Steps` callout: in
+  a whole-module compilation language (Java, C#, Go), a step must not write a test referencing a
+  production symbol a later step introduces — the module fails to compile, not just to pass, so
+  Implementation cannot improvise the missing type. Observed on a real Java plan that split test
+  authoring from the implementation it exercised across separate steps.
+- `plan-driven-build/SKILL.md`'s Step 0 prerequisite that the working tree be clean now allows a
+  user-confirmed exception when the dirty paths belong to other in-flight work (e.g. a concurrent
+  agent on the same tree), recorded under the journal's Deviations rather than assumed silently.
+  `journal-template.md` gained a matching Deviations bullet. Observed blocking Step 0 twice on a
+  real project before being resolved ad hoc.
+- `templates/00-ai-context.md`'s `Current status` section gained a callout that it is a snapshot,
+  not a log, pointing delivered-FR history to `08-change-management.md` §3 instead. A real project's
+  copy of this section grew to over 60% of the document across two weeks before being pruned.
+
 ## [3.5.0] – 2026-09-03
 
 ### Added

@@ -46,7 +46,9 @@ that exceeds its budget — truncate it and say you did. If you find yourself re
 
 ## Gate profiles
 
-The plan's `Gate profile` field decides where you stop. Default is `semi-automatic`.
+The plan's `Gate profile` field decides where you stop. Step 1 proposes the project's declared
+default from `docs/00-ai-context.md` ('Default gate profile'), or `semi-automatic` if the project
+has not declared one.
 
 | Profile | Stops at |
 | --- | --- |
@@ -77,7 +79,11 @@ Check, and if anything is missing: report it and stop.
   Install it in both locations when both Codex and Claude Code are used. The copies must be identical.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
   into the working tree; if it is dirty you can no longer tell its changes from what was there.
-  Report what is uncommitted and let the user decide — never commit, stash or reset for them.
+  Report what is uncommitted and let the user decide — never commit, stash or reset for them. The
+  user may explicitly confirm the dirty paths belong to other in-flight work (for example a
+  concurrent agent on the same tree) and authorize proceeding around them; treat that as a decision
+  you record, not a default you assume, and log the excluded paths and the user's confirmation under
+  the journal's Deviations.
 - `docs/00-ai-context.md` names an aimux account pool for each level — one subscription or several,
   comma-separated, tried in priority order. `aimux profile list` shows the accounts that exist.
   **Account names are subscriptions, not roles** — whatever the project calls its subscriptions is

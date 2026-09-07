@@ -57,6 +57,8 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
   that actually paid — an unrecorded fallback looks like successful account separation.]
 - [Record every environment correction: env file added or changed, toolchain observed by the
   sandbox, and why it stayed within the approved runtime baseline.]
+- [Record every Step 0 prerequisite exception: which paths the working tree carried, the user's
+  confirmation that they belong to other in-flight work, and that they were left untouched.]
 
 ---
 

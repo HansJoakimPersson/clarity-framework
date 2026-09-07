@@ -1,6 +1,6 @@
 # The Clarity Framework Documentation Guide
 
-## Clarity Framework v3.5.0
+## Clarity Framework v3.6.0
 
 Documentation should make decisions easier, not create bureaucracy. Use the smallest coherent set of
 documents that lets the people and agents working on the product make safe, consistent decisions.
@@ -259,4 +259,4 @@ journal, and human gates for scope, merge, release, and plan deletion. See `ai-u
 
 ---
 
-*Clarity Framework v3.5.0 – Documentation Guide*
+*Clarity Framework v3.6.0 – Documentation Guide*
