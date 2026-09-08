@@ -135,9 +135,19 @@ release tag.
 
 ### New project
 
-Copy `skills/clarity-bootstrap/` to both `.agents/skills/` and `.claude/skills/`. Invoke
-`$clarity-bootstrap` in Codex or `/clarity-bootstrap` in Claude Code. The skill inspects the project,
-proposes the smallest coherent document set, and stops for approval before writing.
+From the project root:
+
+```bash
+mkdir -p .agents/skills/clarity-bootstrap .claude/skills/clarity-bootstrap
+curl -fsSL https://raw.githubusercontent.com/HansJoakimPersson/clarity-framework/main/skills/clarity-bootstrap/SKILL.md \
+  -o .agents/skills/clarity-bootstrap/SKILL.md
+cp .agents/skills/clarity-bootstrap/SKILL.md .claude/skills/clarity-bootstrap/SKILL.md
+```
+
+Then invoke `$clarity-bootstrap` in Codex or `/clarity-bootstrap` in Claude Code. The skill inspects
+the project, proposes the smallest coherent document set, and stops for approval before writing —
+this command only places the skill; it fetches from `main` since the skill itself always fetches the
+latest **stable tagged** release when it runs.
 
 Manual setup:
 

@@ -66,6 +66,13 @@ tag, so an untagged heading here is a version no project can reach.
   identifier column, never an enforced foreign key — an enforced FK to a mutable row blocked routine
   cleanup and broke test teardown twice on a real project.
 
+### Changed
+
+- `README.md`'s "New project" getting-started step replaced the manual "copy `skills/clarity-bootstrap/`
+  to both runtime roots" instruction with a two-command `curl`/`cp` one-liner that fetches
+  `SKILL.md` directly, so bootstrapping a new project no longer requires a separate clone of this
+  repository first.
+
 ## [3.5.0] – 2026-09-03
 
 ### Added
