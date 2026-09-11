@@ -30,66 +30,73 @@ they are not custom prompts for either client.
 
 ---
 
-## 1. Accounts that separate subscriptions
+## 1. aimux profiles that separate subscriptions
 
 The purpose of the level split is to move token usage away from the interactive session. This
-requires **separate subscriptions or accounts**, not merely separate processes. aimux is a multiplexer
-for accounts within the same LLM provider; an account selects credentials and a token allowance,
-not an agent persona or a behavioral profile. aimux names its own subcommand `profile`; everywhere
-else this skill says **account**, to keep it apart from a Codex profile and from the plan's gate
-profile. `dispatch.sh` takes `--account` for the same reason.
+requires **separate subscriptions or accounts**, not merely separate processes. aimux is a
+multiplexer for accounts within the same LLM provider, and it unifies each one into a **profile**:
+a single object carrying the CLI, the model, the credentials and the token allowance. A profile is
+not an agent persona; it selects who pays and what runs.
 
-**Name each aimux account after the subscription it is, not after the level it will fill.** aimux
-manages subscriptions; the framework binds levels to them. Naming a subscription `implementation`
-collapses the two and makes the account unusable for any other level:
+**Name each aimux profile after the subscription it is, not after the level it will fill.** aimux
+manages the profiles; the framework binds levels to them. Naming one `implementation` collapses the
+two and makes it unusable for any other level:
 
 ```bash
 aimux profile add <your-subscription-name> --cli codex && aimux auth login <your-subscription-name>
 aimux profile list
 ```
 
-Then record which account fills which level in the project's runtime contract,
+The `--cli` you pass here is what `dispatch.sh` reads back at dispatch time from
+`~/.aimux/config.yaml` — switching a level from codex to gemini later is
+`aimux profile update <name> --cli gemini` and nothing else.
+
+Then record which profile fills which level in the project's runtime contract,
 `docs/00-ai-context.md`. That table is the mapping — step 0 of `SKILL.md` reads it and verifies the
-accounts exist. The binding is arbitrary and project-owned: any account may fill any level, one
-account may fill several, and adding a subscription is an edit to that table, not a rename.
+profiles exist. The binding is arbitrary and project-owned: any profile may fill any level, one
+profile may fill several, and adding a subscription is an edit to that table, not a rename.
 
-Each account can use its own model: `aimux profile update <account> -m <model>`. That is fine for a
-single fixed account per level. It stops working once a level is bound to a **pool** of several
-interchangeable accounts, because the pool members may not share a model config — `dispatch.sh
---model NAME` exists for that case: it overrides the model for one dispatch regardless of which
-pool member ends up running it. Prefer the account's own config when a level has exactly one
-account; reach for `--model` when it has a pool.
+Each profile carries its own model (`aimux profile update <name> -m <model>`). That is enough for a
+single fixed profile per level. Once a level is bound to a **pool** of interchangeable profiles
+whose model configs may differ, `dispatch.sh --model NAME` overrides the model for one dispatch
+regardless of which pool member runs (it is passed to `aimux run -m`). Prefer the profile's own
+config when a level has exactly one profile; reach for `--model` when it has a pool.
 
-Review does not need a separate account. What keeps it from repeating the drafting level's blind
+Review does not need a separate profile. What keeps it from repeating the drafting level's blind
 spots is a different prompt file (`prompts/2-review.txt` vs `prompts/1-plan.txt`), not a different
-subscription. `$ACCT_REVIEW` may equal `$ACCT_REASONING`.
+subscription. `$PROFILE_REVIEW` may equal `$PROFILE_REASONING`.
 
 **A level's pool is resolved once per run, not rotated between runs by hand.** `docs/00-ai-context.md`
 names an ordered, comma-separated pool per level — for example `codework1,codework2,codework3` for
 Implementation. Within a single dispatch, `dispatch.sh` tries the pool in that order and, for
-read-only dispatches only, moves to the next account automatically if one fails; a `workspace-write`
-dispatch picks the first available account and does not retry after it starts, because a failed
-build cannot be safely resumed on a different account without knowing what it already wrote. Put the
-accounts you want tried first at the front of the pool; changing the order is an edit to
-`docs/00-ai-context.md`, not a runtime rotation the skill has to manage.
+read-only dispatches only, moves to the next profile automatically if one fails; a `workspace-write`
+dispatch picks the first profile that resolves and does not retry after it starts, because a failed
+build cannot be safely resumed on a different subscription without knowing what it already wrote.
+Put the profiles you want tried first at the front; changing the order is an edit to
+`docs/00-ai-context.md`, not a runtime rotation the skill manages.
 
-`dispatch.sh` points the CLI's configuration-directory variable at `$HOME/.aimux/profiles/<account>`
-directly instead of using `aimux run`, so it composes with background execution. This is aimux's own
-mechanism: one such variable per CLI (`CLAUDE_CONFIG_DIR` / `CODEX_HOME` / `GEMINI_CLI_HOME`). Which
-variable to set is part of the CLI adapter, not something a project configures.
+`dispatch.sh` runs each dispatch as `aimux run <profile> -- <cli invocation>`. This was verified to
+compose with background execution under `nohup` on aimux 0.25.0 — the profile's authentication and
+subscription apply to the child process, and the `.exit` sentinel is still written.
 
 ### Which CLI runs a dispatch
 
-`dispatch.sh --cli NAME` selects the adapter and defaults to `codex`, the only one implemented. The
-adapter is the one place that knows a tool's grammar: its binary name, how sandbox, approval,
-output-file, network and model are spelled, and which configuration-directory variable it reads.
-Everything else in the dispatcher — account pools, budgets, sentinels, retries, prompts — is the
-same whatever runs underneath.
+`dispatch.sh` resolves the CLI from the resolved profile's `cli` field in `~/.aimux/config.yaml`.
+`codex` is the only adapter implemented. The adapter is the one place that knows a tool's grammar:
+its binary name, how sandbox, approval, output-file, network and model are spelled. Everything else
+in the dispatcher — profile pools, budgets, sentinels, retries, prompts — is the same whatever runs
+underneath.
 
-That boundary matters for ownership. A project changes tools by passing `--cli`, never by editing
-this skill: the copied skill is framework-owned and is replaced wholesale at the next update, so an
-edit here would be silently reverted. Supporting a new CLI is a framework change — two case branches
-in `dispatch.sh` — and it leaves the levels, plan, journal, budgets and gates untouched.
+A pool entry written `cli:NAME` (for example `--profile codework1,cli:codex`) is an explicit
+escape hatch: it runs `NAME` directly, with no `aimux run` wrapper and no subscription separation,
+and only after every real profile ahead of it fails to resolve. `dispatch.sh` prints a `FALLBACK:`
+line whenever it is used.
+
+That boundary matters for ownership. A project changes tools with `aimux profile update`, never by
+editing this skill: the copied skill is framework-owned and is replaced wholesale at the next
+update, so an edit here would be silently reverted. Supporting a new CLI is a framework change —
+one adapter function in `dispatch.sh` — and it leaves the levels, plan, journal, budgets and gates
+untouched.
 
 ---
 
@@ -129,9 +136,9 @@ sandbox_mode    = "workspace-write"
 network_access = true
 ```
 
-Run `codex --profile orchestrator`. A Codex profile (`--profile`) and an aimux account are different:
-the Codex profile controls behavior, while the aimux account determines which subscription pays.
-They are complementary.
+Run `codex --profile orchestrator`. A Codex profile (`codex --profile`) and an aimux profile are different: the Codex profile
+controls codex's own behavior, while the aimux profile determines which CLI runs and which
+subscription pays. `dispatch.sh --profile` refers to the aimux one.
 
 `danger-full-access` solves the same problem more bluntly by removing the sandbox entirely. Do not
 use it as the default; unattended implementation should still run inside a sandbox.
@@ -193,15 +200,16 @@ So step 4 passes `--network`, which sets `sandbox_workspace_write.network_access
 dispatch:
 
 ```bash
-"$SKILLDIR/dispatch.sh" --account "$ACCT_IMPLEMENTATION" --mode workspace-write --background --network \
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_IMPLEMENTATION" --mode workspace-write --background --network \
   --env-file .agents/build-env.sh …
 ```
 
-`$ACCT_IMPLEMENTATION` is the shell variable `SKILL.md` step 0 binds from the runtime contract — not
-a literal account name. Writing `--account implementation` here, even as a placeholder, contradicts
-§ 1's own rule against naming or using a subscription after the level it fills.
+`$PROFILE_IMPLEMENTATION` is the shell variable `SKILL.md` step 0 binds from the runtime
+contract — not a literal profile name. Writing `--profile implementation` here, even as a
+placeholder, contradicts § 1's own rule against naming or using a subscription after the level it
+fills.
 
-Per dispatch, not stored on the account: the read-only levels keep the default, and the wider
+Per dispatch, not stored on the profile: the read-only levels keep the default, and the wider
 sandbox lasts one build rather than becoming the machine's permanent posture. The sandbox still
 confines writes to the workspace — network access changes what the build can reach, not what it can
 overwrite.
@@ -301,8 +309,7 @@ hand when you set the workflow up yourself.
 
 ```bash
 aimux profile list
-CODEX_HOME="$HOME/.aimux/profiles/<one of your subscription names>" codex -a never exec -s read-only \
-  "Answer with one word: ok"
+aimux run <one of your profile names> -- codex -a never exec -s read-only "Answer with one word: ok"
 ```
 
 If it completes without asking for permission, the approval policy is configured correctly. If it

@@ -11,6 +11,38 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## [4.0.0] – Unreleased
+
+### Changed (breaking)
+
+- `plan-driven-build`'s `dispatch.sh` now resolves which CLI and model runs each dispatch from
+  aimux's own `~/.aimux/config.yaml` instead of a hardcoded `codex` binary and a reimplemented
+  `CODEX_HOME` account switch. The dispatch contract changed:
+  - `--account NAME[,NAME...]` → `--profile NAME[,NAME...]` (an ordered pool of aimux **profile**
+    names, each looked up in `~/.aimux/config.yaml`).
+  - `--cli` removed — the CLI now comes from the resolved profile's `cli` field. Switching a
+    level's tool is `aimux profile update <name> --cli <cli>`.
+  - `--fallback NAME` removed — append `NAME` to the `--profile` list instead.
+  - The old `--profile` account-alias is removed; `--profile` now means the aimux profile pool.
+  - A pool entry written `cli:NAME` runs that CLI directly with no aimux wrapper and no
+    subscription separation — an explicit opt-in fallback, reported on a `FALLBACK:` line.
+  - The `DISPATCH` summary line reports `profile=` instead of `account=`.
+- `docs/00-ai-context.md`'s AI-workflow runtime-contract table: the "Agent / account pool" column
+  is now "Agent / profile pool", and its Model column is a per-dispatch override only (the profile
+  carries its own model).
+
+### Migration — projects running `plan-driven-build`
+
+1. `dispatch.sh --account X` → `dispatch.sh --profile X`. A pool stays comma-separated.
+2. `dispatch.sh --cli codex` → drop it. Ensure each named profile exists in aimux and is
+   authenticated: `aimux profile add <name> --cli codex && aimux auth login <name>`.
+3. `dispatch.sh --fallback Y` → append `Y` to the `--profile` list.
+4. No aimux installed? Pass `--profile cli:codex` to run codex directly (unseparated), or install
+   aimux and add a profile.
+5. `docs/00-ai-context.md`: rename the "account pool" column to "Profile pool"; the values are now
+   aimux profile names, which already imply the CLI and model.
+6. Re-run `framework-update` to refresh the skill copies and the template.
+
 ## [3.6.0] – 2026-09-08
 
 ### Added

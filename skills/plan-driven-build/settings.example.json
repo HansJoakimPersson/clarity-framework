@@ -6,6 +6,7 @@
       "Bash($SKILLDIR/dispatch.sh:*)",
       "Bash(command -v:*)",
       "Bash(aimux profile list)",
+      "Bash(aimux run:*)",
       "Bash(git status:*)",
       "Bash(git log:*)",
       "Bash(git rev-parse:*)",

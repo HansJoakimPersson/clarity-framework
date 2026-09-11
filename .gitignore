@@ -25,3 +25,7 @@ Thumbs.db
 
 # Lokal Markdown-konfiguration
 .markdownlint.json
+
+# Superpowers process scaffolding (plans, specs, run journals) — same level as
+# .superpowers/: scratch for the executor, not framework content a project reads
+docs/superpowers/

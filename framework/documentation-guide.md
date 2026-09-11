@@ -1,6 +1,6 @@
 # The Clarity Framework Documentation Guide
 
-## Clarity Framework v3.6.0
+## Clarity Framework v4.0.0
 
 Documentation should make decisions easier, not create bureaucracy. Use the smallest coherent set of
 documents that lets the people and agents working on the product make safe, consistent decisions.
@@ -241,8 +241,8 @@ The four levels, in the order a task passes through them:
 3. Review (optional)
 4. Implementation
 
-The plan-driven workflow uses explicit scope, report budgets, account separation, a committed run
-journal, and human gates for scope, merge, release, and plan deletion. See `ai-usage-guide.md` and
+The plan-driven workflow uses explicit scope, report budgets, aimux-profile separation, a committed
+run journal, and human gates for scope, merge, release, and plan deletion. See `ai-usage-guide.md` and
 `skills/plan-driven-build/` for the executable procedure.
 
 ## 14. Documentation completeness checklist
@@ -259,4 +259,4 @@ journal, and human gates for scope, merge, release, and plan deletion. See `ai-u
 
 ---
 
-*Clarity Framework v3.6.0 – Documentation Guide*
+*Clarity Framework v4.0.0 – Documentation Guide*

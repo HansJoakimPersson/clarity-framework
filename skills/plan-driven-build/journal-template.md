@@ -15,20 +15,20 @@
 | **Plan** | `docs/plans/YYYY-MM-DD-short-name.md` |
 | **Branch** | `[branch-name]` |
 | **Gate profile** | interactive / semi-automatic / unattended |
-| **Orchestrator** | [CLI and account currently running the workflow] |
+| **Orchestrator** | [CLI and profile currently running the workflow] |
 | **Raw output** | `docs/plans/.runs/YYYY-MM-DD-short-name/` (local, gitignored) |
 
 ---
 
 ## Steps
 
-| # | Step | Status | Level — account used | Artifact |
+| # | Step | Status | Level — profile used | Artifact |
 | --- | --- | --- | --- | --- |
-| 1 | Plan | ☐ | Reasoning — `[account]` | `<plan>` |
-| 2 | Review | ☐ | Review — `[account]` | `.runs/.../review.md` |
+| 1 | Plan | ☐ | Reasoning — `[profile]` | `<plan>` |
+| 2 | Review | ☐ | Review — `[profile]` | `.runs/.../review.md` |
 | 3 | Revision + scope gate | ☐ | Orchestrator | — |
-| 4 | Build | ☐ | Implementation — `[account]` | `.runs/.../build.log` |
-| 5 | Verification | ☐ | Reasoning — `[account]` | `.runs/.../verification.md` |
+| 4 | Build | ☐ | Implementation — `[profile]` | `.runs/.../build.log` |
+| 5 | Verification | ☐ | Reasoning — `[profile]` | `.runs/.../verification.md` |
 | 6 | Commit | ☐ | orchestrator | — |
 | 7 | Merge gate | ☐ | human | — |
 | 8 | Closeout | ☐ | orchestrator | — |
@@ -52,9 +52,9 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
 ## Deviations
 
 - [What went wrong, at which step, and what was done. Empty is valid.]
-- [Record every fallback: a dispatch that ran on the logged-in account because the mapped one was
-  missing, the Reasoning account standing in for Review, or an `aimux handoff`. Name the account
-  that actually paid — an unrecorded fallback looks like successful account separation.]
+- [Record every fallback: a dispatch that ran on a `cli:NAME` entry because no mapped profile
+  resolved, the Reasoning profile standing in for Review, or an `aimux handoff`. Name the profile
+  that actually paid — an unrecorded fallback looks like successful subscription separation.]
 - [Record every environment correction: env file added or changed, toolchain observed by the
   sandbox, and why it stayed within the approved runtime baseline.]
 - [Record every Step 0 prerequisite exception: which paths the working tree carried, the user's

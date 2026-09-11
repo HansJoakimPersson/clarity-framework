@@ -77,9 +77,9 @@ The following four levels are the only AI runtime model in Clarity Framework:
 | **Implementation** | Builds the approved plan in full and reports verification | Re-plan; stop on a blocking question |
 
 A single agent may fill multiple levels, but the contracts and approval boundaries still apply.
-Review does not need a different account from the level that authored the plan: what keeps a review
+Review does not need a different profile from the level that authored the plan: what keeps a review
 from repeating the author's blind spots is a different prompt and a stateless invocation, not a
-different subscription. Accounts distribute cost; prompts distribute judgment.
+different subscription. Profiles distribute cost; prompts distribute judgment.
 
 ## 6. Context and budget boundaries
 
@@ -110,25 +110,30 @@ journal and the sentinel and continue without reconstructing the entire context.
 Human gates belong on decisions: scope, merge, release, and plan deletion. Tool calls inside the
 approved sandbox should not become artificial approval gates.
 
-## 8. Accounts and aimux
+## 8. aimux profiles
 
 Moving token usage away from an interactive session requires separate subscriptions or accounts, not
-merely separate processes. If [aimux](https://github.com/Digital-Threads/aimux) is installed, it can
-multiplex multiple subscriptions or accounts within the same LLM provider. Each account retains its
-own authentication and token allowance. aimux does not create agent personas or behavioral profiles.
+merely separate processes. If [aimux](https://github.com/Digital-Threads/aimux) is installed, it
+multiplexes multiple subscriptions within the same LLM provider and unifies each into a **profile**:
+one object carrying the CLI, the model, the authentication, and the token allowance. A profile is
+not an agent persona.
 
-A level may be bound to a **pool** of interchangeable accounts rather than a single one — an ordered,
-comma-separated list in the runtime contract, tried in priority order. A pool spreads load across
-subscriptions; it does not give a level an identity. Name accounts after the subscriptions they are,
-never after the level they happen to fill, or the account becomes unusable for any other level.
+A level may be bound to a **pool** of interchangeable profiles rather than a single one — an
+ordered, comma-separated list in the runtime contract, tried in priority order. A pool spreads load
+across subscriptions; it does not give a level an identity. Name profiles after the subscriptions
+they are, never after the level they happen to fill, or the profile becomes unusable for any other
+level. `plan-driven-build`'s `dispatch.sh` resolves the CLI from the profile's `cli` field in
+`~/.aimux/config.yaml` at dispatch time, so switching a level's tool is `aimux profile update` and
+never a skill edit.
 
-If a run reaches a subscription or token limit, an aimux handoff may continue it under another account.
-The handoff summary is lossy; the committed run journal is the authoritative handover artifact.
+If a run reaches a subscription or token limit, an aimux handoff may continue it under another
+profile. The handoff summary is lossy; the committed run journal is the authoritative handover
+artifact.
 
 ## 9. Plan-driven build
 
 `skills/plan-driven-build/` implements this model for Claude Code and Codex. It dispatches planning,
-review, implementation, and verification through separate account contexts, preserves the state in a
+review, implementation, and verification through separate aimux profiles, preserves the state in a
 run journal, and stops at human approval gates. The plan is a transient work order, not an archive of
 project documentation. Decisions worth keeping move into the SAD, requirements, change-management,
 or other permanent project documents before the plan is deleted.
@@ -149,4 +154,4 @@ change.
 
 ---
 
-*Clarity Framework v3.6.0 – AI Usage Guide*
+*Clarity Framework v4.0.0 – AI Usage Guide*

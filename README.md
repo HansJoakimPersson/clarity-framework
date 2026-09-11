@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 3.5.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 4.0.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -60,11 +60,11 @@ clarity-framework/
 │   └── plan-driven-build/           # Approval-gated planning, review, build, and verification
 │       ├── SKILL.md                 # Orchestrator procedure
 │       ├── prompts/                 # Instructions for dispatched agents
-│       ├── dispatch.sh              # Bounded dispatch with sandbox, approval, and account selection
+│       ├── dispatch.sh              # Bounded dispatch with sandbox, approval, and aimux-profile selection
 │       ├── tests/                   # Dispatch regression tests
 │       ├── plan-template.md         # Copy of templates/plan.md
 │       ├── journal-template.md      # Cross-session workflow state
-│       ├── setup.md                 # One-time account, sandbox, and permissions setup
+│       ├── setup.md                 # One-time profile, sandbox, and permissions setup
 │       └── settings.example.json    # Claude Code permissions example
 │
 ├── AGENTS.md                       # How an agent works in this repository
@@ -166,13 +166,13 @@ updates framework-owned files, reports required document changes, and proposes a
 ### Plan-driven work
 
 When a task is large enough to need scope approval, install `skills/plan-driven-build/` in both
-runtime roots. It uses the four-level runtime contract, separate accounts or subscriptions where
+runtime roots. It uses the four-level runtime contract, separate aimux profiles where
 available, bounded reports, a committed run journal, and human gates for scope, merge, release, and
 plan deletion.
 
 It requires a second AI CLI, because the orchestrator dispatches the work instead of doing it.
-`codex` is the dispatch adapter implemented today; a project selects one with `dispatch.sh --cli`
-and never edits the skill to do so.
+`codex` is the dispatch adapter implemented today; which CLI runs each level comes from its aimux
+profile, so a project never edits the skill to change tools.
 
 ## Documentation flow
 
@@ -205,4 +205,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v3.6.0*
+*Clarity Framework v4.0.0*

@@ -1,6 +1,6 @@
 ---
 name: plan-driven-build
-description: Plan-driven workflow where an orchestrator dispatches planning, critique, build and diff verification to other CLIs or accounts, keeping its own context and token spend bounded. Use when a task is large enough that its scope needs approval before code is written.
+description: Plan-driven workflow where an orchestrator dispatches planning, critique, build and diff verification through aimux profiles, keeping its own context and token spend bounded. Use when a task is large enough that its scope needs approval before code is written.
 ---
 
 # Plan-Driven Build (plan-driven-build)
@@ -15,14 +15,14 @@ full diff — you read bounded distillates produced by agents that did that read
 | **Reasoning** | Drafts the plan (step 1), verifies the diff against it (step 5) | Approve its own work, decide scope |
 | **Implementation** | Builds an approved plan (step 4) | Re-plan — stops and reports instead |
 
-Reasoning and Implementation must run under **a different CLI or account than you**. That is the
+Reasoning and Implementation must run under **a different aimux profile than you**. That is the
 point of the workflow: not context isolation, but moving token spend off the metered interactive
-session. A Claude subagent shares your account and does not achieve this. An account may be one
-subscription or a prioritized pool of interchangeable ones — see Step 0. Review does not need a
-different account from Reasoning; what keeps it from repeating Reasoning's blind spots is a
-different prompt file, not a different subscription.
+session. A Claude subagent shares your account and does not achieve this. A profile pool may be one
+profile or a prioritized list of interchangeable ones — see Step 0. Review does not need a different
+profile from Reasoning; what keeps it from repeating Reasoning's blind spots is a different prompt
+file, not a different subscription.
 
-Setup — accounts, sandbox and approval flags, permission allowlist — is in `setup.md`.
+Setup — aimux profiles, sandbox and approval flags, permission allowlist — is in `setup.md`.
 Read it only if a prerequisite check fails.
 
 ## The budget (the hard rule)
@@ -72,9 +72,11 @@ A profile never removes the merge gate. You never approve on the user's behalf.
 
 Check, and if anything is missing: report it and stop.
 
-- `command -v codex` and `AGENTS.md` in the project root. **This workflow needs a second CLI**: the
-  orchestrator dispatches to it, so a project with only one AI CLI installed cannot run it. `codex`
-  is the only dispatch adapter implemented; `dispatch.sh --cli` exists for future ones.
+- `command -v codex`, `command -v aimux`, and `AGENTS.md` in the project root. **This workflow
+  needs a second CLI**: the orchestrator dispatches to it, so a project with only one AI CLI
+  installed cannot run it. `codex` is the only dispatch adapter implemented; adding another
+  (gemini, claude, opencode) is a one-function framework change to `dispatch.sh`, not a project
+  setting.
 - This skill exists at `.agents/skills/plan-driven-build/` or `.claude/skills/plan-driven-build/`.
   Install it in both locations when both Codex and Claude Code are used. The copies must be identical.
 - `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
@@ -84,13 +86,14 @@ Check, and if anything is missing: report it and stop.
   concurrent agent on the same tree) and authorize proceeding around them; treat that as a decision
   you record, not a default you assume, and log the excluded paths and the user's confirmation under
   the journal's Deviations.
-- `docs/00-ai-context.md` names an aimux account pool for each level — one subscription or several,
-  comma-separated, tried in priority order. `aimux profile list` shows the accounts that exist.
-  **Account names are subscriptions, not roles** — whatever the project calls its subscriptions is
-  what goes in both places, the same account may fill several levels or appear in several pools, and
-  Review does not need a pool distinct from Reasoning's. Step 0 verifies the mapping; without it cost
-  is not separated, only context. `dispatch.sh` also prints a `FALLBACK:` line per dispatch — pass it
-  on to the user and record it in the journal rather than letting it scroll past.
+- `docs/00-ai-context.md` names an aimux profile pool for each level — one profile or several,
+  comma-separated, tried in priority order. `aimux profile list` (or `~/.aimux/config.yaml`) shows
+  the profiles that exist. **A profile carries its own CLI, model, and subscription — it is not a
+  role**: the same profile may fill several levels or appear in several pools, and Review does not
+  need a pool distinct from Reasoning's. Step 0 verifies the mapping; without it cost is not
+  separated, only context. When a pool entry is missing from `~/.aimux/config.yaml`, `dispatch.sh`
+  prints a `FALLBACK:` line — pass it on to the user and record it in the journal rather than
+  letting it scroll past.
 
 Templates: `plan-template.md` and `journal-template.md` in this skill's directory. Copy them, never edit them in
 place. Do not look for `templates/` — that path exists in the framework repo, not in projects.
@@ -115,50 +118,53 @@ RUN=docs/plans/.runs/$ID
 mkdir -p "$RUN" && cp "$SKILLDIR/journal-template.md" "$JOURNAL"
 ```
 
-Then bind each level to an account pool. **The account names are the project's own aimux
-subscriptions** — read them from the runtime contract in `docs/00-ai-context.md` and set them here.
-They are not role names, a pool is one account or several comma-separated ones tried in priority
+Then bind each level to a profile pool. **The profile names are the project's own aimux
+profiles** — read them from the runtime contract in `docs/00-ai-context.md` and set them here.
+They are not role names, a pool is one profile or several comma-separated ones tried in priority
 order, and the skill has no defaults to fall back on:
 
 ```bash
-ACCT_REASONING=<account pool from docs/00-ai-context.md, e.g. codework1,codework2>
-ACCT_IMPLEMENTATION=<account pool from docs/00-ai-context.md>
-ACCT_REVIEW=<account pool from docs/00-ai-context.md, or reuse $ACCT_REASONING>
-MODEL_REASONING=          # from docs/00-ai-context.md; leave assigned-but-empty for the account default
-MODEL_IMPLEMENTATION=     # same — assign the variable even when you have no model to set
+PROFILE_REASONING=<profile pool from docs/00-ai-context.md, e.g. codework1,codework2>
+PROFILE_IMPLEMENTATION=<profile pool from docs/00-ai-context.md>
+PROFILE_REVIEW=<profile pool from docs/00-ai-context.md, or reuse $PROFILE_REASONING>
+MODEL_REASONING=          # from docs/00-ai-context.md; leave assigned-but-empty to use the profile's own model
+MODEL_IMPLEMENTATION=     # same — assign the variable even when you have no override to set
 
-for pool in "$ACCT_REASONING" "$ACCT_IMPLEMENTATION" "$ACCT_REVIEW"; do
+aimux_config="${AIMUX_CONFIG:-$HOME/.aimux/config.yaml}"
+for pool in "$PROFILE_REASONING" "$PROFILE_IMPLEMENTATION" "$PROFILE_REVIEW"; do
   found=0
-  for a in $(printf '%s' "$pool" | tr ',' ' '); do
-    [ -d "$HOME/.aimux/profiles/$a" ] && { printf 'ok       %s\n' "$a"; found=1; }
+  for p in $(printf '%s' "$pool" | tr ',' ' '); do
+    case "$p" in cli:*) found=1; continue ;; esac
+    grep -qE "^  $p:[[:space:]]*$" "$aimux_config" && { printf 'ok       %s\n' "$p"; found=1; }
   done
   [ "$found" -eq 1 ] || printf 'MISSING  %s\n' "$pool"
 done
 ```
 
-A `MISSING` line means every account in that pool is unresolved, so the level will run on the
-logged-in account and its cost will not be separated — `dispatch.sh` reports this per dispatch too,
-but check it here before the run starts. Which subscriptions fill which level, and in what order, is
-the project's decision: one account may fill several levels, any account may fill any level, and a
-pool exists to spread load across interchangeable subscriptions — not to give a level its own
-identity. Review does not need to differ from Reasoning's pool; the prompt file is what keeps a
-review from sharing the drafting level's blind spots, not the account.
+A `MISSING` line means every profile in that pool is absent from `~/.aimux/config.yaml`, so the
+dispatch will fail unless the pool ends in a `cli:NAME` fallback entry — fix the pool in
+`docs/00-ai-context.md`, or run `aimux profile add <name> --cli <cli>`. `dispatch.sh` re-checks
+this per dispatch, but catch it here before the run starts. Which subscriptions fill which level,
+and in what order, is the project's decision: one profile may fill several levels, any profile may
+fill any level, and a pool exists to spread load across interchangeable subscriptions — not to give
+a level its own identity. Review does not need to differ from Reasoning's pool; the prompt file is
+what keeps a review from sharing the drafting level's blind spots, not the profile.
 
 Every dispatch goes through `$SKILLDIR/dispatch.sh`, which takes its instructions from
 `$SKILLDIR/prompts/`. **Do not read the prompt files** — keeping roughly a thousand words of
 instruction text out of your context is the point of them living in files. You fill their
 placeholders with `--var` and never see the rest.
 
-The script also sets sandbox and approval policy together, reports a fallback when an aimux account
-is missing instead of silently landing on the logged-in account, and prints the report's
-line count against its budget so you know whether a report fits before opening it. Calling `codex`
-directly loses all four.
+The script also sets sandbox and approval policy together, reports a fallback when a profile in the
+pool cannot be resolved and a later entry or a `cli:NAME` fallback runs instead, and prints the
+report's line count against its budget so you know whether a report fits before opening it. Calling
+`codex` directly loses all three.
 
 The journal is committed; `docs/plans/.runs/` is local scratch and belongs in `.gitignore`.
 
 **Update the journal after every step, before the next dispatch.** It is the only place the flow's
 state exists — your context is not state, it disappears at a usage limit or a session boundary. A
-correctly kept journal means any CLI, including another one under another account, can answer
+correctly kept journal means any CLI, including another one under another profile, can answer
 "where are we?" by reading ~30 lines and continue from there.
 
 ## Step 1 — Dispatch the plan
@@ -170,7 +176,7 @@ read what it needs — that is the context you are not paying for twice.
 model_args=''
 [ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
 
-"$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" $model_args --mode read-only \
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<one or two sentences: what should be true when this is done>" \
   --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
@@ -192,15 +198,16 @@ each round only surfaced the next one, when a single upfront sweep would have sh
 
 A fresh, stateless invocation reading the plan cold against the code, under a different prompt file
 from the one that drafted it. `prompts/2-review.txt` is what keeps this from repeating step 1's
-blind spots — `$ACCT_REVIEW` may be the same pool as `$ACCT_REASONING`, nothing here requires the
-account to differ. The `--fallback` still protects against `$ACCT_REVIEW` being unresolved at
-runtime; if it fires, that is recorded on stdout and belongs in the journal.
+blind spots — `$PROFILE_REVIEW` may be the same pool as `$PROFILE_REASONING`, nothing here requires
+the profile to differ. Listing `$PROFILE_REASONING` after `$PROFILE_REVIEW` in `--profile` still
+protects against `$PROFILE_REVIEW` being unresolved at runtime; if that fallback fires, it is
+recorded on stdout and belongs in the journal.
 
 ```bash
 model_args=''
 [ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
 
-"$SKILLDIR/dispatch.sh" --account "$ACCT_REVIEW" --fallback "$ACCT_REASONING" $model_args --mode read-only \
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REVIEW,$PROFILE_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
   --out "$RUN/review.md" --max-lines 40
 ```
@@ -254,7 +261,7 @@ project runtime baseline, supported dependency line, or ADR; that is a scope or 
 default, which stops any build that has to resolve a dependency — and a build cannot ask for
 permission, because `-a never` is what keeps a background dispatch from hanging on a prompt nobody
 will answer. `--network` sets the sandbox's `network_access` for that one dispatch only; the
-read-only levels keep the default and the account's stored configuration is untouched.
+read-only levels keep the default and the profile's stored configuration is untouched.
 
 ```bash
 build_env_args=
@@ -264,19 +271,20 @@ build_env_args=
 model_args=''
 [ -n "${MODEL_IMPLEMENTATION:-}" ] && model_args="--model $MODEL_IMPLEMENTATION"
 
-"$SKILLDIR/dispatch.sh" --account "$ACCT_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
   $build_env_args \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
   --log "$RUN/build.log"
 ```
 
-`$ACCT_IMPLEMENTATION` may be a pool. `dispatch.sh` picks the first account in it whose profile
-exists to start the build, but never retries a failed build on the next one — see `dispatch.sh`'s
+`$PROFILE_IMPLEMENTATION` may be a pool. `dispatch.sh` picks the first profile in it that
+resolves from `~/.aimux/config.yaml` to start the build, but never retries a failed build on the
+next one — see `dispatch.sh`'s
 own header comment for why.
 
 The sandbox still confines writes to the workspace. Network access widens what the build can reach,
 not what it can overwrite, which is why it is granted per dispatch rather than stored on the
-account.
+profile.
 
 The command returns immediately and prints the PID and the sentinel path. Write both in the journal.
 
@@ -347,17 +355,17 @@ silently.
 
 ### If a dispatched call hits a usage limit mid-run
 
-If the blocked level's own account pool has an untried member, dispatch on that instead — that is
+If the blocked level's own profile pool has an untried member, dispatch on that instead — that is
 what a pool is for. Only once the whole pool is exhausted do the options below apply.
 
-Before stopping, consider borrowing an account from a different level's pool for this one blocked
-call: dispatch it under that account instead, and record the borrow and the reason in the journal's
+Before stopping, consider borrowing a profile from a different level's pool for this one blocked
+call: dispatch it under that profile instead, and record the borrow and the reason in the journal's
 Deviations. Revert to the normal split on the next dispatch — the borrow is a one-off, not a standing
 reassignment. This was needed in both directions on a real project when one level's pool ran out
 mid-plan and the other level's pool still had headroom.
 
-If no account anywhere has headroom, stop, write it in the journal, report to the user. `aimux
-handoff <sessionId> --to <account>` can continue the same session under another account via a lossy
+If no profile anywhere has headroom, stop, write it in the journal, report to the user. `aimux
+handoff <sessionId> --to <profile>` can continue the same session under another profile via a lossy
 summary — re-check its grasp of scope and Definition of Done before trusting it unattended. Untested
 end-to-end here; if it misbehaves, stop and report rather than improvising a fix mid-build.
 
@@ -369,7 +377,7 @@ Do not read the diff yourself.
 model_args=''
 [ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
 
-"$SKILLDIR/dispatch.sh" --account "$ACCT_REASONING" $model_args --mode read-only \
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" $model_args --mode read-only \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
   --var PLAN="$PLAN" --var SHA="<approval SHA from the journal>" \
   --var BUILD_LOG="$RUN/build.log" \
@@ -426,14 +434,15 @@ step the journal records as done, and do not reconstruct context by reading code
 ## Notes
 
 - The four runtime levels may be assigned to one or more agents. The point is not fewer total tokens — it is keeping your session
-  small and moving the expensive reading onto accounts you are not metered against. For a change the
+  small and moving the expensive reading onto profiles you are not metered against. For a change the
   user can review in five minutes this is not worth it; say so instead of running it.
 - The levels, plan, journal, budgets and gates are tool-independent; only `dispatch.sh` knows how a
-  given CLI spells sandbox, approval, output and config directory, and it keeps that in one adapter
-  block. Selecting a tool is `dispatch.sh --cli NAME`, which defaults to `codex` — a project never
-  edits this skill to change tools. `codex` is the only adapter implemented today; adding another is
-  a framework change, not a project one. `docs/00-ai-context.md` records which CLI and account pool
-  fills each level.
+  given CLI spells sandbox, approval, output and network, and it keeps that in one adapter
+  block. Which CLI runs a level comes from its aimux profile's `cli` field, resolved from
+  `~/.aimux/config.yaml` at dispatch time — a project never edits this skill to change tools, it
+  runs `aimux profile update <name> --cli <cli>`. `codex` is the only adapter implemented today;
+  adding another is a framework change, not a project one. `docs/00-ai-context.md` records which
+  profile pool fills each level.
 - The rationale behind all of this — why cost separation and not just context isolation, why the
   gates sit where they do — is in the framework's `ai-usage-guide.md` § 5. It is not needed to run
   the workflow, which is why it is not here.

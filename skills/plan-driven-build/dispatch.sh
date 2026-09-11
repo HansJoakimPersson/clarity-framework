@@ -5,11 +5,12 @@
 #   1. The prompt lives in prompts/*.txt, not in SKILL.md. That keeps roughly a thousand words of
 #      instruction text out of the orchestrator's context entirely — the orchestrator names a
 #      prompt file and fills its placeholders, it never reads the prompt.
-#   2. Account separation is verified, not assumed — a missing aimux account is reported as a
-#      fallback instead of silently landing on whatever account is logged in on this machine.
-#      An aimux account selects which subscription pays. It is not a persona and it does not change
-#      how an agent behaves; aimux names its own subcommand `profile`, this script says `account` to
-#      keep it distinct from a Codex profile and from the plan's gate profile.
+#   2. Subscription separation is verified, not assumed. Which CLI runs and which subscription pays
+#      both come from one aimux profile, resolved from ~/.aimux/config.yaml at dispatch time. A
+#      pool entry that is not in that file is reported as a FALLBACK line rather than the dispatch
+#      silently running under whatever profile happens to be active. An aimux profile is not a persona and
+#      does not change how an agent behaves; it unifies the CLI, the model, the authentication and
+#      the subscription in one object.
 #   3. Sandbox and approval policy are always set together. Setting only the sandbox leaves the
 #      approval policy at its default, which is what makes an unattended dispatch stop and ask.
 #   4. The orchestrator gets a one-line result with a line count measured against the budget, so it
@@ -19,13 +20,29 @@
 # env-prefixed, backgrounded compound command is not.
 #
 # Usage:
-#   dispatch.sh [--cli NAME] --account NAME[,NAME...] [--fallback NAME]
+#   dispatch.sh --profile NAME[,NAME...]
 #               --mode read-only|workspace-write|danger-full-access
-#               --prompt-file FILE [--var KEY=VALUE ...] [--model NAME]
+#               (--prompt-file FILE [--var KEY=VALUE ...] | --prompt TEXT) [--model NAME]
 #               --out FILE [--max-lines N] [--env-file FILE]
-#   dispatch.sh [--cli NAME] --account NAME[,NAME...] --mode workspace-write|danger-full-access
-#               --prompt-file FILE
-#               [--var KEY=VALUE ...] [--model NAME] --log FILE --background [--network] [--env-file FILE]
+#   dispatch.sh --profile NAME[,NAME...]
+#               --mode workspace-write|danger-full-access
+#               (--prompt-file FILE [--var KEY=VALUE ...] | --prompt TEXT) [--model NAME]
+#               --log FILE --background [--network] [--env-file FILE]
+#
+# --profile is an ordered, comma-separated pool of aimux profile names, e.g.
+# `--profile codework1,codework2,codework3`. This is priority order, resolved once per dispatch —
+# not round-robin, and not a rotation the caller manages between runs. Each name is looked up in
+# ~/.aimux/config.yaml (override with AIMUX_CONFIG); the first present wins, and its `cli:` field
+# selects the adapter. Because an aimux profile carries the CLI, moving a level from codex to
+# gemini is `aimux profile update <name> --cli gemini` with no change to this file. A pool spreads
+# cost across interchangeable subscriptions; it does not bind a level to one persona. Nothing about
+# review needing a *different* profile from reasoning is enforced here — separate that with the
+# prompt file's content.
+#
+# A pool entry written `cli:NAME` (for example `--profile codework1,cli:codex`) is an explicit,
+# opt-in fallback: run NAME directly, with no aimux wrapper and no subscription separation. It is
+# consulted only after every real profile ahead of it fails to resolve, and using it fires a
+# FALLBACK: line.
 #
 # --mode danger-full-access removes codex's macOS Seatbelt sandbox entirely (full filesystem and
 # network access, no workspace confinement). Use it ONLY for a narrowly scoped dispatch that must
@@ -38,54 +55,36 @@
 # (e.g. `cd frontend && npm run test:e2e`) — never use it for a step that writes application code,
 # since it forfeits the workspace confinement that makes workspace-write safe to leave unattended.
 #
-# --cli selects the adapter; it defaults to `codex`, the only one implemented today. Everything
-# tool-specific is confined to the adapter block further down — the binary name, how sandbox,
-# approval, output-file, network and model are spelled, and which environment variable points at an
-# account's configuration directory. A project never edits this file to change tools: it passes
-# --cli. Supporting a new tool is a framework change, two case branches, and the levels, plan,
-# journal, budgets and gates are unaffected by it.
+# --mode read-only dispatches are side-effect-free, so a failed attempt retries the next resolvable
+# profile in the pool automatically until one succeeds or the pool is exhausted. --mode
+# workspace-write never retries after launch: a build can fail partway through, and retrying it
+# blindly on a different subscription would compound a real failure instead of a rate limit. The
+# pool still decides which profile *starts* a workspace-write dispatch — the first one that resolves.
 #
-# --account takes an ordered, comma-separated pool of aimux account names, e.g.
-# `--account codework1,codework2,codework3`. This is priority order, resolved once per dispatch —
-# not round-robin, and not a rotation the caller has to manage between runs. It exists to spread
-# cost across interchangeable subscriptions, not to bind a level to one persona; nothing about
-# review needing a *different* account from reasoning is enforced here — separate that with the
-# prompt file's content, not the account.
-#
-# --mode read-only dispatches are side-effect-free, so a failed attempt retries the next account in
-# the pool automatically until one succeeds or the pool is exhausted. --mode workspace-write never
-# retries after launch: a build can fail partway through, and retrying it blindly on a different
-# account would compound a real failure instead of a rate limit. The pool still decides which
-# account *starts* a workspace-write dispatch — first one whose aimux profile directory exists.
-#
-# The retry-on-failure path treats any non-zero codex exit as grounds to try the next account. This
-# is unverified: it has not been checked against a real rate-limit error from codex, so it may also
-# retry a genuine prompt or task failure on a different account instead of surfacing it. Read this
+# The retry-on-failure path treats any non-zero CLI exit as grounds to try the next profile. This
+# is unverified: it has not been checked against a real rate-limit error, so it may also retry a
+# genuine prompt or task failure on a different subscription instead of surfacing it. Read this
 # skill's setup notes before trusting it unattended, and watch the DISPATCH summary line the first
 # few times it fires.
 #
-# --profile is accepted as a deprecated alias for --account so existing invocations keep working.
-# --fallback NAME is appended to the end of the --account pool; prefer a comma-separated --account
-# list for anything with more than one fallback.
-#
-# --model NAME is passed straight through to codex as a per-dispatch override, independent of which
-# account ends up paying for the call — this is what lets a pool of otherwise-identical accounts
-# share one capability tier. The exact flag codex expects has not been verified against the
-# installed CLI version; check `codex exec --help` before relying on it, per this skill's setup
-# notes. If the flag name is wrong, codex will fail fast with an unrecognized-argument error rather
-# than silently ignoring it.
+# --model NAME overrides the profile's own stored model for this one dispatch, independent of which
+# profile ends up paying. For a resolved profile it is passed to `aimux run` as `-m NAME`; for a
+# `cli:NAME` fallback entry the adapter passes it to the CLI's own model flag (codex: `-m`, after
+# `exec`). The exact flag has not been verified against the installed CLI version; check
+# `codex exec --help` if a dispatch fails fast with an unrecognized-argument error.
 #
 # --prompt TEXT still works for an ad-hoc dispatch. Placeholders in a prompt file are written
 # {{KEY}}; every placeholder must be supplied with --var or the dispatch aborts. Values are
 # single-line. Keys are A-Z and underscore.
 #
 # Background mode writes the exit code to the log path with .log replaced by .exit. Poll that
-# sentinel — never tail a running build.
-# Background mode uses `nohup` so the build is not tied to the short-lived shell process that
-# launched it. Some CLI harnesses clean up ordinary background children as soon as the command that
-# spawned them returns; that leaves an empty log and no sentinel.
+# sentinel — never tail a running build. It uses `nohup` so the build is not tied to the
+# short-lived shell that launched it; `aimux run <profile> -- <codex exec>` was verified to run to
+# completion under `nohup` with no TTY (aimux 0.25.0). Some CLI harnesses clean up ordinary
+# background children as soon as the spawning command returns; that leaves an empty log and no
+# sentinel.
 #
-# --env-file sources one project-owned shell file before launching codex. Use it for language or
+# --env-file sources one project-owned shell file before launching the CLI. Use it for language or
 # toolchain bootstrap such as JAVA_HOME, Node version managers, or Go toolchain variables. The file
 # is explicit per dispatch so environment corrections stay visible in the run journal.
 
@@ -93,15 +92,12 @@ set -eu
 
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
-ACCOUNT=''; FALLBACK=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''; ENV_FILE=''
-MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''; CLI='codex'
+PROFILE=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''; ENV_FILE=''
+MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --cli)         CLI="${2:-}";         shift 2 ;;
-    --account)     ACCOUNT="${2:-}";     shift 2 ;;
-    --profile)     ACCOUNT="${2:-}";     shift 2 ;;  # deprecated alias for --account
-    --fallback)    FALLBACK="${2:-}";    shift 2 ;;
+    --profile)     PROFILE="${2:-}";     shift 2 ;;
     --mode)        MODE="${2:-}";        shift 2 ;;
     --model)       MODEL="${2:-}";       shift 2 ;;
     --out)         OUT="${2:-}";         shift 2 ;;
@@ -124,13 +120,14 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -n "$ACCOUNT" ] || die 'dispatch.sh: --account is required'
+[ -n "$PROFILE" ] || die 'dispatch.sh: --profile is required'
 case "$MODE" in
   read-only|workspace-write|danger-full-access) ;;
   *) die "dispatch.sh: --mode must be read-only, workspace-write, or danger-full-access (got '$MODE')" ;;
 esac
 if [ "$BACKGROUND" -eq 1 ]; then
   [ -n "$LOG" ] || die 'dispatch.sh: --background requires --log'
+  [ "$MODE" != read-only ] || die 'dispatch.sh: --background requires --mode workspace-write or danger-full-access'
 else
   [ -n "$OUT" ] || die 'dispatch.sh: --out is required unless --background'
 fi
@@ -164,89 +161,130 @@ fi
 [ -n "$PROMPT" ] || die 'dispatch.sh: --prompt or --prompt-file is required'
 
 # ---------------------------------------------------------------------------
-# CLI adapters
+# Profile resolution
 #
-# Everything tool-specific lives in this block and in cli_exec() below: the binary name, how
-# sandbox / approval / output-file / network / model are spelled, and which environment variable
-# points at an account's configuration directory. Everything else in this script — pools, budgets,
-# sentinels, prompts, retries — is tool-independent.
-#
-# A project never edits this file to change tools. Selecting one is `--cli NAME`; adding one is a
-# framework change: a branch here and a branch in cli_exec(). That boundary is why the skill can be
-# replaced wholesale on update without a project losing its configuration.
+# ~/.aimux/config.yaml is aimux's own machine-readable source of truth (aimux 0.25.0). `aimux
+# profile list` renders a decorated table only — there is no --json. The format is block-style
+# YAML: a two-space-indented profile key under `profiles:`, then four-space `key: value` lines,
+# until the indentation returns to column 0. aimux owns this file; if its format changes this
+# parser is the framework fix, and the regression test's fake config.yaml is what surfaces it.
+# Only `cli` is read here — `aimux run` resolves the profile's own config directory itself.
 # ---------------------------------------------------------------------------
 
-case "$CLI" in
-  codex) CLI_BIN=codex; CLI_CONFIG_ENV=CODEX_HOME ;;
-  *) die "dispatch.sh: unsupported --cli '$CLI' (supported: codex)" ;;
-esac
+AIMUX_CONFIG="${AIMUX_CONFIG:-$HOME/.aimux/config.yaml}"
 
-# Top-level flags that are grammar rather than value, built into "$@" and passed to every attempt.
-#
-# Sandbox network access: codex denies it under workspace-write by default, which stops any build
-# that has to resolve a dependency. Set it per dispatch rather than widening the account's stored
-# config, so read-only levels keep the default and the wider sandbox lasts exactly one build.
-#
-# Model override: independent of the account, so a pool of otherwise-interchangeable accounts can
-# share one capability tier. See the --model note above — unverified flag name.
-set --
-case "$CLI" in
-  codex)
-    if [ "$NETWORK" -eq 1 ]; then
-      set -- -c 'sandbox_workspace_write.network_access=true'
-    fi
-    if [ -n "$MODEL" ]; then
-      set -- "$@" -m "$MODEL"
-    fi
-    ;;
-esac
-
-# One foreground attempt. Receives the top-level flags as its own "$@"; reads MODE, OUT and PROMPT
-# from the environment above.
-cli_exec() {
-  case "$CLI" in
-    codex) codex -a never "$@" exec -s "$MODE" -o "$OUT" "$PROMPT" >/dev/null 2>&1 ;;
-  esac
+# Echo the `cli` value for profile $1, or nothing if the profile is absent from config.yaml.
+profile_cli() {
+  [ -f "$AIMUX_CONFIG" ] || return 0
+  awk -v want="$1" '
+    $0 == "profiles:" { inp = 1; next }
+    inp && /^[^ ]/ { exit }
+    inp && /^  [A-Za-z0-9._-]+:[ ]*$/ {
+      pname = $1; sub(/:$/, "", pname)
+      cur = (pname == want)
+      next
+    }
+    inp && cur && /^    cli:[ ]/ {
+      v = $0; sub(/^    cli:[ ]*/, "", v)
+      print v
+      exit
+    }
+  ' "$AIMUX_CONFIG"
 }
 
-# Resolve the account pool. aimux keeps one config directory per account (its own CLI calls the
-# subcommand `profile`); pointing the CLI's config-dir variable at it is what actually separates the
-# subscription, not just the process. --account may list several accounts, tried in the order given;
-# --fallback, if set, is appended as the last one. remaining_accounts is consumed by
-# advance_account() below — each call pops candidates off the front until it finds one with an
-# existing profile directory.
-remaining_accounts=$(printf '%s' "$ACCOUNT" | tr ',' ' ')
-[ -n "$FALLBACK" ] && remaining_accounts="$remaining_accounts $FALLBACK"
-missing_log=''
+POOL=$(printf '%s' "$PROFILE" | tr ',' ' ')
+remaining_pool="$POOL"
+RESOLVED_PROFILE=''; RESOLVED_CLI=''; BARE_CLI=''; TARGET_KIND=''
+missing_log=''; deferred_bare=''; bare_used=0
 
-# Sets account_dir and used on success (and shrinks remaining_accounts); leaves account_dir empty
-# and returns 1 once the pool is exhausted. Every skipped candidate is recorded in missing_log.
-advance_account() {
-  account_dir=''
-  while [ -n "$remaining_accounts" ]; do
-    acct=${remaining_accounts%% *}
-    case "$remaining_accounts" in
-      *' '*) remaining_accounts=${remaining_accounts#* } ;;
-      *) remaining_accounts='' ;;
+# Pop the next attempt target off remaining_pool. On success sets TARGET_KIND and either
+# RESOLVED_PROFILE + RESOLVED_CLI (a real aimux profile) or BARE_CLI + RESOLVED_CLI (the cli:NAME
+# fallback, always tried last regardless of its position in the pool). Returns 1 when nothing is
+# left. Every skipped profile name is recorded in missing_log.
+advance_target() {
+  RESOLVED_PROFILE=''; RESOLVED_CLI=''; TARGET_KIND=''
+  while [ -n "$remaining_pool" ]; do
+    entry=${remaining_pool%% *}
+    case "$remaining_pool" in
+      *' '*) remaining_pool=${remaining_pool#* } ;;
+      *) remaining_pool='' ;;
     esac
-    [ -n "$acct" ] || continue
-    if [ -d "$HOME/.aimux/profiles/$acct" ]; then
-      account_dir="$HOME/.aimux/profiles/$acct"; used="$acct"
+    [ -n "$entry" ] || continue
+    case "$entry" in
+      cli:*)
+        [ -n "$deferred_bare" ] || deferred_bare=${entry#cli:}
+        continue ;;
+    esac
+    c=$(profile_cli "$entry")
+    if [ -n "$c" ]; then
+      RESOLVED_PROFILE="$entry"; RESOLVED_CLI="$c"; TARGET_KIND=profile
       return 0
     fi
-    missing_log="$missing_log $acct"
+    missing_log="$missing_log $entry"
   done
+  if [ -n "$deferred_bare" ] && [ "$bare_used" -eq 0 ]; then
+    bare_used=1
+    BARE_CLI="$deferred_bare"; RESOLVED_CLI="$deferred_bare"; TARGET_KIND=bare
+    return 0
+  fi
   return 1
 }
 
-used=''; account_dir=''; note=''
-if advance_account; then
-  export "$CLI_CONFIG_ENV=$account_dir"
-  [ -n "$missing_log" ] && note="FALLBACK: account(s)$missing_log not found, used '$used' instead"
-else
-  used='(logged-in account)'
-  note="FALLBACK: no aimux account among [$ACCOUNT${FALLBACK:+,$FALLBACK}] exists — ran on the logged-in account; cost is NOT separated"
-fi
+target_label() {
+  if [ "$TARGET_KIND" = bare ]; then printf 'cli:%s' "$BARE_CLI"; else printf '%s' "$RESOLVED_PROFILE"; fi
+}
+
+advance_target || die "dispatch.sh: no profile in pool [$PROFILE] found in $AIMUX_CONFIG — add one with 'aimux profile add <name> --cli <cli>' or pass a cli:<name> fallback entry"
+
+LAST_LABEL=$(target_label)
+LAST_KIND=$TARGET_KIND
+
+# ---------------------------------------------------------------------------
+# Adapter: (mode, network, out, prompt) -> argv for the resolved CLI. Only codex is implemented.
+# Adding gemini / claude / opencode is one more `case` arm here and in the background child below;
+# levels, plan, journal, budgets and gates are unaffected.
+# ---------------------------------------------------------------------------
+
+adapter_check() {
+  case "$RESOLVED_CLI" in
+    codex) ;;
+    *)
+      if [ -n "$RESOLVED_PROFILE" ]; then
+        die "dispatch.sh: profile '$RESOLVED_PROFILE' uses cli '$RESOLVED_CLI', which has no dispatch adapter (supported: codex)"
+      fi
+      die "dispatch.sh: cli '$RESOLVED_CLI' has no dispatch adapter (supported: codex)" ;;
+  esac
+  if [ -n "$RESOLVED_PROFILE" ]; then
+    command -v aimux >/dev/null 2>&1 || die "dispatch.sh: aimux not on PATH (needed for profile '$RESOLVED_PROFILE')"
+  fi
+  command -v codex >/dev/null 2>&1 || die 'dispatch.sh: codex not on PATH'
+}
+
+# One foreground attempt with the current target. `set --` sets this function's own positional
+# parameters, not the caller's. Reads MODE, NETWORK, MODEL, OUT and PROMPT from above.
+run_cli() {
+  _rc=0
+  adapter_check
+  case "$RESOLVED_CLI" in
+    codex)
+      if [ -n "$RESOLVED_PROFILE" ]; then
+        set -- aimux run "$RESOLVED_PROFILE"
+        [ -z "$MODEL" ] || set -- "$@" -m "$MODEL"
+        set -- "$@" -- codex -a never
+        [ "$NETWORK" -eq 0 ] || set -- "$@" -c 'sandbox_workspace_write.network_access=true'
+        set -- "$@" exec -s "$MODE" -o "$OUT" "$PROMPT"
+      else
+        set -- codex -a never
+        [ "$NETWORK" -eq 0 ] || set -- "$@" -c 'sandbox_workspace_write.network_access=true'
+        set -- "$@" exec -s "$MODE"
+        [ -z "$MODEL" ] || set -- "$@" -m "$MODEL"
+        set -- "$@" -o "$OUT" "$PROMPT"
+      fi
+      "$@" >/dev/null 2>&1 || _rc=$?
+      ;;
+  esac
+  return "$_rc"
+}
 
 if [ -n "$ENV_FILE" ]; then
   [ -f "$ENV_FILE" ] || die "dispatch.sh: env file not found: $ENV_FILE"
@@ -255,55 +293,87 @@ if [ -n "$ENV_FILE" ]; then
   . "$ENV_FILE"
 fi
 
-command -v "$CLI_BIN" >/dev/null 2>&1 || die "dispatch.sh: $CLI_BIN not on PATH"
+adapter_check
+
+# Note for the FALLBACK: line. Recomputed after the read-only retry loop with the full attempt log;
+# set here too because the background path exits before that recompute.
+note=''
+if [ "$LAST_KIND" = bare ]; then
+  note="FALLBACK: no aimux profile in [$PROFILE] resolved — ran cli '$BARE_CLI' directly; cost is NOT separated"
+elif [ -n "$missing_log" ]; then
+  note="FALLBACK: profile(s)$missing_log not in $AIMUX_CONFIG, used '$RESOLVED_PROFILE' instead"
+fi
 
 if [ "$BACKGROUND" -eq 1 ]; then
   # No retry here even on a pool: a killed or failed build cannot be safely re-launched on another
-  # account without knowing what it already wrote. The pool only decides the starting account.
+  # profile without knowing what it already wrote. The pool only decides the starting profile.
   exit_file="$(printf '%s' "$LOG" | sed 's/\.log$//').exit"
   rm -f "$exit_file"
-  CFD_CLI=$CLI
+  CFD_PROFILE=$RESOLVED_PROFILE
+  CFD_CLI=$RESOLVED_CLI
   CFD_MODE=$MODE
+  CFD_MODEL=$MODEL
+  CFD_NETWORK=$NETWORK
   CFD_PROMPT=$PROMPT
   CFD_EXIT_FILE=$exit_file
-  export CFD_CLI CFD_MODE CFD_PROMPT CFD_EXIT_FILE
-  # The child re-selects the adapter rather than inheriting a command string: a background dispatch
-  # survives this process, so the branch has to live where the command actually runs.
+  export CFD_PROFILE CFD_CLI CFD_MODE CFD_MODEL CFD_NETWORK CFD_PROMPT CFD_EXIT_FILE
+  # The child rebuilds the argv rather than inheriting a command string: a background dispatch
+  # survives this process, so the adapter has to run where the command actually runs.
   nohup sh -c '
     printf "%s\n" "DISPATCH child started"
     status=0
     case "$CFD_CLI" in
-      codex) codex -a never "$@" exec -s "$CFD_MODE" "$CFD_PROMPT" || status=$? ;;
-      *) printf "%s\n" "dispatch child: unsupported CLI $CFD_CLI" >&2; status=2 ;;
+      codex)
+        if [ -n "$CFD_PROFILE" ]; then
+          set -- aimux run "$CFD_PROFILE"
+          [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
+          set -- "$@" -- codex -a never
+          [ "$CFD_NETWORK" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
+          set -- "$@" exec -s "$CFD_MODE" "$CFD_PROMPT"
+        else
+          set -- codex -a never
+          [ "$CFD_NETWORK" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
+          set -- "$@" exec -s "$CFD_MODE"
+          [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
+          set -- "$@" "$CFD_PROMPT"
+        fi
+        "$@" || status=$?
+        ;;
+      *) printf "%s\n" "dispatch child: cli $CFD_CLI has no adapter" >&2; status=2 ;;
     esac
     printf "%s\n" "$status" > "$CFD_EXIT_FILE"
     exit "$status"
-  ' dispatch-bg "$@" > "$LOG" 2>&1 < /dev/null &
-  printf 'DISPATCH started  account=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
-    "$used" "$MODE" "$!" "$LOG" "$exit_file"
-  [ -n "$note" ] && printf '%s\n' "$note"
+  ' dispatch-bg > "$LOG" 2>&1 < /dev/null &
+  printf 'DISPATCH started  profile=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
+    "$LAST_LABEL" "$MODE" "$!" "$LOG" "$exit_file"
+  [ -z "$note" ] || printf '%s\n' "$note"
   exit 0
 fi
 
 status=0
-cli_exec "$@" || status=$?
-attempt_log=" $used=exit$status"
+run_cli || status=$?
+attempt_log=" $LAST_LABEL=exit$status"
 
-# Retry the pool only for read-only dispatch — it has no side effects, so a second attempt under a
-# different account is safe. workspace-write never reaches this loop (background exits above).
+# Retry the pool only for read-only dispatch — no side effects, so a second attempt under another
+# profile is safe. workspace-write never reaches this loop (background exits above).
 if [ "$MODE" = read-only ]; then
-  while [ "$status" -ne 0 ] && advance_account; do
-    export "$CLI_CONFIG_ENV=$account_dir"
+  while [ "$status" -ne 0 ]; do
+    advance_target || break
+    LAST_LABEL=$(target_label)
+    LAST_KIND=$TARGET_KIND
     status=0
-    cli_exec "$@" || status=$?
-    attempt_log="$attempt_log $used=exit$status"
+    run_cli || status=$?
+    attempt_log="$attempt_log $LAST_LABEL=exit$status"
   done
 fi
 
-if [ "$used" = '(logged-in account)' ]; then
-  note="FALLBACK: no aimux account among [$ACCOUNT${FALLBACK:+,$FALLBACK}] worked (tried$missing_log$attempt_log) — ran on the logged-in account; cost is NOT separated"
-elif [ -n "$missing_log" ] || [ "$MODE" = read-only ] && [ "$(printf '%s' "$attempt_log" | wc -w)" -gt 1 ]; then
-  note="FALLBACK: tried$missing_log$attempt_log — used '$used'"
+retry_count=$(printf '%s' "$attempt_log" | wc -w | tr -d ' ')
+if [ "$LAST_KIND" = bare ]; then
+  note="FALLBACK: no profile in [$PROFILE] completed — ran cli '$BARE_CLI' directly (tried$attempt_log); cost is NOT separated"
+elif [ -n "$missing_log" ]; then
+  note="FALLBACK: profile(s)$missing_log not in $AIMUX_CONFIG, used '$LAST_LABEL' instead (tried$attempt_log)"
+elif [ "$retry_count" -gt 1 ]; then
+  note="FALLBACK: retried across the pool (tried$attempt_log), used '$LAST_LABEL'"
 fi
 
 lines=0
@@ -318,7 +388,7 @@ if [ -n "$MAX_LINES" ]; then
   fi
 fi
 
-printf 'DISPATCH exit=%s  account=%s  mode=%s  out=%s  lines=%s  budget=%s\n' \
-  "$status" "$used" "$MODE" "$OUT" "$lines" "$budget"
-[ -n "$note" ] && printf '%s\n' "$note"
+printf 'DISPATCH exit=%s  profile=%s  mode=%s  out=%s  lines=%s  budget=%s\n' \
+  "$status" "$LAST_LABEL" "$MODE" "$OUT" "$lines" "$budget"
+[ -z "$note" ] || printf '%s\n' "$note"
 exit "$status"

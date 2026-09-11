@@ -26,7 +26,7 @@ answers a different question from the other Clarity documents:
 | Directory | Use when… |
 | --- | --- |
 | `clarity-bootstrap/` | A new or unmanaged project needs the smallest relevant document set, stack starter, and skills for both clients |
-| `plan-driven-build/` | The task is large enough to require scope approval before code is written, with planning, review, and implementation dispatched to other CLIs or accounts. Requires a second AI CLI — `codex` today — since the orchestrator dispatches rather than builds |
+| `plan-driven-build/` | The task is large enough to require scope approval before code is written, with planning, review, and implementation dispatched to other aimux profiles. Requires a second AI CLI — `codex` today — since the orchestrator dispatches rather than builds |
 | `framework-update/` | A project on an older framework version must be upgraded without losing completed work |
 
 The three skills are independent. `clarity-bootstrap/` sets up an unmanaged project, while
@@ -50,7 +50,7 @@ commit using an explicit path list.
      /path/to/project/.claude/skills/plan-driven-build
    ```
 
-2. Review `setup.md` for accounts, sandbox, approval settings, and permissions. This is a
+2. Review `setup.md` for profiles, sandbox, approval settings, and permissions. This is a
    one-time setup per machine and determines whether the workflow can run unattended.
 3. Invoke it in Claude Code with `/plan-driven-build`, or in Codex with `$plan-driven-build` or through
    `/skills`.
@@ -66,10 +66,10 @@ framework update.
 | `SKILL.md` | The procedure; the only file the orchestrator reads when invoked |
 | `prompts/*.txt` | Instructions for dispatched agents, kept outside the orchestrator's context |
 | `dispatch.sh` | The only dispatch entry point; sets sandbox and approval together and enforces budgets |
-| `tests/dispatch-test.sh` | Regression test for CLI flag ordering and failure sentinels |
+| `tests/dispatch-test.sh` | Regression test for profile resolution, CLI flag ordering, and failure sentinels |
 | `plan-template.md` | The plan template, identical to `templates/plan.md` |
 | `journal-template.md` | The run journal template and handover state |
-| `setup.md` | One-time setup for accounts, permissions, and gitignore |
+| `setup.md` | One-time setup for profiles, permissions, and gitignore |
 | `settings.example.json` | Claude Code permissions example |
 
 Skills are versioned in the project repository like all other documentation. Use `git check-ignore`
@@ -93,4 +93,4 @@ blindly.
 
 ---
 
-*Clarity Framework v3.6.0*
+*Clarity Framework v4.0.0*
