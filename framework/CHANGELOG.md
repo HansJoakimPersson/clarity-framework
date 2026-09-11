@@ -11,7 +11,7 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
-## [4.0.0] – Unreleased
+## [4.0.0] – 2026-09-11
 
 ### Changed (breaking)
 
