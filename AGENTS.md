@@ -11,7 +11,7 @@ governed by documented decisions, verification gates, and human accountability.
 
 **Three core principles:** Just enough documentation · Documentation as code · Clarity over completeness
 
-**Current version:** 4.0.0
+**Current version:** 4.1.0
 
 **Repository structure:**
 
@@ -44,13 +44,20 @@ the version markers were not updated, or a shipped script changed without its re
 run. Every change increments the version in the same commit; `docs` and `chore` changes do not
 increment it.
 
-The repository ships three executable tests. Run all of them when any `*.sh` under `skills/` changes:
+The repository ships five executable tests. Run all of them when any `*.sh` under `skills/` or
+`framework/scripts/` changes:
 
 ```bash
 sh   skills/plan-driven-build/tests/dispatch-test.sh
 bash skills/framework-update/tests/check-update-scope-test.sh
 bash skills/framework-update/tests/render-update-commit-test.sh
+bash framework/scripts/tests/check-version-consistency-test.sh
+bash framework/scripts/tests/lint-shell-test.sh
 ```
+
+`framework/scripts/lint-shell.sh` runs the last four against every tracked `*.sh` file with
+`shellcheck`, when it is installed; it skips, rather than fails, when the tool is missing.
+`framework/scripts/check-version-consistency.sh` automates release steps 2–4 below.
 
 A green test is necessary, not sufficient: a test that asserts the current output will happily lock
 in a defect. When a script's *output* changes — a commit message, a report line, a flag name — read
@@ -71,7 +78,7 @@ git grep -lE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+|Current version:|\*\*Ver
 | `templates/plan.md` | Identical `skills/plan-driven-build/plan-template.md`; verify with `diff` |
 | Story block in `templates/02-requirements.md` §2.6 | The same block in `templates/02-user-stories.md`. Splitting the backlog moves stories between them, so a field added to one and not the other silently disappears on the move |
 | Dispatch prompt change | The matching prompt and `SKILL.md` when placeholders change |
-| Shipped script change | The script and its test under the same skill's `tests/` |
+| Shipped script change | The script and its test in the same directory's `tests/` (a skill's or `framework/scripts/`) |
 | New template | New file, README, and CHANGELOG entry |
 | Framework guideline change | Guide and affected templates |
 | Release | CHANGELOG, version markers, and annotated Git tag |
@@ -108,6 +115,10 @@ that already exists.
    undated, they were superseded before they were ever tagged: fold their entries into the version
    being released rather than leaving a heading that points at a tag no project can resolve.
    `grep -c 'Unreleased' framework/CHANGELOG.md` must return `0` before step 5.
+
+   Steps 2–4 can be run in one command: `bash framework/scripts/check-version-consistency.sh`. A
+   `FAIL` line names which of the three checks failed; the manual commands above remain the
+   authoritative definition of each check.
 5. Run `git add framework/CHANGELOG.md && git commit -m "[chore] Release vX.Y.Z"`.
 6. Create an annotated tag:
    `git tag -a vX.Y.Z -m "Clarity Framework vX.Y.Z – description"`.
@@ -118,4 +129,4 @@ The tag is the only source read by `skills/framework-update/`. A project never u
 
 ---
 
-*Clarity Framework v4.0.0*
+*Clarity Framework v4.1.0*

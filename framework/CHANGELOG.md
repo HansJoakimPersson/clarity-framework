@@ -11,6 +11,34 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## [4.1.0] – 2026-09-12
+
+### Added
+
+- Five new discipline skills, each self-contained under 320 words, applying to any task rather than
+  to one named workflow: `verification-before-completion`, `systematic-debugging`,
+  `requesting-code-review`, `receiving-code-review`, `finishing-a-development-branch`. `skills/README.md`
+  documents them as independent of the three workflow skills and of each other.
+- `skills/README.md` gained a `Writing or auditing a skill` section: required frontmatter fields,
+  the rule that a skill's `description` states only its trigger and never summarizes its procedure
+  (an agent that reads a summarized workflow tends to follow the summary instead of opening the
+  file), when extra files are warranted over a single `SKILL.md`, and a preference for tables and
+  guardrail lists over prose and flowcharts.
+- `framework/scripts/check-version-consistency.sh` and `framework/scripts/lint-shell.sh`, each with a
+  regression test under `framework/scripts/tests/`, automate the release procedure's version-marker,
+  template-footer, and CHANGELOG checks, and run `shellcheck` at warning severity over every tracked
+  shell script. AGENTS.md's test list and "files that move together" table now cover
+  `framework/scripts/`.
+- `plan-driven-build/SKILL.md`'s Step 3 now scans the plan itself once more before presenting it —
+  placeholders, self-contradicting tasks, and two-ways-to-read requirements — bounded to the plan
+  text already in hand, not the source-diff reading the orchestrator's context budget forbids.
+
+### Changed
+
+- `description` fields on `clarity-bootstrap`, `plan-driven-build`, and `framework-update` rewritten
+  to state only their trigger, matching the rule above; the prior wording summarized each skill's
+  steps, which the same rule identifies as the failure mode it exists to prevent.
+
 ## [4.0.0] – 2026-09-11
 
 ### Changed (breaking)

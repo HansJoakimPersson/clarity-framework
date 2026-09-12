@@ -22,6 +22,7 @@ grep -Fx 'git commit --only -m "[minor] Update Clarity Framework to v1.5.2" -- "
 
 ARRAY_ONLY="$TEST_ROOT/array.sh"
 sed -n '/^UPDATE_PATHS=(/,/^)/p' "$OUTPUT" > "$ARRAY_ONLY"
+# shellcheck disable=SC1090 # dynamic path is this test's own generated fixture, not user input
 source "$ARRAY_ONLY"
 test "${#UPDATE_PATHS[@]}" -eq 4
 test "${UPDATE_PATHS[1]}" = '.agents/skills/framework-update'

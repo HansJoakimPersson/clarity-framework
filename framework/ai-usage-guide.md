@@ -154,4 +154,4 @@ change.
 
 ---
 
-*Clarity Framework v4.0.0 – AI Usage Guide*
+*Clarity Framework v4.1.0 – AI Usage Guide*

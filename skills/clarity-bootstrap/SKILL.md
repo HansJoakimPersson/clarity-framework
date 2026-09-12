@@ -1,6 +1,6 @@
 ---
 name: clarity-bootstrap
-description: Bootstrap Clarity Framework in a new or not-yet-managed software project by selecting the smallest useful document set, stack-specific AGENTS starter, and optional workflows from the product, team, UI, API, deployment, and AI-agent needs.
+description: Use when a new or not-yet-managed software project needs Clarity Framework set up — the smallest relevant document set, a stack-specific AGENTS starter, and optional workflow skills chosen from the project's actual product, team, UI, API, deployment, and AI-agent needs.
 ---
 
 # Clarity Bootstrap

@@ -1,6 +1,6 @@
 ---
 name: plan-driven-build
-description: Plan-driven workflow where an orchestrator dispatches planning, critique, build and diff verification through aimux profiles, keeping its own context and token spend bounded. Use when a task is large enough that its scope needs approval before code is written.
+description: Use when a task is large enough that its scope needs approval before code is written, and a second AI CLI is available via aimux to dispatch planning, critique, build, and verification to.
 ---
 
 # Plan-Driven Build (plan-driven-build)
@@ -219,6 +219,12 @@ lines only and note the truncation in the journal.
 
 Write the objections you agree with into the plan yourself — a bounded edit, unlike reading source
 docs or diffs. Briefly justify the ones you dismiss; silent dismissal hides that the review happened.
+
+Before presenting it, scan the plan itself once more: placeholders ("TBD", "handle appropriately",
+a step with no file path or verification command), tasks that contradict each other or the stated
+`Excluded` list, and requirements a reader could take two ways. This is a bounded read of the plan
+you already hold, not the source-diff reading the budget forbids. Fix what you can inline; turn what
+you can't fix into a `BLOCKING` question rather than presenting it unresolved.
 
 Show the user: the goal, `Included` / `Excluded`, all `BLOCKING` questions, and what the review
 changed.

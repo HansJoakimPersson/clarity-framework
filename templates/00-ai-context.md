@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v4.0.0 |
+| **Framework version** | Clarity Framework v4.1.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -195,4 +195,4 @@ on every plan; a plan may still state a different profile when the change warran
 
 ---
 
-*Clarity Framework v4.0.0 – AI Context Document*
+*Clarity Framework v4.1.0 – AI Context Document*

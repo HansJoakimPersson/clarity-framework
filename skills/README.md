@@ -28,11 +28,23 @@ answers a different question from the other Clarity documents:
 | `clarity-bootstrap/` | A new or unmanaged project needs the smallest relevant document set, stack starter, and skills for both clients |
 | `plan-driven-build/` | The task is large enough to require scope approval before code is written, with planning, review, and implementation dispatched to other aimux profiles. Requires a second AI CLI — `codex` today — since the orchestrator dispatches rather than builds |
 | `framework-update/` | A project on an older framework version must be upgraded without losing completed work |
+| `verification-before-completion/` | Any task, story, build, or checklist item is about to be reported done |
+| `systematic-debugging/` | A bug, test failure, crash, or unexpected behavior needs investigating before a fix is proposed |
+| `requesting-code-review/` | A change is ready for another reviewer, before merging or asking for approval |
+| `receiving-code-review/` | Review feedback has come back and needs a response |
+| `finishing-a-development-branch/` | A branch is believed done, or its work has landed and needs closing out |
 
-The three skills are independent. `clarity-bootstrap/` sets up an unmanaged project, while
-`framework-update/` works only with projects that already use Clarity. The latter does not
-dispatch anything; it runs in the current session and touches only approved framework paths under
-`docs/`, `AGENTS.md`, `.agents/skills/`, and `.claude/skills/`.
+`clarity-bootstrap/`, `plan-driven-build/`, and `framework-update/` are independent, multi-step
+workflows dispatched by name (`/plan-driven-build`, and so on). `clarity-bootstrap/` sets up an
+unmanaged project, while `framework-update/` works only with projects that already use Clarity and
+touches only approved framework paths under `docs/`, `AGENTS.md`, `.agents/skills/`, and
+`.claude/skills/`; neither dispatches anything itself except `plan-driven-build/`, which requires
+the second CLI noted above.
+
+The five discipline skills (`verification-before-completion/` through
+`finishing-a-development-branch/`) are single-file, self-contained, and apply to any task an agent
+performs in the project — not only work started through one of the three named workflows. Install
+whichever ones fit the project; they do not depend on each other or on the workflow skills.
 
 Unrelated changes in project code, build files, tests, or application configuration do not need to
 be committed first. `framework-update` protects its own write surface and proposes a separate
@@ -80,6 +92,28 @@ The `prompts/` directories are internal resources for their scripts. They are un
 deprecated `~/.codex/prompts/` and Claude Code's older `.claude/commands/`; both clients use the
 shared `SKILL.md` frontend.
 
+## Writing or auditing a skill
+
+A `SKILL.md` needs YAML frontmatter with exactly two required fields:
+
+- `name` — letters, numbers, and hyphens only, matching the directory name.
+- `description` — third person, starting with "Use when…", stating only the triggering
+  situation. Never summarize the skill's steps here: an agent that reads a summarized workflow in
+  the description tends to follow that summary instead of opening the file, which defeats a skill
+  whose actual procedure differs in any detail from its one-line gloss.
+
+Prefer a single self-contained `SKILL.md` (the five discipline skills above are all this shape).
+Reach for extra files only for a heavy reference the body would drown in, or a reusable script or
+template — `plan-driven-build/` is the example already in this directory. Keep the body scoped to
+what an agent must do differently because of this skill; move anything else to the guide or template
+that already owns it.
+
+There is no fixed length requirement — a discipline reminder loaded on every relevant task earns
+its brevity, while a multi-step, infrequently-invoked orchestration procedure like
+`plan-driven-build/` earns the precision that comes with being explicit. Favor tables and short
+guardrail lists over prose narrative and flowcharts; a workflow's real decision points are almost
+always better shown as a table (see `plan-driven-build/`'s Gate profiles) than as a diagram.
+
 ## Precedence
 
 1. An explicit user instruction in the session
@@ -93,4 +127,4 @@ blindly.
 
 ---
 
-*Clarity Framework v4.0.0*
+*Clarity Framework v4.1.0*

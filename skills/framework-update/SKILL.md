@@ -1,6 +1,6 @@
 ---
 name: framework-update
-description: Upgrade a project's Clarity Framework documents and tooling to the latest release, preserving everything already written. Use when the project is on an older framework version, when a new release is out, or when the user asks to update or sync the framework.
+description: Use when a project is on an older Clarity Framework version, a new release is out, or the user asks to update or sync the framework — upgrades documents and tooling without losing anything already written.
 ---
 
 # Framework Update (framework-update)
