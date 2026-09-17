@@ -1,6 +1,6 @@
 # The Clarity Framework Documentation Guide
 
-## Clarity Framework v4.1.0
+## Clarity Framework v4.2.0
 
 Documentation should make decisions easier, not create bureaucracy. Use the smallest coherent set of
 documents that lets the people and agents working on the product make safe, consistent decisions.
@@ -245,6 +245,12 @@ The plan-driven workflow uses explicit scope, report budgets, aimux-profile sepa
 run journal, and human gates for scope, merge, release, and plan deletion. See `ai-usage-guide.md` and
 `skills/plan-driven-build/` for the executable procedure.
 
+Observed execution behavior is also a source of framework improvement. When repeated runs expose
+environment failures, retry waste, model-routing ambiguity, incomplete run evidence, or redundant
+background polling, use the pattern to improve the central framework. Keep the implementation
+backlog local and unversioned; project logs remain project-owned evidence and do not create an
+obligation to update older projects.
+
 ## 14. Documentation completeness checklist
 
 - Vision and scope are approved.
@@ -259,4 +265,4 @@ run journal, and human gates for scope, merge, release, and plan deletion. See `
 
 ---
 
-*Clarity Framework v4.1.0 – Documentation Guide*
+*Clarity Framework v4.2.0 – Documentation Guide*

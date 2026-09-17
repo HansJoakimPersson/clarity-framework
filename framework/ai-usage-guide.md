@@ -104,11 +104,22 @@ Workflow state belongs in files, not in the orchestrator's memory. Use
 `docs/plans/YYYY-MM-DD-short-name.run.md`, update it after every step, and commit it with the plan.
 Store raw dispatch output in `docs/plans/.runs/`, which should be gitignored.
 
-Long-running builds use an exit sentinel rather than log polling. A new session or CLI can read the
-journal and the sentinel and continue without reconstructing the entire context.
+Long-running builds use an exit sentinel as their completion source of truth. When the harness
+provides task notifications, the orchestrator records the PID and sentinel, yields control, and
+resumes on the notification. It must not use `ScheduleWakeup`, an arbitrary delay, or a second
+polling loop merely to check a task the harness already tracks. In a plain CLI environment without
+task notifications, a bounded sentinel wait remains the fallback. A notification or sentinel only
+establishes completion; the exit code still determines success or failure.
 
 Human gates belong on decisions: scope, merge, release, and plan deletion. Tool calls inside the
 approved sandbox should not become artificial approval gates.
+
+For governed execution, use a bounded preflight before dispatch, classify failures by cause, and
+retry only explicitly retryable conditions. Verify the effective model for parent and child agents;
+the requested model is not sufficient evidence by itself. Keep a compact attempt ledger beside the
+raw output, and stop on non-retryable environment, routing, verification, budget, or repository
+safety failures. The executable contract and flags live in `skills/plan-driven-build/SKILL.md` and
+its `dispatch.sh`.
 
 ## 8. aimux profiles
 
@@ -152,6 +163,14 @@ sequence of plans delivers it. At the other end, a change too small to need scop
 code is written does not need this workflow at all — the dispatches and gates cost more than the
 change.
 
+## 10. Continuous improvement of governed execution
+
+Experience from repeated framework runs should improve the execution layer itself. Treat recurring
+environment failures, unbounded retries, unexpected model routing, opaque run histories, and
+duplicate background-job polling as framework risks rather than isolated agent mistakes. The
+framework maintainer may keep a local, unversioned implementation backlog for these improvements;
+project documentation should contain only the resulting stable execution rules.
+
 ---
 
-*Clarity Framework v4.1.0 – AI Usage Guide*
+*Clarity Framework v4.2.0 – AI Usage Guide*

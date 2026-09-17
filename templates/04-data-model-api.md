@@ -324,4 +324,4 @@ tokens, or personal data in this document.
 *Next step: Define the Deployment View based on the technology choices in the SAD and the API
 contract above.*
 
-*Clarity Framework v4.1.0 – Data Model & API Contract*
+*Clarity Framework v4.2.0 – Data Model & API Contract*

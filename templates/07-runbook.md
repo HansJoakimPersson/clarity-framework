@@ -486,4 +486,4 @@ Notes and evidence: _______________________________
 
 *Update this document immediately when an operational event exposes a gap.*
 
-*Clarity Framework v4.1.0 – Runbook*
+*Clarity Framework v4.2.0 – Runbook*

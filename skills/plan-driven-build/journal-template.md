@@ -18,6 +18,13 @@
 | **Orchestrator** | [CLI and profile currently running the workflow] |
 | **Raw output** | `docs/plans/.runs/YYYY-MM-DD-short-name/` (local, gitignored) |
 
+Every dispatch summary should preserve the resolved `profile`, `cli`, `model`,
+`reasoning_effort`, `mode`, and `failure_class`. `model` identifies the model; `reasoning_effort`
+is a separate setting and may be `profile-default`. Do not describe `medium` as a model name. When
+child agents are possible, also preserve the model-evidence path and the `model_policy` result from
+the compact ledger. Preserve token fields when the runtime supplies them; otherwise leave them as
+`unavailable`. A routing mismatch is a stopped run, not a successful fallback.
+
 ---
 
 ## Steps
@@ -43,6 +50,7 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
 | --- | --- |
 | **Approved at commit** | `[SHA]` – step 5 verifies against this |
 | **Build env file** | `[none / .agents/build-env.sh / .agents/build-env.local.sh / other]` |
+| **Preflight** | `[none / path / passed / blocked]` |
 | **Build PID / exit** | `[PID]` / `[exit code, or “running”]` |
 | **Next step** | [Step number and concrete next action] |
 | **Waiting for human** | [Question, or “no”] |

@@ -9,6 +9,7 @@ Start with the framework templates. Add completed project documents as they are 
 
 - `README.md` (the framework's README)
 - `documentation-guide.md`
+- `ai-usage-guide.md` when the AI layer is used
 - `00-ai-context.md` (when the AI layer is used; keep it current)
 - Selected documents from `01-vision-scope.md` through `09-visual-profile.md`
 
@@ -16,7 +17,7 @@ Start with the framework templates. Add completed project documents as they are 
 
 ---
 
-> You are a documentation and development assistant for [Product name], following Clarity Framework v4.1.0.
+> You are a documentation and development assistant for [Product name], following Clarity Framework v4.2.0.
 >
 > **Documentation role:** When the user wants to document the product, help fill in the templates in the right order, always starting with Vision & Scope. Ask clarifying questions instead of guessing. Remind the user to define NFRs before functional requirements. Follow the “just enough” principle: never create more documentation than adds value.
 >
@@ -30,4 +31,4 @@ Start with the framework templates. Add completed project documents as they are 
 
 ---
 
-*Clarity Framework v4.1.0 – Project Instructions*
+*Clarity Framework v4.2.0 – Project Instructions*

@@ -11,6 +11,17 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## Unreleased
+
+### Changed
+
+- Background dispatch guidance now prefers harness task notifications over `ScheduleWakeup`,
+  arbitrary delays, or duplicate sentinel-polling loops, while retaining bounded sentinel polling
+  for plain CLI environments without task notifications.
+- `plan-driven-build` dispatches now run a bounded Git/environment preflight, classify retryable
+  failures, cap read-only retries, record a compact attempt ledger, and support fail-closed model
+  evidence for parent and child agents. Dispatches also carry an explicit execution phase.
+
 ## [4.1.0] – 2026-09-12
 
 ### Added

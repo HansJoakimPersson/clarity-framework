@@ -23,7 +23,9 @@
 #   dispatch.sh --profile NAME[,NAME...]
 #               --mode read-only|workspace-write|danger-full-access
 #               (--prompt-file FILE [--var KEY=VALUE ...] | --prompt TEXT) [--model NAME]
-#               --out FILE [--max-lines N] [--env-file FILE]
+#               [--reasoning-effort none|low|medium|high|xhigh]
+#               --out FILE [--max-lines N] [--env-file FILE] [--preflight FILE]
+#               [--model-evidence FILE] [--ledger FILE] [--job-id ID] [--phase PHASE] [--max-retries N]
 #   dispatch.sh --profile NAME[,NAME...]
 #               --mode workspace-write|danger-full-access
 #               (--prompt-file FILE [--var KEY=VALUE ...] | --prompt TEXT) [--model NAME]
@@ -68,9 +70,11 @@
 # few times it fires.
 #
 # --model NAME overrides the profile's own stored model for this one dispatch, independent of which
-# profile ends up paying. For a resolved profile it is passed to `aimux run` as `-m NAME`; for a
-# `cli:NAME` fallback entry the adapter passes it to the CLI's own model flag (codex: `-m`, after
-# `exec`). The exact flag has not been verified against the installed CLI version; check
+# profile ends up paying. For a resolved profile it is passed to `aimux run` as `-m NAME` and to
+# the CLI's own model flag as well. For a `cli:NAME` fallback entry the adapter passes it to the
+# CLI's own model flag (codex: `-m`, after `exec`). `--reasoning-effort LEVEL` is sent as Codex's
+# `model_reasoning_effort` configuration.
+# Check
 # `codex exec --help` if a dispatch fails fast with an unrecognized-argument error.
 #
 # --prompt TEXT still works for an ad-hoc dispatch. Placeholders in a prompt file are written
@@ -87,25 +91,40 @@
 # --env-file sources one project-owned shell file before launching the CLI. Use it for language or
 # toolchain bootstrap such as JAVA_HOME, Node version managers, or Go toolchain variables. The file
 # is explicit per dispatch so environment corrections stay visible in the run journal.
+# --preflight runs a project-owned, read-only shell check before dispatch. A non-zero result blocks
+# the job and is never retried. --model-evidence is a newline-separated list of observed parent and
+# child models; every non-empty line must equal the requested/effective model. --ledger writes one
+# tab-separated, machine-readable completion record. --max-retries caps read-only pool retries.
 
 set -eu
 
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
+TMP_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/clarity-dispatch.XXXXXX")
+trap 'rm -rf "$TMP_ROOT"' EXIT HUP INT TERM
+
 PROFILE=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''; ENV_FILE=''
-MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''
+MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''; REASONING_EFFORT=''
+PREFLIGHT=''; MODEL_EVIDENCE=''; LEDGER=''; JOB_ID=''; PHASE='dispatch'; MAX_RETRIES=''
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --profile)     PROFILE="${2:-}";     shift 2 ;;
     --mode)        MODE="${2:-}";        shift 2 ;;
     --model)       MODEL="${2:-}";       shift 2 ;;
+    --reasoning-effort) REASONING_EFFORT="${2:-}"; shift 2 ;;
     --out)         OUT="${2:-}";         shift 2 ;;
     --log)         LOG="${2:-}";         shift 2 ;;
     --max-lines)   MAX_LINES="${2:-}";   shift 2 ;;
     --prompt)      PROMPT="${2:-}";      shift 2 ;;
     --prompt-file) PROMPT_FILE="${2:-}"; shift 2 ;;
     --env-file)    ENV_FILE="${2:-}";    shift 2 ;;
+    --preflight)   PREFLIGHT="${2:-}";   shift 2 ;;
+    --model-evidence) MODEL_EVIDENCE="${2:-}"; shift 2 ;;
+    --ledger)      LEDGER="${2:-}";      shift 2 ;;
+    --job-id)      JOB_ID="${2:-}";      shift 2 ;;
+    --phase)       PHASE="${2:-}";       shift 2 ;;
+    --max-retries) MAX_RETRIES="${2:-}"; shift 2 ;;
     --background)  BACKGROUND=1;         shift ;;
     --network)     NETWORK=1;            shift ;;
     --var)
@@ -121,6 +140,26 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$PROFILE" ] || die 'dispatch.sh: --profile is required'
+case "$PHASE" in
+  dispatch|planning|implementation|verification|review|finalization) ;;
+  *) die "dispatch.sh: --phase must be planning, implementation, verification, review, or finalization (got '$PHASE')" ;;
+esac
+[ -n "$JOB_ID" ] || JOB_ID=$(basename "${OUT:-$LOG}")
+[ -n "$JOB_ID" ] || JOB_ID='dispatch'
+[ -n "$LEDGER" ] || {
+  ledger_source=${OUT:-$LOG}
+  case "$ledger_source" in
+    *.*) LEDGER=$(printf '%s' "$ledger_source" | sed 's/\.[^.]*$/.ledger/') ;;
+    *) LEDGER="$ledger_source.ledger" ;;
+  esac
+}
+case "$MAX_RETRIES" in
+  ''|*[!0-9]*) [ -z "$MAX_RETRIES" ] || die "dispatch.sh: --max-retries must be a non-negative integer (got '$MAX_RETRIES')" ;;
+esac
+case "$REASONING_EFFORT" in
+  ''|none|low|medium|high|xhigh) ;;
+  *) die "dispatch.sh: --reasoning-effort must be none, low, medium, high, or xhigh (got '$REASONING_EFFORT')" ;;
+esac
 case "$MODE" in
   read-only|workspace-write|danger-full-access) ;;
   *) die "dispatch.sh: --mode must be read-only, workspace-write, or danger-full-access (got '$MODE')" ;;
@@ -192,9 +231,29 @@ profile_cli() {
   ' "$AIMUX_CONFIG"
 }
 
+# Echo the profile's configured model when aimux exposes it in the profile block.
+profile_model() {
+  [ -f "$AIMUX_CONFIG" ] || return 0
+  awk -v want="$1" '
+    $0 == "profiles:" { inp = 1; next }
+    inp && /^[^ ]/ { exit }
+    inp && /^  [A-Za-z0-9._-]+:[ ]*$/ {
+      pname = $1; sub(/:$/, "", pname)
+      cur = (pname == want)
+      next
+    }
+    inp && cur && /^    model:[ ]/ {
+      v = $0; sub(/^    model:[ ]*/, "", v)
+      print v
+      exit
+    }
+  ' "$AIMUX_CONFIG"
+}
+
 POOL=$(printf '%s' "$PROFILE" | tr ',' ' ')
 remaining_pool="$POOL"
 RESOLVED_PROFILE=''; RESOLVED_CLI=''; BARE_CLI=''; TARGET_KIND=''
+PROFILE_MODEL=''; EFFECTIVE_MODEL=''
 missing_log=''; deferred_bare=''; bare_used=0
 
 # Pop the next attempt target off remaining_pool. On success sets TARGET_KIND and either
@@ -218,6 +277,7 @@ advance_target() {
     c=$(profile_cli "$entry")
     if [ -n "$c" ]; then
       RESOLVED_PROFILE="$entry"; RESOLVED_CLI="$c"; TARGET_KIND=profile
+      PROFILE_MODEL=$(profile_model "$entry")
       return 0
     fi
     missing_log="$missing_log $entry"
@@ -225,6 +285,7 @@ advance_target() {
   if [ -n "$deferred_bare" ] && [ "$bare_used" -eq 0 ]; then
     bare_used=1
     BARE_CLI="$deferred_bare"; RESOLVED_CLI="$deferred_bare"; TARGET_KIND=bare
+    PROFILE_MODEL=''
     return 0
   fi
   return 1
@@ -271,10 +332,14 @@ run_cli() {
         set -- aimux run "$RESOLVED_PROFILE"
         [ -z "$MODEL" ] || set -- "$@" -m "$MODEL"
         set -- "$@" -- codex -a never
+        [ -z "$REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$REASONING_EFFORT"
         [ "$NETWORK" -eq 0 ] || set -- "$@" -c 'sandbox_workspace_write.network_access=true'
-        set -- "$@" exec -s "$MODE" -o "$OUT" "$PROMPT"
+        set -- "$@" exec -s "$MODE"
+        [ -z "$MODEL" ] || set -- "$@" -m "$MODEL"
+        set -- "$@" -o "$OUT" "$PROMPT"
       else
         set -- codex -a never
+        [ -z "$REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$REASONING_EFFORT"
         [ "$NETWORK" -eq 0 ] || set -- "$@" -c 'sandbox_workspace_write.network_access=true'
         set -- "$@" exec -s "$MODE"
         [ -z "$MODEL" ] || set -- "$@" -m "$MODEL"
@@ -295,6 +360,73 @@ fi
 
 adapter_check
 
+run_preflight() {
+  if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+    printf '%s\n' 'dispatch.sh: preflight failed: current directory is not a Git repository' >&2
+    return 78
+  fi
+  git_dir=$(git rev-parse --git-dir 2>/dev/null) || return 78
+  [ ! -e "$git_dir/index.lock" ] || {
+    printf '%s\n' "dispatch.sh: preflight failed: Git index lock exists at $git_dir/index.lock" >&2
+    return 78
+  }
+  if [ -n "$PREFLIGHT" ]; then
+    [ -r "$PREFLIGHT" ] || die "dispatch.sh: preflight file not readable: $PREFLIGHT"
+    sh "$PREFLIGHT"
+  fi
+}
+
+failure_class='none'
+retryable=0
+model_policy='not_checked'
+classify_output() {
+  failure_class='unknown'
+  retryable=0
+  [ -f "$1" ] || return 0
+  if grep -Eiq 'rate.?limit|too many requests|quota exceeded|temporarily unavailable|server overloaded|try again later' "$1"; then
+    failure_class='environment.rate_limit'; retryable=1
+  elif grep -Eiq 'timeout|timed out|deadline exceeded' "$1"; then
+    failure_class='timeout'; retryable=1
+  elif grep -Eiq 'permission denied|sandbox|approval|not writable|index\.lock|connection attempt failed|connection refused|could not connect' "$1"; then
+    failure_class='environment'; retryable=0
+  elif grep -Eiq 'unknown model|model.*not found|unrecognized.*argument|invalid.*model' "$1"; then
+    failure_class='model-routing'; retryable=0
+  elif grep -Eiq 'invalid configuration|configuration.*invalid|profile.*not found|missing.*configuration' "$1"; then
+    failure_class='configuration'; retryable=0
+  elif grep -Eiq 'unfilled placeholder|scope.*incomplete|blocking question|plan.*wrong' "$1"; then
+    failure_class='plan'; retryable=0
+  elif grep -Eiq 'test.*fail|failures?: [1-9]|errors?: [1-9]|compilation failure' "$1"; then
+    failure_class='verification'; retryable=0
+  elif grep -Eiq 'implementation failed|cannot implement|code change failed' "$1"; then
+    failure_class='implementation'; retryable=0
+  fi
+}
+
+write_ledger() {
+  [ -n "$LEDGER" ] || return 0
+  mkdir -p "$(dirname "$LEDGER")"
+  printf 'job_id\tstatus\tphase\tprofile\tcli\trequested_model\teffective_model\treasoning_effort\tattempts\tretryable\tfailure_class\tmodel_policy\tinput_tokens\toutput_tokens\ttotal_tokens\texit_status\n' > "$LEDGER"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$JOB_ID" "$1" "${PHASE:-dispatch}" "$LAST_LABEL" "$RESOLVED_CLI" \
+    "${MODEL:-profile-default}" "$EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" \
+    "${attempt_count:-0}" "$retryable" "$failure_class" "$model_policy" \
+    "${CF_INPUT_TOKENS:-unavailable}" "${CF_OUTPUT_TOKENS:-unavailable}" \
+    "${CF_TOTAL_TOKENS:-unavailable}" "$2" >> "$LEDGER"
+}
+
+if ! run_preflight >"$TMP_ROOT/preflight.out" 2>&1; then
+  failure_class='environment.preflight'
+  retryable=0
+  cat "$TMP_ROOT/preflight.out" >&2
+  EFFECTIVE_MODEL="$MODEL"
+  [ -n "$EFFECTIVE_MODEL" ] || EFFECTIVE_MODEL="$PROFILE_MODEL"
+  [ -n "$EFFECTIVE_MODEL" ] || EFFECTIVE_MODEL='profile-default'
+  write_ledger blocked 78
+  printf 'DISPATCH exit=78  profile=%s  cli=%s  model=%s  reasoning_effort=%s  mode=%s  failure_class=%s  out=%s  lines=0  budget=n/a\n' \
+    "$LAST_LABEL" "$RESOLVED_CLI" "$EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" "$MODE" "$failure_class"
+  exit 78
+fi
+
 # Note for the FALLBACK: line. Recomputed after the read-only retry loop with the full attempt log;
 # set here too because the background path exits before that recompute.
 note=''
@@ -313,10 +445,14 @@ if [ "$BACKGROUND" -eq 1 ]; then
   CFD_CLI=$RESOLVED_CLI
   CFD_MODE=$MODE
   CFD_MODEL=$MODEL
+  CFD_REASONING_EFFORT=$REASONING_EFFORT
   CFD_NETWORK=$NETWORK
   CFD_PROMPT=$PROMPT
   CFD_EXIT_FILE=$exit_file
-  export CFD_PROFILE CFD_CLI CFD_MODE CFD_MODEL CFD_NETWORK CFD_PROMPT CFD_EXIT_FILE
+  CFD_LEDGER=$LEDGER
+  CFD_PHASE=$PHASE
+  CFD_JOB_ID=$JOB_ID
+  export CFD_PROFILE CFD_CLI CFD_MODE CFD_MODEL CFD_REASONING_EFFORT CFD_NETWORK CFD_PROMPT CFD_EXIT_FILE CFD_LEDGER CFD_JOB_ID CFD_PHASE
   # The child rebuilds the argv rather than inheriting a command string: a background dispatch
   # survives this process, so the adapter has to run where the command actually runs.
   nohup sh -c '
@@ -328,10 +464,14 @@ if [ "$BACKGROUND" -eq 1 ]; then
           set -- aimux run "$CFD_PROFILE"
           [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
           set -- "$@" -- codex -a never
+          [ -z "$CFD_REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$CFD_REASONING_EFFORT"
           [ "$CFD_NETWORK" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
-          set -- "$@" exec -s "$CFD_MODE" "$CFD_PROMPT"
+          set -- "$@" exec -s "$CFD_MODE"
+          [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
+          set -- "$@" "$CFD_PROMPT"
         else
           set -- codex -a never
+          [ -z "$CFD_REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$CFD_REASONING_EFFORT"
           [ "$CFD_NETWORK" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
           set -- "$@" exec -s "$CFD_MODE"
           [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
@@ -342,6 +482,16 @@ if [ "$BACKGROUND" -eq 1 ]; then
       *) printf "%s\n" "dispatch child: cli $CFD_CLI has no adapter" >&2; status=2 ;;
     esac
     printf "%s\n" "$status" > "$CFD_EXIT_FILE"
+    if [ -n "$CFD_LEDGER" ]; then
+      printf 'job_id\tstatus\tphase\tprofile\tcli\trequested_model\teffective_model\treasoning_effort\tattempts\tretryable\tfailure_class\tmodel_policy\tinput_tokens\toutput_tokens\ttotal_tokens\texit_status\n' > "$CFD_LEDGER"
+      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t1\t0\t%s\tnot_checked\t%s\t%s\t%s\t%s\n' \
+        "$CFD_JOB_ID" "$([ "$status" -eq 0 ] && printf passed || printf failed)" "$CFD_PHASE" \
+        "${CFD_PROFILE:-cli:$CFD_CLI}" "$CFD_CLI" "${CFD_MODEL:-profile-default}" \
+        "${CFD_MODEL:-profile-default}" "${CFD_REASONING_EFFORT:-profile-default}" \
+        "$([ "$status" -eq 0 ] && printf none || printf unknown)" \
+        "${CF_INPUT_TOKENS:-unavailable}" "${CF_OUTPUT_TOKENS:-unavailable}" \
+        "${CF_TOTAL_TOKENS:-unavailable}" "$status" >> "$CFD_LEDGER"
+    fi
     exit "$status"
   ' dispatch-bg > "$LOG" 2>&1 < /dev/null &
   printf 'DISPATCH started  profile=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
@@ -351,23 +501,48 @@ if [ "$BACKGROUND" -eq 1 ]; then
 fi
 
 status=0
+attempt_count=1
 run_cli || status=$?
 attempt_log=" $LAST_LABEL=exit$status"
+classify_output "$OUT"
 
 # Retry the pool only for read-only dispatch — no side effects, so a second attempt under another
 # profile is safe. workspace-write never reaches this loop (background exits above).
 if [ "$MODE" = read-only ]; then
-  while [ "$status" -ne 0 ]; do
+  while [ "$status" -ne 0 ] && [ "$retryable" -eq 1 ]; do
+    if [ -n "$MAX_RETRIES" ] && [ "$attempt_count" -gt "$MAX_RETRIES" ]; then break; fi
     advance_target || break
     LAST_LABEL=$(target_label)
     LAST_KIND=$TARGET_KIND
     status=0
     run_cli || status=$?
+    attempt_count=$((attempt_count + 1))
     attempt_log="$attempt_log $LAST_LABEL=exit$status"
+    classify_output "$OUT"
   done
 fi
 
 retry_count=$(printf '%s' "$attempt_log" | wc -w | tr -d ' ')
+EFFECTIVE_MODEL="$MODEL"
+[ -n "$EFFECTIVE_MODEL" ] || EFFECTIVE_MODEL="$PROFILE_MODEL"
+[ -n "$EFFECTIVE_MODEL" ] || EFFECTIVE_MODEL='profile-default'
+failure_class='none'
+if [ "$status" -ne 0 ]; then
+  classify_output "$OUT"
+fi
+
+if [ "$status" -eq 0 ] && [ -n "$MODEL_EVIDENCE" ]; then
+  [ -r "$MODEL_EVIDENCE" ] || die "dispatch.sh: model evidence file not readable: $MODEL_EVIDENCE"
+  observed_models=$(sed '/^[[:space:]]*$/d' "$MODEL_EVIDENCE" | tr '\n' ',' | sed 's/,$//')
+  if [ -z "$observed_models" ] || sed '/^[[:space:]]*$/d' "$MODEL_EVIDENCE" | grep -Fvx "$EFFECTIVE_MODEL" >/dev/null; then
+    status=78
+    failure_class='model-routing'
+    retryable=0
+    model_policy='failed'
+  else
+    model_policy='passed'
+  fi
+fi
 if [ "$LAST_KIND" = bare ]; then
   note="FALLBACK: no profile in [$PROFILE] completed — ran cli '$BARE_CLI' directly (tried$attempt_log); cost is NOT separated"
 elif [ -n "$missing_log" ]; then
@@ -388,7 +563,8 @@ if [ -n "$MAX_LINES" ]; then
   fi
 fi
 
-printf 'DISPATCH exit=%s  profile=%s  mode=%s  out=%s  lines=%s  budget=%s\n' \
-  "$status" "$LAST_LABEL" "$MODE" "$OUT" "$lines" "$budget"
+printf 'DISPATCH exit=%s  profile=%s  cli=%s  model=%s  reasoning_effort=%s  mode=%s  failure_class=%s  out=%s  lines=%s  budget=%s\n' \
+  "$status" "$LAST_LABEL" "$RESOLVED_CLI" "$EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" "$MODE" "$failure_class" "$OUT" "$lines" "$budget"
 [ -z "$note" ] || printf '%s\n' "$note"
+write_ledger "$([ "$status" -eq 0 ] && printf passed || printf failed)" "$status"
 exit "$status"

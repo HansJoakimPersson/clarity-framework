@@ -44,6 +44,58 @@ You may **not** read: `git diff`, source files, the full build log, the prompt f
 that exceeds its budget — truncate it and say you did. If you find yourself reading the codebase
 "to be sure", the workflow has already failed; say so rather than continue.
 
+## Execution safety contract
+
+Every dispatch has a bounded execution contract. The lifecycle is:
+
+```text
+preflight -> planning -> implementation -> verification -> review -> finalization
+```
+
+Use the phase that matches the dispatch and record its status in the journal. The shared failure
+classes are `environment`, `configuration`, `routing`, `timeout`, `verification`, `implementation`,
+and `unknown`; a failure is retryable only when the dispatch evidence says it is. Rate limits,
+temporary service unavailability, and timeouts may be retryable. Runtime, repository, model-routing,
+verification, and plan failures are not automatically retryable.
+
+`dispatch.sh` runs a Git and index-lock preflight for every invocation. Add a project-owned,
+read-only check when a runtime or service is required:
+
+```bash
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" --mode read-only \
+  --preflight .agents/preflight.sh --job-id "$ID-plan" \
+  --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
+  --var TASK="<outcome>" --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
+  --var DATE="$(date +%F)" --out "$PLAN" --max-lines 200
+```
+
+A failed preflight stops before the agent runs and is never sent through the read-only retry pool.
+The preflight script must not repair the environment or modify application files.
+
+When a dispatch creates or may create child agents, pass the requested model to both aimux and the
+underlying CLI (the dispatcher does this for Codex), and supply model evidence after the run. The
+file contains one observed parent or child model per non-empty line:
+
+```bash
+--model "$MODEL_IMPLEMENTATION" \
+--model-evidence "$RUN/implementation.models" \
+--ledger "$RUN/implementation.ledger"
+```
+
+Any observed model different from the effective model fails closed with `failure_class=model-routing`.
+An explicit model handoff must be documented in the journal before it is accepted. A compact ledger
+is written automatically beside `--out` or `--log` unless `--ledger` overrides that path. It records
+the job, phase, profile, requested and effective model, reasoning effort, attempt count, retryability,
+failure class, model policy, token usage when supplied by the runtime, and exit status. If the
+runtime exports `CF_INPUT_TOKENS`, `CF_OUTPUT_TOKENS`, or `CF_TOTAL_TOKENS`, those values are copied;
+otherwise the ledger records `unavailable`. Raw output remains a debugging artifact, not the primary
+run record.
+
+Retries are bounded by the remaining read-only profile pool and may be further limited with
+`--max-retries N`. Workspace-write and background dispatches never retry automatically after launch.
+Stop and record the next action when preflight, routing, environment, verification, budget, or
+repository safety fails.
+
 ## Gate profiles
 
 The plan's `Gate profile` field decides where you stop. Step 1 proposes the project's declared
@@ -129,6 +181,8 @@ PROFILE_IMPLEMENTATION=<profile pool from docs/00-ai-context.md>
 PROFILE_REVIEW=<profile pool from docs/00-ai-context.md, or reuse $PROFILE_REASONING>
 MODEL_REASONING=          # from docs/00-ai-context.md; leave assigned-but-empty to use the profile's own model
 MODEL_IMPLEMENTATION=     # same — assign the variable even when you have no override to set
+REASONING_EFFORT_REASONING=      # optional: none, low, medium, high, or xhigh
+REASONING_EFFORT_IMPLEMENTATION= # optional: none, low, medium, high, or xhigh
 
 aimux_config="${AIMUX_CONFIG:-$HOME/.aimux/config.yaml}"
 for pool in "$PROFILE_REASONING" "$PROFILE_IMPLEMENTATION" "$PROFILE_REVIEW"; do
@@ -175,8 +229,10 @@ read what it needs — that is the context you are not paying for twice.
 ```bash
 model_args=''
 [ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
+[ -n "${REASONING_EFFORT_REASONING:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_REASONING"
 
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" $model_args --mode read-only \
+  --phase planning \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<one or two sentences: what should be true when this is done>" \
   --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
@@ -206,8 +262,10 @@ recorded on stdout and belongs in the journal.
 ```bash
 model_args=''
 [ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
+[ -n "${REASONING_EFFORT_REASONING:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_REASONING"
 
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_REVIEW,$PROFILE_REASONING" $model_args --mode read-only \
+  --phase review \
   --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
   --out "$RUN/review.md" --max-lines 40
 ```
@@ -276,8 +334,10 @@ build_env_args=
 
 model_args=''
 [ -n "${MODEL_IMPLEMENTATION:-}" ] && model_args="--model $MODEL_IMPLEMENTATION"
+[ -n "${REASONING_EFFORT_IMPLEMENTATION:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_IMPLEMENTATION"
 
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
+  --phase implementation \
   $build_env_args \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
   --log "$RUN/build.log"
@@ -294,16 +354,22 @@ profile.
 
 The command returns immediately and prints the PID and the sentinel path. Write both in the journal.
 
-Poll the sentinel, not the log. Read `tail -30 "$RUN/build.log"` only when the exit code is
-non-zero. Tailing a running build is the unbounded read this workflow exists to avoid.
+The sentinel is the completion source of truth. Read `tail -30 "$RUN/build.log"` only when the
+exit code is non-zero. Tailing a running build is the unbounded read this workflow exists to avoid.
 
 Because the sentinel is a file, a build survives you: if your session hits a usage limit while it
 runs, the build finishes anyway and whoever resumes reads the exit code.
 
-### Wait for the build — do not end your turn
+### Wait for the build
 
-The dispatch returns immediately; the build does not. Waiting is your job, not the user's. Run the
-wait as one bounded blocking call and let it return on its own:
+If the harness provides task notifications for background processes, record the PID and sentinel,
+yield control, and resume only when the task notification arrives. Do not call `ScheduleWakeup`, add
+an arbitrary delay, or create a second polling loop solely to check a dispatch that the harness is
+already tracking. A task notification is a wake-up signal, not proof that the build passed; always
+read the sentinel after resuming.
+
+If the harness does not provide task notifications, waiting is the orchestrator's job. Run one
+bounded sentinel wait as a fallback:
 
 ```bash
 BUILD_PID=<pid printed by the dispatch>
@@ -336,11 +402,9 @@ stuck network call holds a live PID indefinitely. Compare `build.log`'s size acr
 if it has not grown, treat the still-alive report as a likely stall (observed silently hanging three
 separate times on a real project) and say so instead of quietly starting another 60-minute wait.
 
-**Never end your turn with a dispatch in flight.** "I will report back when it finishes" is not a
-mechanism — nothing wakes you up, so the run stalls until the user thinks to ask, which is precisely
-the interruption this workflow exists to spare them. If your runtime genuinely cannot block for the
-wait, do not pretend to watch: say you are stopping, and give the user the exact sentinel command to
-run so they can restart you with the answer.
+If the runtime has neither task notifications nor a bounded wait mechanism, do not claim to be
+watching the build. Record the exact sentinel command and stop at that handoff. Never use an
+arbitrary wake-up delay as a substitute for either mechanism.
 
 ### If Implementation stops because the plan is wrong
 
@@ -382,8 +446,10 @@ Do not read the diff yourself.
 ```bash
 model_args=''
 [ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
+[ -n "${REASONING_EFFORT_REASONING:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_REASONING"
 
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" $model_args --mode read-only \
+  --phase verification \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
   --var PLAN="$PLAN" --var SHA="<approval SHA from the journal>" \
   --var BUILD_LOG="$RUN/build.log" \

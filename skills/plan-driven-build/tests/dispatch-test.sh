@@ -36,9 +36,15 @@ cat > "$TEST_ROOT/bin/codex" <<'FAKE_CODEX'
 shift 2
 model=''
 netarg=''
+reasoning=''
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    -c) netarg=$2; shift 2 ;;
+    -c)
+      case "$2" in
+        model_reasoning_effort=*) reasoning=${2#*=} ;;
+        *) netarg=$2 ;;
+      esac
+      shift 2 ;;
     -m) model=$2; shift 2 ;;
     exec) shift; break ;;
     *) exit 64 ;;
@@ -66,19 +72,23 @@ fi
 
 # CF_FAIL_PROFILE makes one pool member fail (e.g. rate-limited) without on-disk profile dirs:
 # the fake aimux exports AIMUX_FAKE_PROFILE, and this exits 42 when it matches.
-case "${AIMUX_FAKE_PROFILE:-}" in
-  "${CF_FAIL_PROFILE:-__cf_no_match__}") exit 42 ;;
-esac
+if [ "${AIMUX_FAKE_PROFILE:-}" = "${CF_FAIL_PROFILE:-__cf_no_match__}" ] && [ "${CF_TEST_RATE_LIMIT:-0}" -eq 0 ]; then
+  exit 42
+fi
+
+if [ "${CF_TEST_RATE_LIMIT:-0}" -eq 1 ] && [ "${AIMUX_FAKE_PROFILE:-}" = "${CF_FAIL_PROFILE:-__cf_no_match__}" ]; then
+  [ -z "$out" ] || printf 'error: rate limit, try again later\n' > "$out"
+  exit 17
+fi
 
 # CF_PROMPT_OUT, when set, captures the exact prompt text codex received — used to verify
 # --var substitution reached the CLI, not just that dispatch exited 0.
 [ -z "${CF_PROMPT_OUT:-}" ] || printf '%s' "$prompt" > "$CF_PROMPT_OUT"
 
-[ -z "$out" ] || printf 'ok%s%s%s%s\n' \
-  "${CF_ENV_SEEN:+:$CF_ENV_SEEN}" \
-  "${model:+:model=$model}" \
-  "${AIMUX_FAKE_MODEL:+:aimux-model=$AIMUX_FAKE_MODEL}" \
-  "${netarg:+:net=$netarg}" > "$out"
+if [ -n "$out" ]; then
+  result="ok${CF_ENV_SEEN:+:$CF_ENV_SEEN}${model:+:model=$model}${AIMUX_FAKE_MODEL:+:aimux-model=$AIMUX_FAKE_MODEL}${netarg:+:net=$netarg}${reasoning:+:reasoning=$reasoning}"
+  printf '%s\n' "$result" > "$out"
+fi
 FAKE_CODEX
 chmod +x "$TEST_ROOT/bin/codex"
 
@@ -91,7 +101,7 @@ profiles:
   pool-bad:
     cli: codex
     path: ~/.aimux/profiles/pool-bad
-    model: gpt-5.6-luna medium
+    model: gpt-5.6-luna
   pool-good:
     cli: codex
     path: ~/.aimux/profiles/pool-good
@@ -134,13 +144,14 @@ unset CF_TEST_FAIL
 
 # 4. read-only pool retry: first profile's CLI fails, second succeeds, summary names the second
 CF_FAIL_PROFILE=pool-bad
-export CF_FAIL_PROFILE
+CF_TEST_RATE_LIMIT=1
+export CF_FAIL_PROFILE CF_TEST_RATE_LIMIT
 out=$("$D" --profile pool-bad,pool-good --mode read-only --prompt test \
   --out "$TEST_ROOT/out/pool-report.md")
 printf '%s\n' "$out" | grep -F 'profile=pool-good' >/dev/null
 printf '%s\n' "$out" | grep -F "used 'pool-good'" >/dev/null
 test "$(cat "$TEST_ROOT/out/pool-report.md")" = 'ok'
-unset CF_FAIL_PROFILE
+unset CF_FAIL_PROFILE CF_TEST_RATE_LIMIT
 
 # 5. workspace-write does not retry after launch
 CF_FAIL_PROFILE=pool-bad
@@ -173,12 +184,27 @@ test "$(cat "$TEST_ROOT/out/bare.md")" = 'ok'
 # 8. --model on a resolved profile reaches `aimux run -m`
 "$D" --profile reg --mode read-only --prompt test --model test-model-x \
   --out "$TEST_ROOT/out/model-profile.md" >/dev/null
-test "$(cat "$TEST_ROOT/out/model-profile.md")" = 'ok:aimux-model=test-model-x'
+test "$(cat "$TEST_ROOT/out/model-profile.md")" = 'ok:model=test-model-x:aimux-model=test-model-x'
 
 # 9. --model on a cli: fallback entry reaches codex's own -m (after exec)
 "$D" --profile cli:codex --mode read-only --prompt test --model test-model-x \
   --out "$TEST_ROOT/out/model-bare.md" >/dev/null
 test "$(cat "$TEST_ROOT/out/model-bare.md")" = 'ok:model=test-model-x'
+
+# 21. --reasoning-effort is distinct from --model and reaches Codex configuration
+out=$("$D" --profile reg --mode read-only --prompt test --model test-model-x \
+  --reasoning-effort medium --out "$TEST_ROOT/out/reasoning.md")
+printf '%s\n' "$out" | grep -F 'reasoning_effort=medium' >/dev/null
+test "$(cat "$TEST_ROOT/out/reasoning.md")" = 'ok:model=test-model-x:aimux-model=test-model-x:reasoning=medium'
+
+# 22. an invalid reasoning level is rejected before dispatch
+if "$D" --profile reg --mode read-only --prompt test --reasoning-effort invalid \
+  --out "$TEST_ROOT/out/invalid-reasoning.md" 2>"$TEST_ROOT/out/invalid-reasoning.err"; then
+  printf 'dispatch-test: invalid reasoning effort should have failed\n' >&2; exit 1
+fi
+grep -F -- '--reasoning-effort must be none, low, medium, high, or xhigh' \
+  "$TEST_ROOT/out/invalid-reasoning.err" >/dev/null
+test ! -f "$TEST_ROOT/out/invalid-reasoning.md"
 
 # 10. a profile whose cli has no adapter → die before dispatching, no output file
 if "$D" --profile claudeonly --mode read-only --prompt test \
@@ -266,5 +292,37 @@ while [ ! -f "$TEST_ROOT/out/net-bg.exit" ] && [ "$attempt" -lt 50 ]; do
 done
 test -f "$TEST_ROOT/out/net-bg.exit"
 grep -F 'CF_NETWORK_ARG=sandbox_workspace_write.network_access=true' "$TEST_ROOT/out/net-bg.log" >/dev/null
+
+# 23. a successful preflight and compact ledger are recorded
+printf '%s\n' 'test -n "$PATH"' > "$TEST_ROOT/preflight-ok.sh"
+"$D" --profile reg --mode read-only --phase planning --prompt test --preflight "$TEST_ROOT/preflight-ok.sh" \
+  --job-id preflight-job --ledger "$TEST_ROOT/out/preflight.ledger" \
+  --out "$TEST_ROOT/out/preflight.md" >/dev/null
+grep -F 'preflight-job' "$TEST_ROOT/out/preflight.ledger" >/dev/null
+grep -F 'planning' "$TEST_ROOT/out/preflight.ledger" >/dev/null
+grep -F 'passed' "$TEST_ROOT/out/preflight.ledger" >/dev/null
+
+# 24. a failed preflight blocks before Codex and is not retryable
+printf '%s\n' 'printf preflight-broken >&2; exit 9' > "$TEST_ROOT/preflight-fail.sh"
+if "$D" --profile reg,pool-good --mode read-only --prompt test --preflight "$TEST_ROOT/preflight-fail.sh" \
+  --ledger "$TEST_ROOT/out/preflight-fail.ledger" --out "$TEST_ROOT/out/preflight-fail.md" \
+  2>"$TEST_ROOT/out/preflight-fail.err"; then
+  printf 'dispatch-test: failed preflight should have failed\n' >&2; exit 1
+fi
+grep -F 'preflight-broken' "$TEST_ROOT/out/preflight-fail.err" >/dev/null
+grep -F 'environment.preflight' "$TEST_ROOT/out/preflight-fail.ledger" >/dev/null
+test ! -f "$TEST_ROOT/out/preflight-fail.md"
+
+# 25. model evidence fails closed when a child model differs from the effective model
+printf '%s\n' 'test-model-x' > "$TEST_ROOT/models-ok.txt"
+"$D" --profile reg --mode read-only --prompt test --model test-model-x \
+  --model-evidence "$TEST_ROOT/models-ok.txt" --out "$TEST_ROOT/out/models-ok.md" >/dev/null
+printf '%s\n' 'test-model-x' 'gpt-6-astra' > "$TEST_ROOT/models-bad.txt"
+if "$D" --profile reg --mode read-only --prompt test --model test-model-x \
+  --model-evidence "$TEST_ROOT/models-bad.txt" --out "$TEST_ROOT/out/models-bad.md" \
+  >"$TEST_ROOT/out/models-bad-summary"; then
+  printf 'dispatch-test: unexpected model should have failed\n' >&2; exit 1
+fi
+grep -F 'failure_class=model-routing' "$TEST_ROOT/out/models-bad-summary" >/dev/null
 
 printf 'dispatch-test: ok\n'

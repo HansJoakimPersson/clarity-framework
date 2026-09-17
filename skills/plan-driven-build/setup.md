@@ -62,6 +62,16 @@ whose model configs may differ, `dispatch.sh --model NAME` overrides the model f
 regardless of which pool member runs (it is passed to `aimux run -m`). Prefer the profile's own
 config when a level has exactly one profile; reach for `--model` when it has a pool.
 
+Reasoning effort is independent from model selection. Use `dispatch.sh --reasoning-effort medium`
+(or `none`, `low`, `high`, or `xhigh`) when the run needs an explicit reasoning level. The dispatch
+summary reports both `model=` and `reasoning_effort=` so a run can be audited without guessing
+whether `medium` was a model name or a reasoning setting.
+
+For new workflows, also use `--phase`, `--job-id`, and the automatic ledger beside `--out` or
+`--log`. Add `--preflight FILE` for project-owned read-only runtime and service checks. When child
+agents may be created, provide `--model-evidence FILE` with one observed parent or child model per
+line; a mismatch fails closed as `model-routing`.
+
 Review does not need a separate profile. What keeps it from repeating the drafting level's blind
 spots is a different prompt file (`prompts/2-review.txt` vs `prompts/1-plan.txt`), not a different
 subscription. `$PROFILE_REVIEW` may equal `$PROFILE_REASONING`.
@@ -78,6 +88,10 @@ Put the profiles you want tried first at the front; changing the order is an edi
 `dispatch.sh` runs each dispatch as `aimux run <profile> -- <cli invocation>`. This was verified to
 compose with background execution under `nohup` on aimux 0.25.0 — the profile's authentication and
 subscription apply to the child process, and the `.exit` sentinel is still written.
+
+Read-only pools retry only evidence classified as transient, such as a rate limit or temporary
+service unavailability. Workspace-write dispatches never retry after launch. The resulting ledger
+records the final failure class and whether another attempt was allowed.
 
 ### Which CLI runs a dispatch
 
