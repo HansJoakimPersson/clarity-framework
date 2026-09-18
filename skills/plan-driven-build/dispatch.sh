@@ -370,7 +370,7 @@ accumulate_usage() {
   [ -r "$_events" ] || return 0
   while IFS= read -r _line; do
     case "$_line" in
-      *'\"type\":\"turn.completed\"'*|*'\"type\": \"turn.completed\"'*)
+      *'"type":"turn.completed"'*|*'"type": "turn.completed"'*)
         _input=$(json_number "$_line" input_tokens)
         _cached=$(json_number "$_line" cached_input_tokens)
         _cache_write=$(json_number "$_line" cache_write_input_tokens)
