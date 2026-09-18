@@ -114,22 +114,20 @@ which profile, and with which permissions. It is the single source for this info
 script can be replaced without redefining the workflow.
 
 > **The profile pool column is the level-to-profile binding** that `plan-driven-build` reads at
-> step 0. Name the project's real aimux profiles here. An aimux profile unifies the CLI, the model,
-> the authentication and the subscription in one object, so the profile name is all a level needs —
-> it is not a role. Any profile may fill any level, one profile may fill several, and a pool
-> (comma-separated, priority order) spreads load across interchangeable profiles; it does not give
-> a level its own identity. Switching which CLI or subscription runs a level is
-> `aimux profile update <name> --cli <cli>` plus an edit to this column — never a change to the
-> skill or `dispatch.sh`. The Model column is a per-dispatch override only: the profile already
-> carries its own model, and this column overrides it regardless of which pool member runs, which
-> matters once a pool has more than one profile.
+> step 0. Name the project's real aimux profiles here. A profile selects the CLI, authentication and
+> paying subscription and may carry a default model, but it is not a role. Any profile may fill any
+> level, one profile may fill several, and a pool (comma-separated, priority order) spreads load
+> across interchangeable subscriptions. Switching which CLI or subscription runs a level is
+> `aimux profile update <name> --cli <cli>` plus an edit to this column — never a skill edit.
+> Implementation is stricter: its Model and Rollout budget columns are mandatory execution policy,
+> so borrowing another profile changes who pays without changing what model may write code.
 
-| Level | Agent / profile pool | Model (per-dispatch override) | Sandbox + approval | Responsibility |
-| --- | --- | --- | --- | --- |
-| Orchestrator | [e.g. Claude Code or Codex] | — | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, owns gates, and maintains the run journal. Does not read the codebase or diff itself. |
-| Reasoning | [e.g. pool `codework1,codework2` — aimux profile names] | [leave empty to use the profile's own model] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different profile pool from the Orchestrator. |
-| Review *(optional)* | [e.g. reuse Reasoning's pool, or its own] | [optional per-dispatch override] | `read-only` + approval `never` | Reviews the plan cold against the code, from a different prompt file than Reasoning's. Does not need a different profile — the prompt is what separates it. |
-| Implementation | [e.g. pool `codework3,codework4` — aimux profile names] | [e.g. a faster/cheaper model once scope is approved] | `workspace-write` + approval `never` | Builds the approved plan. Does not re-plan; stops on a blocking question. |
+| Level | Agent / profile pool | Model | Rollout budget | Sandbox + approval | Responsibility |
+| --- | --- | --- | --- | --- | --- |
+| Orchestrator | [e.g. Claude Code or Codex] | — | — | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, owns gates, and maintains the run journal. Does not read the codebase or diff itself. |
+| Reasoning | [e.g. pool `codework1,codework2` — aimux profile names] | [optional; empty uses profile default] | [optional] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different profile pool from the Orchestrator. |
+| Review *(optional)* | [e.g. reuse Reasoning's pool, or its own] | [optional; empty uses profile default] | [optional] | `read-only` + approval `never` | Reviews the plan cold against the code, from a different prompt file than Reasoning's. Does not need a different profile — the prompt is what separates it. |
+| Implementation | [e.g. pool `codework3,codework4` — aimux profile names] | [required exact model, e.g. `gpt-5.6-luna`] | [required positive token ceiling, e.g. `120000`] | `workspace-write` + approval `never` | Builds the approved plan. Model and budget remain fixed when another profile pays. Does not re-plan; stops on a blocking question. |
 
 > Sandbox and approval are independent settings. If only the sandbox is set, approval remains at its
 > default and an unattended run may stop to ask. Always set both.
