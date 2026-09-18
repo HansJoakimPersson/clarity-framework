@@ -14,8 +14,10 @@ the branch being finished.
   Done — before calling it ready. See the `verification-before-completion` skill.
 - Confirm the diff matches what is being claimed: no debug code, no unrelated changes, no file left
   half-migrated. Scan the whole diff, not only the files you remember touching.
-- Get explicit merge approval before merging into a shared branch. A branch being technically
-  mergeable is not the same as someone having agreed it should merge now.
+- Classify the integration boundary before asking. Merging an orchestrator-created temporary branch
+  or `.worktree` back into the task's owning branch is Delegated after verification. A merge or push
+  to a shared branch requires human approval only when the project's authority contract marks that
+  transition Escalation or Reserved.
 - After the merge lands, verify it actually contains the work — the merge commit exists, it is on
   the target branch, and it is not a fast-forward that silently skipped a commit.
 - Close out what the branch was for: delete the branch once merged (unless the project's convention
@@ -33,6 +35,7 @@ believes about it before it disappears.
 ## Integration contract
 
 When used by `plan-driven-build`, receive the final verification result, changed-path summary, open
-findings, branch state, and release requirement. Return the available closeout options and the
-evidence for each. Do not merge, push, delete a branch, or delete a plan without the human decision
-required by the project's gate profile.
+findings, branch state, authority contract, and release requirement. Perform Delegated internal
+integration and cleanup directly, including verified worktree-to-owning-branch merges. Return evidence
+for any remaining external transition. Stop only when that transition is Escalation or Reserved;
+do not manufacture a human gate for reversible repository plumbing.
