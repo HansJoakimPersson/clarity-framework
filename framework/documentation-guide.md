@@ -32,7 +32,7 @@ decision, interface, or operational responsibility.
 ```text
 00 AI Context (optional, continuously updated)
         ↕
-01 Vision & Scope (approved before detailed work)
+01 Vision & Scope (intent baseline before detailed work)
         ↓
 02 Requirements (functional requirements and NFRs)
         ├── 02 User Stories (split out when the backlog outgrows one document)
@@ -58,7 +58,9 @@ it must not hide decisions that affect users, operations, security, or other con
 ## 4. Vision & Scope
 
 Vision & Scope answers why the product exists, who it serves, which problem it solves, and what is
-explicitly outside the product. It is the first document to approve.
+explicitly outside the product. It is the first document to establish as the intent baseline. The orchestrator may derive it from a
+project description and continue when the remaining choices are Delegated; explicit approval is
+needed only for material Escalation/Reserved decisions.
 
 Include:
 
@@ -67,7 +69,7 @@ Include:
 - measurable goals and success criteria;
 - in-scope and out-of-scope capabilities;
 - assumptions, external dependencies, risks, and constraints;
-- approval by the product and technical owners.
+- recorded ownership and any material decisions that actually required approval.
 
 Do not turn it into a solution design. The document defines the problem and boundaries; the SAD
 defines the architecture.
@@ -215,7 +217,9 @@ typography, spacing, radii, shadows, motion, iconography, accessibility targets,
 Store design tokens in the project's chosen DTCG-compatible source file and treat it as the source of
 truth. Generated platform files must not be edited manually.
 
-Before UI implementation, approve the visual profile. After every meaningful UI change, inspect the
+Before UI implementation, establish the visual profile. Escalate unresolved brand choices only when
+reasonable alternatives materially change the intended identity or user experience. After every
+meaningful UI change, inspect the
 running product at supported viewport sizes and states, attach screenshots or equivalent evidence,
 and have a human review visual differences. A successful build is not visual validation.
 
@@ -234,7 +238,7 @@ conventions that no numbered document covers. A project never records its own ru
 framework-owned file: rules kept where the framework already governs them stay reviewed, versioned,
 and visible, and they survive every framework update.
 
-The four levels, in the order a task passes through them:
+The four levels, in the order a governed increment passes through them:
 
 1. Orchestrator
 2. Reasoning
@@ -242,7 +246,7 @@ The four levels, in the order a task passes through them:
 4. Implementation
 
 The plan-driven workflow uses explicit scope, report budgets, aimux-profile separation, a committed
-run journal, and human gates for scope, merge, release, and plan deletion. See `ai-usage-guide.md` and
+run journal, and impact gates only for Escalation/Reserved transitions. See `ai-usage-guide.md` and
 `skills/plan-driven-build/` for the executable procedure.
 
 Observed execution behavior is also a source of framework improvement. When repeated runs expose
@@ -257,9 +261,9 @@ review, and branch-closeout rules across workflows.
 
 ## 14. Documentation completeness checklist
 
-- Vision and scope are approved.
+- Vision and scope are established as the current intent baseline; material unresolved decisions are explicit.
 - Requirements and NFRs are measurable and traceable.
-- Architecture reflects the requirements and approved decisions.
+- Architecture reflects the requirements and recorded material decisions.
 - Data/API contracts are versioned and compatible.
 - Deployment, secrets, health checks, and rollback are documented.
 - Automated tests and relevant negative paths pass.

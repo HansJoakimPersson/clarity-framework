@@ -29,7 +29,9 @@ Project-specific rules belong in `docs/`; keep this framework-owned file unchang
    `docs/04-data-model-api.md` before changing data or API contracts; and `docs/07-runbook.md`
    before operational or recovery work.
 3. If a plan under `docs/plans/` governs the task, treat its `Included` and `Excluded` sections as
-   authoritative. Stop when the plan is wrong or incomplete instead of silently re-planning.
+   authoritative for Goal, Included, Excluded, requirements, and documented boundaries. Resolve local,
+   reversible implementation gaps from repository evidence and record them; stop only when continuing
+   would materially change one of those boundaries.
 4. Inspect the relevant code, tests, configuration, and build scripts before proposing changes.
 5. Implement the smallest coherent change that satisfies the complete requested behavior.
 6. Run the repository's documented targeted checks, then the broader relevant checks when practical.
@@ -42,7 +44,9 @@ You are dispatched when a plan under `docs/plans/` governs the task or the promp
 authoritative.
 
 - Build only what is listed under `Included`; do not implement anything under `Excluded`.
-- Stop and report blockers or a wrong plan. Do not improvise beyond approved scope.
+- Resolve local reversible plan gaps inside Goal, Included, requirements, and documented boundaries.
+  Stop only when continuing requires a material scope, architecture, security/privacy, cost, or
+  irreversible change.
 - Do not invoke another CLI as a subprocess. Ignore orchestration skills under `.agents/skills/`
   and `.claude/skills/`; you are the level that performs the assigned work.
 - Stay within the requested report budget and include verification outcomes.

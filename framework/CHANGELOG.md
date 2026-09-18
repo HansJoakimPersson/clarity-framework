@@ -11,13 +11,27 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
-## [4.3.0] – 2026-09-18
+## Unreleased
+
+### Added
+
+- New `project-driver` skill provides the outer autonomous loop from documented product intent to
+  successive verified increments, invoking `plan-driven-build` as the execution engine and stopping
+  only for material Escalation/Reserved decisions.
 
 ### Changed
 
+- Clarity now uses Delegated / Escalation / Reserved decision classes. Reversible implementation,
+  commit, temporary branch/worktree, bounded replanning, and internal-integration choices are
+  Delegated by default; uncertainty alone no longer creates an approval gate.
+- `clarity-bootstrap` is infer-first and asks only for material gaps rather than requiring approval
+  of its inferred document, starter, skill, Git, and commit choices.
+- `plan-driven-build` replaces universal scope/merge gates with impact gates, allows local reversible
+  plan corrections inside approved intent, and treats merges from orchestrator-created worktrees
+  back to the owning task branch as internal execution plumbing.
 - Discipline skills now expose integration contracts for conditional use by `plan-driven-build`,
   keeping verification, debugging, review, and branch-closeout policy modular while the orchestrator
-  retains workflow state, dispatch, runtime policy, and human gates.
+  retains workflow state, dispatch, runtime policy, and material impact gates.
 - Implementation dispatches now fail closed unless an exact model and positive rollout-token budget
   are explicit. Profile selection determines which subscription pays; it can no longer silently
   change the model used for code-writing work.

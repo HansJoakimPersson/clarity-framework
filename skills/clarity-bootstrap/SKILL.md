@@ -5,8 +5,9 @@ description: Use when a new or not-yet-managed software project needs Clarity Fr
 
 # Clarity Bootstrap
 
-Set up Clarity from the project's actual needs. Produce a scoped proposal first; write only after
-the user approves it. Do not generate application code.
+Set up Clarity from the project's actual needs. Infer first, ask only for material gaps, and apply
+the minimum coherent setup without turning normal framework choices into approval gates. Do not
+generate application code.
 
 ## Guardrails
 
@@ -14,15 +15,17 @@ the user approves it. Do not generate application code.
 - If Clarity version markers already exist in the project's documents, stop and invoke `framework-update` instead.
 - If this is a Git repository and the tree has unrelated uncommitted changes, report them and stop
   before writing.
-- If the directory is not under version control, put initialization in the step 4 proposal and
-  initialize in step 5 once approved. Never initialize silently, and never initialize a directory
-  that already sits inside another repository — that would nest one repository in another.
+- If the directory is not under version control, infer initialization as the default Delegated
+  choice and initialize in step 5 unless evidence makes repository ownership an Escalation decision.
+  Never initialize a directory that already sits inside another repository — that would nest one
+  repository in another.
 - Fetch only a stable tagged Clarity release. Never bootstrap from untagged `main` or a prerelease.
 - Treat templates as starting structures, not permission to invent product decisions.
 - Install every selected Clarity skill identically in both `.agents/skills/<name>/` and
-  `.claude/skills/<name>/`. Never overwrite a same-named non-Clarity skill without approval.
+  `.claude/skills/<name>/`. A same-named non-Clarity skill is an ownership conflict: treat it as
+  Escalation rather than overwriting it.
 
-## Step 1 — Inspect, then ask only for gaps
+## Step 1 — Inspect, infer, then ask only for material gaps
 
 Inspect the README, build manifests, directory layout, and existing docs without changing them.
 Infer what is already evident. Establish the Git state first, because it decides whether the
@@ -40,19 +43,22 @@ printf 'git: %s %s\n' "$GIT_STATE" "${TOPLEVEL:-}"
 `repo-root` is the normal case. `inside-repo` means a parent directory owns the history: use it, and
 never initialize a second repository inside it. `none` means the choice below is live.
 
-Ask one compact set of questions covering only unresolved choices:
+Infer product, users, stack, UI/data/API/deployment/operations needs, team shape, AI clients, and
+workflow needs from the user's project description, repository, manifests, and existing docs. Do not
+ask for a value merely because the template has a field.
 
-1. What is being built and for whom?
-2. Which runtime and stack will it use?
-3. Does it have a visual UI, persistent data, an API, deployment, or ongoing operations?
-4. Is it personal, launch-bound, or maintained by a team?
-5. Will Claude Code, Codex, or both be used after bootstrap?
-6. Is the plan-driven workflow wanted now?
-7. Only when `GIT_STATE=none`: should this bootstrap initialize a Git repository? Recommend yes.
-   *Documentation as code* is a core framework principle, `.gitignore` handling and the bootstrap
-   commit both depend on it, and unversioned Clarity documents lose their history from day one.
+Ask one compact set of questions only for unresolved **Escalation** or **Reserved** decisions: choices
+whose reasonable alternatives materially change scope, externally visible behavior, security/privacy,
+cost, architecture, reversibility, or repository ownership. Ordinary implementation uncertainty is a
+Delegated decision: choose the least-consequential reversible option, record the assumption, and
+continue.
 
-Do not ask the user to choose template numbers. Translate product needs into framework artifacts.
+When `GIT_STATE=none`, initialize Git by default because documentation-as-code requires history.
+Ask only when there is evidence that repository initialization itself could conflict with the user's
+intent or an enclosing ownership model.
+
+Do not ask the user to choose template numbers, runtime plumbing, starter files, or skills. Translate
+product needs into framework artifacts automatically.
 
 ## Step 2 — Fetch the release
 
@@ -103,43 +109,38 @@ Select skills separately:
 
 - `clarity-bootstrap`: keep it installed so the setup remains reproducible.
 - `framework-update`: select by default for managed projects.
-- `plan-driven-build`: select only when the user wants the multi-agent, approval-gated workflow.
+- `plan-driven-build`: select when the project will use governed multi-agent implementation.
+- `project-driver`: select with `plan-driven-build` when the user wants the orchestrator to drive
+  the project from product intent through successive increments rather than manually request each one.
 
-## Step 4 — Propose and stop
+## Step 4 — Resolve the setup
 
-Show:
+Record the inferred setup in the run report: product/stack assumptions, Git state, release version,
+selected documents, starter, skills, merge targets, and any assumptions. Continue directly to apply
+it when every unresolved item is Delegated.
 
-- detected product and stack assumptions;
-- the Git state, and when it is `none`, whether this run will initialize a repository — plus, if it
-  will not, the exact consequences: no `.gitignore` handling, no `git check-ignore` verification,
-  and no bootstrap commit, leaving the documents unversioned;
-- release version;
-- selected documents with one-line reasons;
-- selected starter;
-- selected skills and both installation paths;
-- existing files that need a merge rather than a copy;
-- an existing `AGENTS.md` or `CLAUDE.md` whose project-specific content must be moved into the
-  governing `docs/` document before the selected starter can replace it, naming the target document
-  for each piece;
-- unresolved decisions.
-
-Stop for approval. Do not write before the user approves this scope.
+Stop only when an unresolved Escalation or Reserved decision remains. Present that single material
+decision with the consequences of the realistic alternatives; do not turn the rest of the inferred
+setup into an approval checklist.
 
 ## Step 5 — Apply without losing existing work
 
-After approval:
+When the resolved setup has no outstanding Escalation/Reserved decision:
 
-1. When initialization was approved, run `git init` before writing anything, so every file this
+1. When initialization is selected under the authority rules above, run `git init` before writing anything, so every file this
    skill creates is captured by the bootstrap commit rather than arriving as pre-existing untracked
    clutter. Initialize only when `GIT_STATE=none`; never run it for `repo-root` or `inside-repo`.
-2. Create or update `README.md` as approved, preserving all existing content, then create `docs/`
-   and copy only the approved templates from the stable tag.
-3. Fill only facts established by the user's answers or existing project evidence. Leave visible
-   placeholders for unknown decisions.
-4. Never overwrite an existing project document. Merge the approved template structure around its
-   content, or stop and ask if the mapping is ambiguous.
+2. Create or update `README.md` from the resolved setup, preserving all existing content, then
+   create `docs/` and copy only the selected templates from the stable tag.
+3. Fill established facts from the user's description and project evidence. For unknown Delegated
+   details, choose the least-consequential reversible assumption and mark it as an assumption.
+   Leave a visible unresolved item only for an Escalation or Reserved decision.
+4. Never overwrite an existing project document. Merge the selected template structure around its
+   content. Resolve straightforward mappings from headings and semantics; escalate only when
+   alternative mappings would materially change meaning or ownership.
 5. If `AGENTS.md` or `CLAUDE.md` already contains project-specific instructions, move them into the
-   `docs/` document that governs each one, only as approved. Then copy the selected starter verbatim
+   `docs/` document that clearly governs each one. Escalate only ambiguous ownership or conflicting
+   rules. Then copy the selected starter verbatim
    to `AGENTS.md`.
 6. Write `CLAUDE.md` containing exactly `@AGENTS.md` and nothing else. Never reduce an existing
    `CLAUDE.md` to the import until its content has been migrated under step 5; losing a project's
@@ -181,10 +182,11 @@ Verify:
 - both runtime copies of each managed skill are identical;
 - `git check-ignore` confirms that neither managed skill copy is excluded;
 - existing Framework version markers match the fetched tag;
-- no source file or unapproved documentation file changed.
+- no source file or documentation outside the resolved setup changed.
 
-Report remaining placeholders and decisions first, then created/merged artifacts and verification
-results. Propose a dedicated bootstrap commit and wait for approval before committing.
+Report remaining placeholders and material decisions first, then created/merged artifacts and
+verification results. A bootstrap commit is Delegated unless the project explicitly reserves commits
+or the commit would include unrelated pre-existing work; create it and report the SHA.
 
 The Git-dependent checks and the commit proposal are unconditional, because step 5 has already
 guaranteed a repository in every path except one: the user declined initialization. Only then, skip

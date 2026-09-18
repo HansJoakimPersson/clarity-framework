@@ -14,12 +14,12 @@
 | **Report budget** | Review 40 lines · Verification: one answer per DoD condition + 10 deviation lines |
 | **Run journal** | `docs/plans/YYYY-MM-DD-short-name.run.md` (when an automated workflow is used) |
 
-> **Gate profile** determines where the workflow stops for you. `semi-automatic`, the default, stops
-> at scope and merge — the two decisions that are yours and hard to walk back. `interactive` adds
-> stops at commit and closeout, worth it for unfamiliar or risky work. `unattended` stops only at
-> merge and requires every Definition of Done condition to be command-checkable. The merge gate
-> exists in all three. Choose by risk, not impatience. Check `docs/00-ai-context.md` for a
-> project-declared default before assuming `semi-automatic`.
+> **Gate profile** controls supervision, not authority. `semi-automatic`, the default, executes
+> Delegated work end-to-end and stops only for Escalation or Reserved decisions. `interactive`
+> may also pause before commit or external integration when deliberate supervision is useful.
+> `unattended` executes every Delegated transition and reports only completion, failure, or a real
+> impact-gate decision. There is no universal merge gate. Check `docs/00-ai-context.md` for the
+> project's authority contract and declared default.
 >
 > **Delivers** names the user stories this plan implements. Cite the IDs; never copy their
 > acceptance criteria into this plan. The plan is transient and the requirements document is the
@@ -44,8 +44,8 @@
 > **Size test:** if every step cannot state a real file path and a runnable verification command
 > within 200 lines, the plan is too large. Steps going vague to fit is the symptom, not the
 > workaround. Split by increment, not by layer — the rule that governs splitting a story governs
-> splitting a plan. Below the other end, a change too small to need scope approval does not need a
-> plan at all; five dispatches and four gates cost more than the change.
+> splitting a plan. Below the other end, a change too small to justify separate planning, review, implementation, and
+> verification does not need a plan at all; orchestration overhead costs more than the change.
 
 **Included:**
 
@@ -57,8 +57,9 @@
 - [Explicit boundary: what must not be touched, even if it looks tempting]
 - [...]
 
-> This section is authoritative. The build agent must not re-plan. If the plan is wrong or
-> incomplete, stop and report instead of improvising.
+> Goal, Included, Excluded, requirements, and documented architecture are authoritative. The build
+> agent may correct local reversible implementation gaps inside those boundaries and must record the
+> correction. Escalate only when the correction would materially change a boundary or consequence.
 
 ## Context to read first
 
@@ -116,10 +117,12 @@
 
 ## Open questions
 
-- [ ] **BLOCKING:** [Must be answered by a human before the build starts]
+- [ ] **ESCALATION:** [Material choice whose alternatives change scope, behavior, architecture, security/privacy, cost, or reversibility]
+- [ ] **RESERVED:** [Action the project explicitly keeps for a human]
 - [ ] Assume [X] and continue; record the assumption in the report
 
-> Blocking questions stop the build. Resolve other questions with a documented assumption.
+> Resolve Delegated questions from project evidence and continue. Only Escalation and Reserved
+> questions stop the workflow.
 
 ## Definition of Done
 

@@ -26,7 +26,8 @@ answers a different question from the other Clarity documents:
 | Directory | Use when… |
 | --- | --- |
 | `clarity-bootstrap/` | A new or unmanaged project needs the smallest relevant document set, stack starter, and skills for both clients |
-| `plan-driven-build/` | The task is large enough to require scope approval before code is written, with planning, review, and implementation dispatched to other aimux profiles. Requires a second AI CLI — `codex` today — since the orchestrator dispatches rather than builds |
+| `project-driver/` | The user provides project/product intent and wants the orchestrator to drive successive increments with minimal routine interaction |
+| `plan-driven-build/` | A non-trivial increment needs bounded planning, cold review, implementation, and verification dispatched to other aimux profiles. Requires a second AI CLI — `codex` today — since the orchestrator dispatches rather than builds |
 | `framework-update/` | A project on an older framework version must be upgraded without losing completed work |
 | `verification-before-completion/` | Any task, story, build, or checklist item is about to be reported done |
 | `systematic-debugging/` | A bug, test failure, crash, or unexpected behavior needs investigating before a fix is proposed |
@@ -34,12 +35,11 @@ answers a different question from the other Clarity documents:
 | `receiving-code-review/` | Review feedback has come back and needs a response |
 | `finishing-a-development-branch/` | A branch is believed done, or its work has landed and needs closing out |
 
-`clarity-bootstrap/`, `plan-driven-build/`, and `framework-update/` are independent, multi-step
-workflows dispatched by name (`/plan-driven-build`, and so on). `clarity-bootstrap/` sets up an
-unmanaged project, while `framework-update/` works only with projects that already use Clarity and
-touches only approved framework paths under `docs/`, `AGENTS.md`, `.agents/skills/`, and
-`.claude/skills/`; neither dispatches anything itself except `plan-driven-build/`, which requires
-the second CLI noted above.
+`clarity-bootstrap/`, `project-driver/`, `plan-driven-build/`, and `framework-update/` are
+multi-step workflows dispatched by name. `project-driver/` is the outer project loop: it turns
+documented intent into successive increments and invokes `plan-driven-build/` for each non-trivial
+one. `clarity-bootstrap/` sets up an unmanaged project, while `framework-update/` upgrades a
+managed one. `plan-driven-build/` is the execution engine that requires the second CLI noted above.
 
 The five discipline skills (`verification-before-completion/` through
 `finishing-a-development-branch/`) are single-file, self-contained, and apply to any task an agent

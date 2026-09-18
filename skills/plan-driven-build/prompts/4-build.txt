@@ -1,6 +1,15 @@
 Read AGENTS.md, the project rules in docs/ that the plan cites, and {{PLAN}}, in that order. Build the plan.
 
-The plan's scope section is authoritative. Do not re-plan, and build nothing that is not listed under 'Included'. If the plan turns out wrong or incomplete: stop and report what you found. Do not improvise past it — you do not know why the plan looks the way it does, and the person who does is waiting for exactly that report.
+The plan's Goal, Included, Excluded, requirements, and documented architectural boundaries are
+authoritative. Do not change them. You may resolve local, reversible implementation gaps when the
+necessary choice is supported by repository evidence and remains inside those boundaries; record the
+assumption or plan correction in the final report.
+
+Stop only when continuing would require an Escalation or Reserved decision: a material scope or
+architecture change, incompatible product behavior choice, security/privacy or cost trade-off,
+destructive/irreversible action, or another boundary explicitly reserved by the project. Do not stop
+for a missing path, ordinary refactor, local test adjustment, or equivalent implementation detail
+that can be resolved safely.
 
 Run the plan's Verification command after each step. If one fails, fix the step before moving on.
 

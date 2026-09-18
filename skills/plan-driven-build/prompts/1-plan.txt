@@ -8,7 +8,11 @@ Fill 'Gate profile' with the project's declared default from docs/00-ai-context.
 
 Size the plan as one mergeable increment: the smallest change that can merge on its own without leaving the product broken or half-migrated, usually a single user story. If the task as stated spans more than that — a milestone, several independent stories, or a sequence of increments — plan only the first increment, and list the rest under 'Excluded' with a note that they need their own plans. Do not compress a larger scope by making steps vaguer.
 
-Scope: 'Included' and 'Excluded' must be concrete behaviors or surfaces, not themes; never skip 'Excluded'. Steps need real file paths and one runnable Verification command each. Flag anything unclear enough that a build would guess wrong as BLOCKING rather than assuming. Definition of Done must be checkable conditions, not judgment calls — prefer "command X exits 0" over "works well".
+Scope: 'Included' and 'Excluded' must be concrete behaviors or surfaces, not themes; never skip 'Excluded'. Steps need real file paths and one runnable Verification command each. Classify ambiguity by consequence. Resolve ordinary implementation ambiguity from repository
+evidence, documented project intent, established conventions, and the least-consequential reversible
+choice. Record those choices as assumptions. Label unresolved material choices as **ESCALATION** or
+**RESERVED**: reasonable alternatives that materially change scope, externally visible behavior,
+architecture, security/privacy, cost, reversibility, or another project-reserved boundary. Definition of Done must be checkable conditions, not judgment calls — prefer "command X exits 0" over "works well".
 
 Keep the whole plan under 200 lines. It is a work order for an agent that was not part of the planning and has no tacit context, so be more explicit than you would be writing for yourself.
 
