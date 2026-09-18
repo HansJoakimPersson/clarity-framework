@@ -278,7 +278,7 @@ as this sentence. Build nothing in this step.
 Immediately compile the plan's document references into the bounded context pack:
 
 ```bash
-"$SKILLDIR/context-pack.sh" --plan "$PLAN" --out "$CONTEXT_PACK" \
+sh "$SKILLDIR/context-pack.sh" --plan "$PLAN" --out "$CONTEXT_PACK" \
   --max-bytes "$MAX_CONTEXT_PACK_BYTES" \
   --max-file-bytes "$MAX_CONTEXT_FILE_BYTES"
 ```
