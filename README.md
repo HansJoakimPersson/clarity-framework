@@ -203,7 +203,7 @@ profile, so a project never edits the skill to change tools.
 06-test-documentation  ← In parallel with implementation.
 07-runbook             ← Created for the first staging deployment.
 08-change-management   ← Maintained throughout the product lifecycle.
-09-visual-profile      ← Approved before visual UI implementation when a UI exists.
+09-visual-profile      ← Established before visual UI implementation when a UI exists.
 ```
 
 ## Visual UX verification
