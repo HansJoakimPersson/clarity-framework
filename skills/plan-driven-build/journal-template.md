@@ -37,7 +37,7 @@ the compact ledger. Preserve token fields when the runtime supplies them; otherw
 | 4 | Build | ☐ | Implementation — `[profile]` | `.runs/.../build.log` |
 | 5 | Verification | ☐ | Reasoning — `[profile]` | `.runs/.../verification.md` |
 | 6 | Commit | ☐ | orchestrator | — |
-| 7 | Merge gate | ☐ | human | — |
+| 7 | Impact gate / delegated transition | ☐ | orchestrator / human only if Escalation or Reserved | — |
 | 8 | Closeout | ☐ | orchestrator | — |
 
 Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see Deviations)
@@ -48,13 +48,13 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
 
 | | |
 | --- | --- |
-| **Approved at commit** | `[SHA]` – step 5 verifies against this |
+| **Baseline commit** | `[SHA]` – step 5 verifies against this |
 | **Build env file** | `[none / .agents/build-env.sh / .agents/build-env.local.sh / other]` |
 | **Preflight** | `[none / path / passed / blocked]` |
 | **Implementation model / rollout budget** | `[exact model]` / `[token ceiling]` |
 | **Build PID / exit** | `[PID]` / `[exit code, or “running”]` |
 | **Next step** | [Step number and concrete next action] |
-| **Waiting for human** | [Question, or “no”] |
+| **Waiting for decision** | [Escalation/Reserved question, or “no”] |
 
 ---
 
@@ -65,7 +65,7 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
   resolved, the Reasoning profile standing in for Review, or an `aimux handoff`. Name the profile
   that actually paid — an unrecorded fallback looks like successful subscription separation.]
 - [Record every environment correction: env file added or changed, toolchain observed by the
-  sandbox, and why it stayed within the approved runtime baseline.]
+  sandbox, and why it stayed within the documented runtime baseline.]
 - [Record every Step 0 prerequisite exception: which paths the working tree carried, the user's
   confirmation that they belong to other in-flight work, and that they were left untouched.]
 
