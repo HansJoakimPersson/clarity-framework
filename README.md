@@ -111,6 +111,12 @@ Every path has exactly one owner, and nothing crosses between them. This table i
 belonging to each managed name and nothing else — not `.claude/` broadly, not every skill it finds.
 That is what makes it safe to keep your own skills beside Clarity's.
 
+**The target release owns the update procedure.** An installed `framework-update` copy is only the
+bootstrap entry point. Once it resolves the latest stable tag, the target tag's
+`skills/framework-update/SKILL.md` and scripts govern the rest of that run. This prevents an older
+updater from interpreting a newer release with stale migration rules and makes direct upgrades across
+multiple releases deterministic.
+
 **`CLAUDE.md` is a pointer, not a rulebook.** It exists only so Claude Code loads the same
 instructions Codex reads directly. It never holds project-specific instructions.
 
@@ -164,8 +170,11 @@ Manual setup:
 ### Existing project
 
 Copy `skills/framework-update/` to both runtime skill roots and invoke `$framework-update` or
-`/framework-update`. It fetches the latest stable release, preserves completed project content,
-updates framework-owned files, reports required document changes, and proposes a dedicated commit.
+`/framework-update`. It fetches the latest stable release, switches to that tag's update procedure,
+preserves project-owned content, replaces framework-owned files, performs unambiguous structural
+migrations autonomously, stamps every active version marker, and creates a dedicated update commit
+when commits are Delegated. It stops only for ambiguous ownership/content mapping or another
+Escalation/Reserved condition.
 
 ### Project-driven work
 
