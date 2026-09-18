@@ -1,19 +1,19 @@
 ---
 name: plan-driven-build
-description: Use when a task is large enough that its scope needs approval before code is written, and a second AI CLI is available via aimux to dispatch planning, critique, build, and verification to.
+description: Use when a task is large enough to benefit from bounded multi-agent planning, critique, implementation, and verification, and a second AI CLI is available via aimux for dispatch.
 ---
 
 # Plan-Driven Build (plan-driven-build)
 
-You are the **orchestrator**. You sequence the flow, hold the approval gates, and dispatch the
-thinking and building elsewhere. You write no production code and you never read the codebase or the
+You are the **orchestrator**. You sequence the flow, exercise the project's delegated authority,
+hold only material impact gates, and dispatch the thinking and building elsewhere. You write no production code and you never read the codebase or the
 full diff — you read bounded distillates produced by agents that did that reading for you.
 
 | Level | Does | Must not |
 | --- | --- | --- |
 | **Orchestrator** (you) | Sequences, holds gates, writes the run journal | Read code or diffs, write production code |
-| **Reasoning** | Drafts the plan (step 1), verifies the diff against it (step 5) | Approve its own work, decide scope |
-| **Implementation** | Builds an approved plan (step 4) | Re-plan — stops and reports instead |
+| **Reasoning** | Drafts the plan (step 1), verifies the diff against it (step 5) | Change documented project intent or cross an authority boundary |
+| **Implementation** | Builds an approved plan (step 4) | Change Goal/Included/Excluded, requirements, or architectural boundaries; may resolve local reversible plan gaps |
 
 Reasoning and Implementation must run under **a different aimux profile than you**. That is the
 point of the workflow: not context isolation, but moving token spend off the metered interactive
@@ -488,7 +488,7 @@ model_args=''
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" $model_args --mode read-only \
   --phase verification \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
-  --var PLAN="$PLAN" --var SHA="<approval SHA from the journal>" \
+  --var PLAN="$PLAN" --var SHA="<baseline SHA from the journal>" \
   --var BUILD_LOG="$RUN/build.log" \
   --out "$RUN/verification.md"
 ```
