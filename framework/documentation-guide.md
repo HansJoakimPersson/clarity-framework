@@ -249,7 +249,7 @@ and have a human review visual differences. A successful build is not visual val
 
 ## 13. AI-assisted work
 
-Agents are governed contributors, not decision owners. Use `00-ai-context.md` as the compact starting
+Agents are governed contributors with consequence-bounded Delegated authority. Use `00-ai-context.md` as the compact starting
 point, keep durable state in project files, and use the four-level runtime contract when work is
 split across agents.
 
