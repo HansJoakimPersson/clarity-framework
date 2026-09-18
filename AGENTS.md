@@ -44,19 +44,22 @@ the version markers were not updated, or a shipped script changed without its re
 run. Every change increments the version in the same commit; `docs` and `chore` changes do not
 increment it.
 
-The repository ships five executable tests. Run all of them when any `*.sh` under `skills/` or
-`framework/scripts/` changes:
+The repository ships seven executable regression tests. Run all of them when any `*.sh` under
+`skills/` or `framework/scripts/` changes:
 
 ```bash
 sh   skills/plan-driven-build/tests/dispatch-test.sh
+sh   skills/plan-driven-build/tests/context-pack-test.sh
 bash skills/framework-update/tests/check-update-scope-test.sh
 bash skills/framework-update/tests/render-update-commit-test.sh
 bash framework/scripts/tests/check-version-consistency-test.sh
+bash framework/scripts/tests/check-context-budgets-test.sh
 bash framework/scripts/tests/lint-shell-test.sh
 ```
 
-`framework/scripts/lint-shell.sh` runs the last four against every tracked `*.sh` file with
-`shellcheck`, when it is installed; it skips, rather than fails, when the tool is missing.
+Also run `bash framework/scripts/check-context-budgets.sh` for any agent-starter or
+`templates/00-ai-context.md` change. It enforces the hot-instruction budgets used by CI.
+`framework/scripts/lint-shell.sh` runs shellcheck over every tracked `*.sh` file when installed;
 `framework/scripts/check-version-consistency.sh` automates release steps 2–4 below.
 
 A green test is necessary, not sufficient: a test that asserts the current output will happily lock
@@ -79,6 +82,7 @@ git grep -lE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+|Current version:|\*\*Ver
 | Story block in `templates/02-requirements.md` §2.6 | The same block in `templates/02-user-stories.md`. Splitting the backlog moves stories between them, so a field added to one and not the other silently disappears on the move |
 | Dispatch prompt change | The matching prompt and `SKILL.md` when placeholders change |
 | Shipped script change | The script and its test in the same directory's `tests/` (a skill's or `framework/scripts/`) |
+| Agent starter or AI-context size change | `framework/scripts/check-context-budgets.sh` and its regression test when the policy changes |
 | New template | New file, README, and CHANGELOG entry |
 | Framework guideline change | Guide and affected templates |
 | Release | CHANGELOG, version markers, and annotated Git tag |
