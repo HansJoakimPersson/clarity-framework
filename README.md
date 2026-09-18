@@ -60,7 +60,7 @@ clarity-framework/
 │   └── plan-driven-build/           # Approval-gated planning, review, build, and verification
 │       ├── SKILL.md                 # Orchestrator procedure
 │       ├── prompts/                 # Instructions for dispatched agents
-│       ├── dispatch.sh              # Bounded dispatch with sandbox, approval, and aimux-profile selection
+│       ├── dispatch.sh              # Bounded dispatch with sandbox, pinned models, rollout budgets, and profile selection
 │       ├── tests/                   # Dispatch regression tests
 │       ├── plan-template.md         # Copy of templates/plan.md
 │       ├── journal-template.md      # Cross-session workflow state

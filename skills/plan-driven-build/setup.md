@@ -56,11 +56,12 @@ Then record which profile fills which level in the project's runtime contract,
 profiles exist. The binding is arbitrary and project-owned: any profile may fill any level, one
 profile may fill several, and adding a subscription is an edit to that table, not a rename.
 
-Each profile carries its own model (`aimux profile update <name> -m <model>`). That is enough for a
-single fixed profile per level. Once a level is bound to a **pool** of interchangeable profiles
-whose model configs may differ, `dispatch.sh --model NAME` overrides the model for one dispatch
-regardless of which pool member runs (it is passed to `aimux run -m`). Prefer the profile's own
-config when a level has exactly one profile; reach for `--model` when it has a pool.
+An aimux profile may carry a stored model (`aimux profile update <name> -m <model>`), but Clarity
+now treats that as a default for read-only work, not as the Implementation policy. **Implementation
+must always pass an explicit model and a positive rollout budget.** `dispatch.sh --model NAME`
+overrides whichever pool member pays, and `--max-rollout-tokens N` maps to Codex's native rollout
+budget. This separation is intentional: changing or borrowing a profile changes the subscription,
+not the model allowed to write code.
 
 Reasoning effort is independent from model selection. Use `dispatch.sh --reasoning-effort medium`
 (or `none`, `low`, `high`, or `xhigh`) when the run needs an explicit reasoning level. The dispatch
@@ -68,7 +69,10 @@ summary reports both `model=` and `reasoning_effort=` so a run can be audited wi
 whether `medium` was a model name or a reasoning setting.
 
 For new workflows, also use `--phase`, `--job-id`, and the automatic ledger beside `--out` or
-`--log`. Add `--preflight FILE` for project-owned read-only runtime and service checks. When child
+`--log`. Add `--preflight FILE` for project-owned read-only runtime and service checks. The
+`implementation` phase fails closed unless it runs in the background under a writable mode with
+both `--model` and `--max-rollout-tokens`; planning, review, and verification fail closed unless
+they remain read-only. When child
 agents may be created, provide `--model-evidence FILE` with one observed parent or child model per
 line; a mismatch fails closed as `model-routing`.
 

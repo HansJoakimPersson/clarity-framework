@@ -18,6 +18,18 @@ tag, so an untagged heading here is a version no project can reach.
 - Discipline skills now expose integration contracts for conditional use by `plan-driven-build`,
   keeping verification, debugging, review, and branch-closeout policy modular while the orchestrator
   retains workflow state, dispatch, runtime policy, and human gates.
+- Implementation dispatches now fail closed unless an exact model and positive rollout-token budget
+  are explicit. Profile selection determines which subscription pays; it can no longer silently
+  change the model used for code-writing work.
+- `dispatch.sh` now enforces phase permissions, forwards Codex's native rollout budget, preserves
+  raw stdout/stderr per foreground attempt for reliable failure classification, and records the
+  execution ceiling in its ledger and summaries.
+- Background dispatches now validate supplied model evidence before writing a success sentinel and
+  classify rollout-budget exhaustion and routing failures in the same ledger contract as foreground
+  dispatches.
+- Added GitHub Actions verification for all five shipped shell regression suites, including new
+  coverage for pinned Implementation models, rollout budgets, background model mismatches, phase
+  enforcement, and stderr-only rate-limit/budget failures.
 
 ## [4.2.0] – 2026-09-17
 
