@@ -19,7 +19,7 @@
 | **Raw output** | `docs/plans/.runs/YYYY-MM-DD-short-name/` (local, gitignored) |
 
 Every dispatch summary should preserve the resolved `profile`, `cli`, `model`,
-`reasoning_effort`, `mode`, and `failure_class`. `model` identifies the model; `reasoning_effort`
+`reasoning_effort`, `rollout_budget`, `mode`, and `failure_class`. `model` identifies the model; `reasoning_effort`
 is a separate setting and may be `profile-default`. Do not describe `medium` as a model name. When
 child agents are possible, also preserve the model-evidence path and the `model_policy` result from
 the compact ledger. Preserve token fields when the runtime supplies them; otherwise leave them as
@@ -51,6 +51,7 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
 | **Approved at commit** | `[SHA]` – step 5 verifies against this |
 | **Build env file** | `[none / .agents/build-env.sh / .agents/build-env.local.sh / other]` |
 | **Preflight** | `[none / path / passed / blocked]` |
+| **Implementation model / rollout budget** | `[exact model]` / `[token ceiling]` |
 | **Build PID / exit** | `[PID]` / `[exit code, or “running”]` |
 | **Next step** | [Step number and concrete next action] |
 | **Waiting for human** | [Question, or “no”] |
@@ -83,7 +84,8 @@ keeps its context budget.
 | 5 | Verification (limit: DoD conditions + 10) | | |
 
 > Consistent overruns mean the workflow is not saving what it claims. Tighten dispatch prompt limits;
-> do not raise the ceilings.
+> do not raise the ceilings. This table covers orchestrator reading only; the Implementation model
+> and rollout-token ceiling are recorded above and enforced by the dispatcher.
 
 ---
 
