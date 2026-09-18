@@ -8,9 +8,11 @@ set -euo pipefail
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
 FRAMEWORK_SKILLS=''
+MANAGED_SKILLS=''
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --framework-skills) FRAMEWORK_SKILLS="${2:-}"; shift 2 ;;
+    --managed-skills) MANAGED_SKILLS="${2:-}"; shift 2 ;;
     *) die "check-update-scope.sh: unknown argument '$1'" ;;
   esac
 done
@@ -19,7 +21,9 @@ REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || die 'check-update-scop
 cd -- "$REPO_ROOT"
 [ -n "$FRAMEWORK_SKILLS" ] || die 'check-update-scope.sh: --framework-skills is required'
 
-IFS=',' read -r -a SKILL_NAMES <<< "$FRAMEWORK_SKILLS"
+ALL_SKILLS="$FRAMEWORK_SKILLS"
+[ -z "$MANAGED_SKILLS" ] || ALL_SKILLS="$ALL_SKILLS,$MANAGED_SKILLS"
+IFS=',' read -r -a SKILL_NAMES <<< "$ALL_SKILLS"
 for skill in "${SKILL_NAMES[@]}"; do
   [[ "$skill" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "check-update-scope.sh: invalid skill name '$skill'"
 done
