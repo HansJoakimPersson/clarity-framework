@@ -31,7 +31,7 @@ tag, so an untagged heading here is a version no project can reach.
   back to the owning task branch as internal execution plumbing.
 - Discipline skills now expose integration contracts for conditional use by `plan-driven-build`,
   keeping verification, debugging, review, and branch-closeout policy modular while the orchestrator
-  retains workflow state, dispatch, runtime policy, and human gates.
+  retains workflow state, dispatch, runtime policy, and material impact gates.
 - Implementation dispatches now fail closed unless an exact model and positive rollout-token budget
   are explicit. Profile selection determines which subscription pays; it can no longer silently
   change the model used for code-writing work.
