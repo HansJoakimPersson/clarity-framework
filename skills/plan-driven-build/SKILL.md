@@ -94,8 +94,10 @@ Any observed model different from the effective model fails closed with `failure
 An explicit model handoff must be documented in the journal before it is accepted. A compact ledger
 is written automatically beside `--out` or `--log` unless `--ledger` overrides that path. It records
 the job, phase, profile, requested and effective model, reasoning effort, rollout-budget ceiling,
-attempt count, retryability, failure class, model policy, token usage when supplied by the runtime,
-and exit status. If the
+attempt count, retryability, failure class, model policy, and token usage. Codex dispatches collect
+native JSONL `turn.completed.usage` fields (input, cached input, cache-write input, output, reasoning
+output); environment `CF_*` values remain a fallback for other runtimes. The ledger also records
+exit status. If the
 runtime exports `CF_INPUT_TOKENS`, `CF_OUTPUT_TOKENS`, or `CF_TOTAL_TOKENS`, those values are copied;
 otherwise the ledger records `unavailable`. Raw output remains a debugging artifact, not the primary
 run record.
@@ -283,7 +285,7 @@ Immediately compile the plan's document references into the bounded context pack
 
 A pack failure is a planning defect, not permission to raise the ceiling. Narrow an oversized
 whole-file reference to an exact heading, remove irrelevant context, or split the increment. Record
-the resulting byte count in the journal. The pack is local run state under `.runs/`; it is not
+the resulting byte count and `git hash-object "$CONTEXT_PACK"` in the journal. The pack is local run state under `.runs/`; it is not
 committed and is never a new source of truth.
 
 When `TASK` fixes a defect, leak, or regression suspected to recur across a family of similar units
