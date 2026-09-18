@@ -217,7 +217,9 @@ typography, spacing, radii, shadows, motion, iconography, accessibility targets,
 Store design tokens in the project's chosen DTCG-compatible source file and treat it as the source of
 truth. Generated platform files must not be edited manually.
 
-Before UI implementation, approve the visual profile. After every meaningful UI change, inspect the
+Before UI implementation, establish the visual profile. Escalate unresolved brand choices only when
+reasonable alternatives materially change the intended identity or user experience. After every
+meaningful UI change, inspect the
 running product at supported viewport sizes and states, attach screenshots or equivalent evidence,
 and have a human review visual differences. A successful build is not visual validation.
 
