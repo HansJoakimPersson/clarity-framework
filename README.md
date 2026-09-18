@@ -62,8 +62,9 @@ clarity-framework/
 │   └── plan-driven-build/           # Governed planning, review, build, verification, and impact gates
 │       ├── SKILL.md                 # Orchestrator procedure
 │       ├── prompts/                 # Instructions for dispatched agents
-│       ├── dispatch.sh              # Bounded dispatch with sandbox, pinned models, rollout budgets, and profile selection
-│       ├── tests/                   # Dispatch regression tests
+│       ├── dispatch.sh              # Bounded dispatch with sandbox, pinned models, rollout budgets, usage telemetry, and profile selection
+│       ├── context-pack.sh           # Builds the frozen bounded project-document context for a run
+│       ├── tests/                   # Dispatch and context-pack regression tests
 │       ├── plan-template.md         # Copy of templates/plan.md
 │       ├── journal-template.md      # Cross-session workflow state
 │       ├── setup.md                 # One-time profile, sandbox, and permissions setup
@@ -82,6 +83,7 @@ my-project/
 │   ├── 00-ai-context.md
 │   ├── 01-vision-scope.md
 │   ├── 02-requirements.md
+│   ├── archive/                     # Cold history; explicit lookup only, never normal agent context
 │   └── plans/
 ├── .agents/skills/                 # Codex copies of selected Clarity skills
 ├── .claude/skills/                 # Claude Code copies of selected Clarity skills
@@ -173,12 +175,18 @@ next ready increment from the documented intent, runs it through the governed bu
 integrates verified internal work, updates project state, and continues until the outcome is complete
 or a material Escalation/Reserved decision is reached.
 
+Independent increments may run as a two-workflow wave when their dependency/write surfaces are
+disjoint. Workers use separate worktrees and do not synchronize live; integration is serialized and
+the orchestrator is the single writer for shared coordination documents.
+
 ### Plan-driven work
 
 For a non-trivial increment, install `skills/plan-driven-build/` in both runtime roots. It uses the
 four-level runtime contract, separate aimux profiles where available, bounded reports, a committed run
-journal, and impact gates only for Escalation/Reserved decisions. Routine commits, temporary
-branches/worktrees, and internal integration are Delegated by default.
+journal, and impact gates only for Escalation/Reserved decisions. Planning compiles exact document
+references into one frozen context pack (64 KiB default) reused by review/build/verification, while
+Codex dispatch ledgers capture native token usage. Routine commits, temporary branches/worktrees, and
+internal integration are Delegated by default.
 
 It requires a second AI CLI, because the orchestrator dispatches the work instead of doing it.
 `codex` is the dispatch adapter implemented today; which CLI runs each level comes from its aimux
