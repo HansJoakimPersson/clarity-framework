@@ -98,6 +98,11 @@ The orchestrator must not read the full codebase, source files, full diff, promp
 Where possible, dispatch commands should enforce the limits and permissions should deny accidental
 diff reads.
 
+These ceilings are **reading budgets**, not execution budgets. A short final report does not prevent
+a build agent from consuming an entire model allowance. Mutating Implementation dispatches therefore
+pin an exact model and a positive rollout-token ceiling before they start. Profile selection chooses
+the paying subscription; execution policy chooses the model and maximum consumption.
+
 ## 7. State, handovers, and permissions
 
 Workflow state belongs in files, not in the orchestrator's memory. Use
@@ -116,7 +121,8 @@ approved sandbox should not become artificial approval gates.
 
 For governed execution, use a bounded preflight before dispatch, classify failures by cause, and
 retry only explicitly retryable conditions. Verify the effective model for parent and child agents;
-the requested model is not sufficient evidence by itself. Keep a compact attempt ledger beside the
+the requested model is not sufficient evidence by itself. Background dispatches apply the same
+model-evidence check before their completion sentinel can report success. Keep a compact attempt ledger beside the
 raw output, and stop on non-retryable environment, routing, verification, budget, or repository
 safety failures. The executable contract and flags live in `skills/plan-driven-build/SKILL.md` and
 its `dispatch.sh`.
@@ -135,7 +141,10 @@ not an agent persona.
 
 A level may be bound to a **pool** of interchangeable profiles rather than a single one — an
 ordered, comma-separated list in the runtime contract, tried in priority order. A pool spreads load
-across subscriptions; it does not give a level an identity. Name profiles after the subscriptions
+across subscriptions; it does not give a level an identity. For Implementation, a profile's stored
+model is never authoritative: the runtime contract supplies the exact model and rollout budget for
+every build, so moving to another subscription cannot silently move the build to another model.
+Name profiles after the subscriptions
 they are, never after the level they happen to fill, or the profile becomes unusable for any other
 level. `plan-driven-build`'s `dispatch.sh` resolves the CLI from the profile's `cli` field in
 `~/.aimux/config.yaml` at dispatch time, so switching a level's tool is `aimux profile update` and
