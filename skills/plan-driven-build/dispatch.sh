@@ -26,10 +26,12 @@
 #               [--reasoning-effort none|low|medium|high|xhigh]
 #               --out FILE [--max-lines N] [--env-file FILE] [--preflight FILE]
 #               [--model-evidence FILE] [--ledger FILE] [--job-id ID] [--phase PHASE] [--max-retries N]
+#               [--max-rollout-tokens N]
 #   dispatch.sh --profile NAME[,NAME...]
 #               --mode workspace-write|danger-full-access
 #               (--prompt-file FILE [--var KEY=VALUE ...] | --prompt TEXT) [--model NAME]
 #               --log FILE --background [--network] [--env-file FILE]
+#               [--model-evidence FILE] [--max-rollout-tokens N]
 #
 # --profile is an ordered, comma-separated pool of aimux profile names, e.g.
 # `--profile codework1,codework2,codework3`. This is priority order, resolved once per dispatch —
@@ -93,8 +95,12 @@
 # is explicit per dispatch so environment corrections stay visible in the run journal.
 # --preflight runs a project-owned, read-only shell check before dispatch. A non-zero result blocks
 # the job and is never retried. --model-evidence is a newline-separated list of observed parent and
-# child models; every non-empty line must equal the requested/effective model. --ledger writes one
+# child models; every non-empty line must equal the requested/effective model. Background dispatches
+# validate the same evidence before writing their completion sentinel. --ledger writes one
 # tab-separated, machine-readable completion record. --max-retries caps read-only pool retries.
+# --max-rollout-tokens N enables Codex's native rollout budget for the dispatch. Implementation
+# requires both an explicit --model and a positive rollout budget: profile selection decides which
+# subscription pays, while the level policy decides which model may run and how much it may consume.
 
 set -eu
 
@@ -106,6 +112,7 @@ trap 'rm -rf "$TMP_ROOT"' EXIT HUP INT TERM
 PROFILE=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''; ENV_FILE=''
 MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''; REASONING_EFFORT=''
 PREFLIGHT=''; MODEL_EVIDENCE=''; LEDGER=''; JOB_ID=''; PHASE='dispatch'; MAX_RETRIES=''
+MAX_ROLLOUT_TOKENS=''
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -125,6 +132,7 @@ while [ $# -gt 0 ]; do
     --job-id)      JOB_ID="${2:-}";      shift 2 ;;
     --phase)       PHASE="${2:-}";       shift 2 ;;
     --max-retries) MAX_RETRIES="${2:-}"; shift 2 ;;
+    --max-rollout-tokens) MAX_ROLLOUT_TOKENS="${2:-}"; shift 2 ;;
     --background)  BACKGROUND=1;         shift ;;
     --network)     NETWORK=1;            shift ;;
     --var)
@@ -156,6 +164,11 @@ esac
 case "$MAX_RETRIES" in
   ''|*[!0-9]*) [ -z "$MAX_RETRIES" ] || die "dispatch.sh: --max-retries must be a non-negative integer (got '$MAX_RETRIES')" ;;
 esac
+case "$MAX_ROLLOUT_TOKENS" in
+  '') ;;
+  *[!0-9]*) die "dispatch.sh: --max-rollout-tokens must be a positive integer (got '$MAX_ROLLOUT_TOKENS')" ;;
+  *) [ "$MAX_ROLLOUT_TOKENS" -gt 0 ] || die "dispatch.sh: --max-rollout-tokens must be a positive integer (got '$MAX_ROLLOUT_TOKENS')" ;;
+esac
 case "$REASONING_EFFORT" in
   ''|none|low|medium|high|xhigh) ;;
   *) die "dispatch.sh: --reasoning-effort must be none, low, medium, high, or xhigh (got '$REASONING_EFFORT')" ;;
@@ -173,6 +186,24 @@ fi
 if [ "$NETWORK" -eq 1 ] && [ "$MODE" = read-only ]; then
   die 'dispatch.sh: --network applies to --mode workspace-write or danger-full-access only'
 fi
+
+# Phase is policy, not only metadata. Read-only phases cannot silently widen permissions, and
+# Implementation cannot start unless its model and execution budget are explicit.
+case "$PHASE" in
+  planning|review|verification)
+    [ "$MODE" = read-only ] || die "dispatch.sh: --phase $PHASE requires --mode read-only"
+    [ "$BACKGROUND" -eq 0 ] || die "dispatch.sh: --phase $PHASE cannot run in background"
+    ;;
+  implementation)
+    case "$MODE" in
+      workspace-write|danger-full-access) ;;
+      *) die 'dispatch.sh: --phase implementation requires --mode workspace-write or danger-full-access' ;;
+    esac
+    [ "$BACKGROUND" -eq 1 ] || die 'dispatch.sh: --phase implementation requires --background'
+    [ -n "$MODEL" ] || die 'dispatch.sh: --phase implementation requires explicit --model'
+    [ -n "$MAX_ROLLOUT_TOKENS" ] || die 'dispatch.sh: --phase implementation requires --max-rollout-tokens'
+    ;;
+esac
 
 # Render the prompt.
 if [ -n "$PROMPT_FILE" ]; then
@@ -333,6 +364,7 @@ run_cli() {
         [ -z "$MODEL" ] || set -- "$@" -m "$MODEL"
         set -- "$@" -- codex -a never
         [ -z "$REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$REASONING_EFFORT"
+        [ -z "$MAX_ROLLOUT_TOKENS" ] || set -- "$@" -c "features.rollout_budget={enabled=true,limit_tokens=$MAX_ROLLOUT_TOKENS,reminder_at_remaining_tokens=[],sampling_token_weight=1.0,prefill_token_weight=1.0}"
         [ "$NETWORK" -eq 0 ] || set -- "$@" -c 'sandbox_workspace_write.network_access=true'
         set -- "$@" exec -s "$MODE"
         [ -z "$MODEL" ] || set -- "$@" -m "$MODEL"
@@ -340,12 +372,15 @@ run_cli() {
       else
         set -- codex -a never
         [ -z "$REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$REASONING_EFFORT"
+        [ -z "$MAX_ROLLOUT_TOKENS" ] || set -- "$@" -c "features.rollout_budget={enabled=true,limit_tokens=$MAX_ROLLOUT_TOKENS,reminder_at_remaining_tokens=[],sampling_token_weight=1.0,prefill_token_weight=1.0}"
         [ "$NETWORK" -eq 0 ] || set -- "$@" -c 'sandbox_workspace_write.network_access=true'
         set -- "$@" exec -s "$MODE"
         [ -z "$MODEL" ] || set -- "$@" -m "$MODEL"
         set -- "$@" -o "$OUT" "$PROMPT"
       fi
-      "$@" >/dev/null 2>&1 || _rc=$?
+      RAW_ATTEMPT_LOG="$OUT.attempt-${attempt_count:-1}.log"
+      rm -f "$OUT" "$RAW_ATTEMPT_LOG"
+      "$@" >"$RAW_ATTEMPT_LOG" 2>&1 || _rc=$?
       ;;
   esac
   return "$_rc"
@@ -378,12 +413,15 @@ run_preflight() {
 
 failure_class='none'
 retryable=0
-model_policy='not_checked'
+model_policy='profile-default'
+[ -n "$MODEL" ] && model_policy='pinned'
 classify_output() {
   failure_class='unknown'
   retryable=0
   [ -f "$1" ] || return 0
-  if grep -Eiq 'rate.?limit|too many requests|quota exceeded|temporarily unavailable|server overloaded|try again later' "$1"; then
+  if grep -Eiq 'shared rollout token budget exhausted|rollout.?budget.*exhaust' "$1"; then
+    failure_class='budget'; retryable=0
+  elif grep -Eiq 'rate.?limit|too many requests|quota exceeded|temporarily unavailable|server overloaded|try again later' "$1"; then
     failure_class='environment.rate_limit'; retryable=1
   elif grep -Eiq 'timeout|timed out|deadline exceeded' "$1"; then
     failure_class='timeout'; retryable=1
@@ -402,14 +440,26 @@ classify_output() {
   fi
 }
 
+classify_attempt() {
+  _combined="$TMP_ROOT/classify-${attempt_count:-1}.log"
+  : > "$_combined"
+  if [ -n "${RAW_ATTEMPT_LOG:-}" ] && [ -f "$RAW_ATTEMPT_LOG" ]; then
+    cat "$RAW_ATTEMPT_LOG" >> "$_combined"
+  fi
+  if [ -f "$OUT" ]; then
+    cat "$OUT" >> "$_combined"
+  fi
+  classify_output "$_combined"
+}
+
 write_ledger() {
   [ -n "$LEDGER" ] || return 0
   mkdir -p "$(dirname "$LEDGER")"
-  printf 'job_id\tstatus\tphase\tprofile\tcli\trequested_model\teffective_model\treasoning_effort\tattempts\tretryable\tfailure_class\tmodel_policy\tinput_tokens\toutput_tokens\ttotal_tokens\texit_status\n' > "$LEDGER"
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+  printf 'job_id\tstatus\tphase\tprofile\tcli\trequested_model\teffective_model\treasoning_effort\trollout_budget_tokens\tattempts\tretryable\tfailure_class\tmodel_policy\tinput_tokens\toutput_tokens\ttotal_tokens\texit_status\n' > "$LEDGER"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$JOB_ID" "$1" "${PHASE:-dispatch}" "$LAST_LABEL" "$RESOLVED_CLI" \
     "${MODEL:-profile-default}" "$EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" \
-    "${attempt_count:-0}" "$retryable" "$failure_class" "$model_policy" \
+    "${MAX_ROLLOUT_TOKENS:-unbounded}" "${attempt_count:-0}" "$retryable" "$failure_class" "$model_policy" \
     "${CF_INPUT_TOKENS:-unavailable}" "${CF_OUTPUT_TOKENS:-unavailable}" \
     "${CF_TOTAL_TOKENS:-unavailable}" "$2" >> "$LEDGER"
 }
@@ -422,8 +472,8 @@ if ! run_preflight >"$TMP_ROOT/preflight.out" 2>&1; then
   [ -n "$EFFECTIVE_MODEL" ] || EFFECTIVE_MODEL="$PROFILE_MODEL"
   [ -n "$EFFECTIVE_MODEL" ] || EFFECTIVE_MODEL='profile-default'
   write_ledger blocked 78
-  printf 'DISPATCH exit=78  profile=%s  cli=%s  model=%s  reasoning_effort=%s  mode=%s  failure_class=%s  out=%s  lines=0  budget=n/a\n' \
-    "$LAST_LABEL" "$RESOLVED_CLI" "$EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" "$MODE" "$failure_class"
+  printf 'DISPATCH exit=78  profile=%s  cli=%s  model=%s  reasoning_effort=%s  rollout_budget=%s  mode=%s  failure_class=%s  out=%s  lines=0  budget=n/a\n' \
+    "$LAST_LABEL" "$RESOLVED_CLI" "$EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" "${MAX_ROLLOUT_TOKENS:-unbounded}" "$MODE" "$failure_class"
   exit 78
 fi
 
@@ -446,13 +496,19 @@ if [ "$BACKGROUND" -eq 1 ]; then
   CFD_MODE=$MODE
   CFD_MODEL=$MODEL
   CFD_REASONING_EFFORT=$REASONING_EFFORT
+  CFD_MAX_ROLLOUT_TOKENS=$MAX_ROLLOUT_TOKENS
+  CFD_MODEL_EVIDENCE=$MODEL_EVIDENCE
+  CFD_LOG=$LOG
+  CFD_EFFECTIVE_MODEL=$MODEL
+  [ -n "$CFD_EFFECTIVE_MODEL" ] || CFD_EFFECTIVE_MODEL=$PROFILE_MODEL
+  [ -n "$CFD_EFFECTIVE_MODEL" ] || CFD_EFFECTIVE_MODEL='profile-default'
   CFD_NETWORK=$NETWORK
   CFD_PROMPT=$PROMPT
   CFD_EXIT_FILE=$exit_file
   CFD_LEDGER=$LEDGER
   CFD_PHASE=$PHASE
   CFD_JOB_ID=$JOB_ID
-  export CFD_PROFILE CFD_CLI CFD_MODE CFD_MODEL CFD_REASONING_EFFORT CFD_NETWORK CFD_PROMPT CFD_EXIT_FILE CFD_LEDGER CFD_JOB_ID CFD_PHASE
+  export CFD_PROFILE CFD_CLI CFD_MODE CFD_MODEL CFD_REASONING_EFFORT CFD_MAX_ROLLOUT_TOKENS CFD_MODEL_EVIDENCE CFD_LOG CFD_EFFECTIVE_MODEL CFD_NETWORK CFD_PROMPT CFD_EXIT_FILE CFD_LEDGER CFD_JOB_ID CFD_PHASE
   # The child rebuilds the argv rather than inheriting a command string: a background dispatch
   # survives this process, so the adapter has to run where the command actually runs.
   nohup sh -c '
@@ -465,6 +521,7 @@ if [ "$BACKGROUND" -eq 1 ]; then
           [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
           set -- "$@" -- codex -a never
           [ -z "$CFD_REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$CFD_REASONING_EFFORT"
+          [ -z "$CFD_MAX_ROLLOUT_TOKENS" ] || set -- "$@" -c "features.rollout_budget={enabled=true,limit_tokens=$CFD_MAX_ROLLOUT_TOKENS,reminder_at_remaining_tokens=[],sampling_token_weight=1.0,prefill_token_weight=1.0}"
           [ "$CFD_NETWORK" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
           set -- "$@" exec -s "$CFD_MODE"
           [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
@@ -472,6 +529,7 @@ if [ "$BACKGROUND" -eq 1 ]; then
         else
           set -- codex -a never
           [ -z "$CFD_REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$CFD_REASONING_EFFORT"
+          [ -z "$CFD_MAX_ROLLOUT_TOKENS" ] || set -- "$@" -c "features.rollout_budget={enabled=true,limit_tokens=$CFD_MAX_ROLLOUT_TOKENS,reminder_at_remaining_tokens=[],sampling_token_weight=1.0,prefill_token_weight=1.0}"
           [ "$CFD_NETWORK" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
           set -- "$@" exec -s "$CFD_MODE"
           [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
@@ -481,21 +539,51 @@ if [ "$BACKGROUND" -eq 1 ]; then
         ;;
       *) printf "%s\n" "dispatch child: cli $CFD_CLI has no adapter" >&2; status=2 ;;
     esac
+    failure_class=none
+    retryable=0
+    model_policy=profile-default
+    [ -n "$CFD_MODEL" ] && model_policy=pinned
+    if [ "$status" -ne 0 ]; then
+      if grep -Eiq "shared rollout token budget exhausted|rollout.?budget.*exhaust" "$CFD_LOG"; then
+        failure_class=budget
+      elif grep -Eiq "rate.?limit|too many requests|quota exceeded|temporarily unavailable|server overloaded|try again later" "$CFD_LOG"; then
+        failure_class=environment.rate_limit
+      elif grep -Eiq "timeout|timed out|deadline exceeded" "$CFD_LOG"; then
+        failure_class=timeout
+      elif grep -Eiq "unknown model|model.*not found|invalid.*model" "$CFD_LOG"; then
+        failure_class=model-routing
+      else
+        failure_class=unknown
+      fi
+    fi
+    if [ "$status" -eq 0 ] && [ -n "$CFD_MODEL_EVIDENCE" ]; then
+      if [ ! -r "$CFD_MODEL_EVIDENCE" ]; then
+        printf "%s\n" "dispatch child: model evidence file not readable: $CFD_MODEL_EVIDENCE" >&2
+        status=78; failure_class=model-routing; model_policy=failed
+      else
+        observed_models=$(sed "/^[[:space:]]*$/d" "$CFD_MODEL_EVIDENCE" | tr "\\n" "," | sed "s/,$//")
+        if [ -z "$observed_models" ] || sed "/^[[:space:]]*$/d" "$CFD_MODEL_EVIDENCE" | grep -Fvx "$CFD_EFFECTIVE_MODEL" >/dev/null; then
+          status=78; failure_class=model-routing; model_policy=failed
+        else
+          model_policy=passed
+        fi
+      fi
+    fi
     printf "%s\n" "$status" > "$CFD_EXIT_FILE"
     if [ -n "$CFD_LEDGER" ]; then
-      printf 'job_id\tstatus\tphase\tprofile\tcli\trequested_model\teffective_model\treasoning_effort\tattempts\tretryable\tfailure_class\tmodel_policy\tinput_tokens\toutput_tokens\ttotal_tokens\texit_status\n' > "$CFD_LEDGER"
-      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t1\t0\t%s\tnot_checked\t%s\t%s\t%s\t%s\n' \
+      printf 'job_id\tstatus\tphase\tprofile\tcli\trequested_model\teffective_model\treasoning_effort\trollout_budget_tokens\tattempts\tretryable\tfailure_class\tmodel_policy\tinput_tokens\toutput_tokens\ttotal_tokens\texit_status\n' > "$CFD_LEDGER"
+      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t1\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$CFD_JOB_ID" "$([ "$status" -eq 0 ] && printf passed || printf failed)" "$CFD_PHASE" \
         "${CFD_PROFILE:-cli:$CFD_CLI}" "$CFD_CLI" "${CFD_MODEL:-profile-default}" \
-        "${CFD_MODEL:-profile-default}" "${CFD_REASONING_EFFORT:-profile-default}" \
-        "$([ "$status" -eq 0 ] && printf none || printf unknown)" \
+        "$CFD_EFFECTIVE_MODEL" "${CFD_REASONING_EFFORT:-profile-default}" \
+        "${CFD_MAX_ROLLOUT_TOKENS:-unbounded}" "$retryable" "$failure_class" "$model_policy" \
         "${CF_INPUT_TOKENS:-unavailable}" "${CF_OUTPUT_TOKENS:-unavailable}" \
         "${CF_TOTAL_TOKENS:-unavailable}" "$status" >> "$CFD_LEDGER"
     fi
     exit "$status"
   ' dispatch-bg > "$LOG" 2>&1 < /dev/null &
-  printf 'DISPATCH started  profile=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
-    "$LAST_LABEL" "$MODE" "$!" "$LOG" "$exit_file"
+  printf 'DISPATCH started  profile=%s  cli=%s  model=%s  reasoning_effort=%s  rollout_budget=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
+    "$LAST_LABEL" "$RESOLVED_CLI" "$CFD_EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" "${MAX_ROLLOUT_TOKENS:-unbounded}" "$MODE" "$!" "$LOG" "$exit_file"
   [ -z "$note" ] || printf '%s\n' "$note"
   exit 0
 fi
@@ -504,7 +592,7 @@ status=0
 attempt_count=1
 run_cli || status=$?
 attempt_log=" $LAST_LABEL=exit$status"
-classify_output "$OUT"
+classify_attempt
 
 # Retry the pool only for read-only dispatch — no side effects, so a second attempt under another
 # profile is safe. workspace-write never reaches this loop (background exits above).
@@ -515,10 +603,10 @@ if [ "$MODE" = read-only ]; then
     LAST_LABEL=$(target_label)
     LAST_KIND=$TARGET_KIND
     status=0
-    run_cli || status=$?
     attempt_count=$((attempt_count + 1))
+    run_cli || status=$?
     attempt_log="$attempt_log $LAST_LABEL=exit$status"
-    classify_output "$OUT"
+    classify_attempt
   done
 fi
 
@@ -528,7 +616,7 @@ EFFECTIVE_MODEL="$MODEL"
 [ -n "$EFFECTIVE_MODEL" ] || EFFECTIVE_MODEL='profile-default'
 failure_class='none'
 if [ "$status" -ne 0 ]; then
-  classify_output "$OUT"
+  classify_attempt
 fi
 
 if [ "$status" -eq 0 ] && [ -n "$MODEL_EVIDENCE" ]; then
@@ -563,8 +651,8 @@ if [ -n "$MAX_LINES" ]; then
   fi
 fi
 
-printf 'DISPATCH exit=%s  profile=%s  cli=%s  model=%s  reasoning_effort=%s  mode=%s  failure_class=%s  out=%s  lines=%s  budget=%s\n' \
-  "$status" "$LAST_LABEL" "$RESOLVED_CLI" "$EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" "$MODE" "$failure_class" "$OUT" "$lines" "$budget"
+printf 'DISPATCH exit=%s  profile=%s  cli=%s  model=%s  reasoning_effort=%s  rollout_budget=%s  mode=%s  failure_class=%s  out=%s  lines=%s  budget=%s\n' \
+  "$status" "$LAST_LABEL" "$RESOLVED_CLI" "$EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" "${MAX_ROLLOUT_TOKENS:-unbounded}" "$MODE" "$failure_class" "$OUT" "$lines" "$budget"
 [ -z "$note" ] || printf '%s\n' "$note"
 write_ledger "$([ "$status" -eq 0 ] && printf passed || printf failed)" "$status"
 exit "$status"
