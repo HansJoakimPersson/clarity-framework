@@ -64,7 +64,8 @@
 
 ## Open questions and decisions
 
-[List unresolved architectural or product questions. This helps the AI understand uncertainty and avoid making implicit decisions.]
+[List unresolved architectural or product questions. This helps the AI distinguish real Escalation
+decisions from ordinary Delegated assumptions.]
 
 - [ ] [Open question 1]
 - [ ] [Open question 2]
@@ -109,9 +110,10 @@
 
 [Omit this entire section if the project does not divide work among multiple agents.]
 
-This section is the project's **runtime contract**: it states which agent fills each level, under
-which profile, and with which permissions. It is the single source for this information; a skill or
-script can be replaced without redefining the workflow.
+This section is the project's **runtime and authority contract**: it states which agent fills each
+level, under which profile and permissions, and which decisions are Delegated, Escalation, or
+Reserved. It is the single source for this information; a skill or script can be replaced without
+redefining the workflow.
 
 > **The profile pool column is the level-to-profile binding** that `plan-driven-build` reads at
 > step 0. Name the project's real aimux profiles here. A profile selects the CLI, authentication and
@@ -124,7 +126,7 @@ script can be replaced without redefining the workflow.
 
 | Level | Agent / profile pool | Model | Rollout budget | Sandbox + approval | Responsibility |
 | --- | --- | --- | --- | --- | --- |
-| Orchestrator | [e.g. Claude Code or Codex] | — | — | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, owns gates, and maintains the run journal. Does not read the codebase or diff itself. |
+| Orchestrator | [e.g. Claude Code or Codex] | — | — | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, exercises Delegated authority, presents material impact gates, and maintains the run journal. Does not read the codebase or diff itself. |
 | Reasoning | [e.g. pool `codework1,codework2` — aimux profile names] | [optional; empty uses profile default] | [optional] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different profile pool from the Orchestrator. |
 | Review *(optional)* | [e.g. reuse Reasoning's pool, or its own] | [optional; empty uses profile default] | [optional] | `read-only` + approval `never` | Reviews the plan cold against the code, from a different prompt file than Reasoning's. Does not need a different profile — the prompt is what separates it. |
 | Implementation | [e.g. pool `codework3,codework4` — aimux profile names] | [required exact model, e.g. `gpt-5.6-luna`] | [required positive token ceiling, e.g. `120000`] | `workspace-write` + approval `never` | Builds the approved plan. Model and budget remain fixed when another profile pays. Does not re-plan; stops on a blocking question. |
@@ -168,12 +170,24 @@ and gitignored.
 **Orchestrator budget:** [What the orchestrator may read per round, e.g. “plan + review ≤ 40 lines +
 verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separation is illusory.]
 
-**Default gate profile:** [semi-automatic (default) / interactive / unattended — what step 1 of
-`plan-driven-build` proposes for a new plan's `Gate profile` field. Set this once the project has
-proven itself under `semi-automatic` a few rounds, instead of re-authorizing a looser profile by hand
-on every plan; a plan may still state a different profile when the change warrants it.]
+**Default gate profile:** [semi-automatic (default) / interactive / unattended — supervision level
+for `plan-driven-build`. Authority below still controls which decisions can stop the run.]
 
-**Always requires a human:** [e.g. scope approval, merge, release decision, plan deletion]
+**Delegated authority:** [e.g. decompose approved requirements, local architecture-consistent design,
+tests, dependency-neutral refactors, commits, temporary branches/worktrees, merge worktrees back to
+the task branch, push to a named task branch]
+
+**Escalate when:** [e.g. project scope materially changes; a new paid/external dependency is needed;
+architecture, security/privacy, cost, or externally visible behavior has materially different
+reasonable alternatives]
+
+**Reserved for a human:** [e.g. production release/deployment, destructive data migration, credential
+or permission changes, deletion of production data, push/merge to protected main if the project
+chooses to reserve it]
+
+> Uncertainty alone is not a reason to ask. Use repository evidence, project intent, conventions, and
+> the least-consequential reversible option for Delegated decisions; record the assumption and
+> continue.
 
 ---
 
