@@ -118,20 +118,26 @@ cannot finish the journey, and a step crowded with Must-have stories, which usua
 should be split. Keep an epic overview alongside it so each epic states the outcome it delivers, not
 just the stories it contains.
 
-### 5.3 Splitting the document
+### 5.3 Splitting and archiving the backlog
 
 Keep requirements in one document by default. Split the story detail into its own document when the
-backlog passes roughly 20 active stories or more than one person maintains it: NFRs are written
-once and shape the architecture, while the backlog churns continuously, and the two do not deserve
-the same file. The roles, quality bar, lifecycle, story map, epic overview, priorities, and
-traceability stay with the requirements document — they are the stable contract. Very large
-backlogs may shard further into one file per epic, with the epic overview as the index.
+backlog passes roughly 20 active stories or more than one person maintains it: NFRs are written once
+and shape the architecture, while the backlog churns continuously, and the two do not deserve the
+same file. The roles, quality bar, lifecycle, story map, epic overview, priorities, and traceability
+stay with the requirements document — they are the stable contract. Very large active backlogs may
+shard further into one file per epic, with the epic overview as the index.
+
+Do not let completed work become permanent hot context. After a release closes the last useful
+implementation link to a Done or Dropped story, move its detailed story block to
+`docs/archive/stories/YYYY.md` (or an epic-specific file under that directory). Keep only its ID,
+title, terminal status, release, and archive pointer in the active traceability/index. IDs remain
+retired forever; archiving removes context weight, not history.
 
 ### 5.4 Traceability and ownership
 
 Maintain traceability from requirements to architecture and tests. Retire story IDs rather than
-deleting or reusing them; a dropped story keeps its ID and its reason so that historical plans,
-commits, and test cases keep resolving. Priorities are decisions, not technical facts; record the
+reusing them; a dropped story keeps its ID, reason, and archive pointer so that historical plans,
+commits, and test cases keep resolving without keeping the full story in active context. Priorities are decisions, not technical facts; record the
 business owner of those decisions.
 
 ## 6. System Architecture Document (SAD)
@@ -206,9 +212,27 @@ the relevant issue, story, ADR, commit, release, or post-mortem.
 
 Use ADRs for decisions that affect architecture, interfaces, security, operations, or future change
 cost. **Write them in the SAD**, next to the architecture they explain — `03-sad.md` §6 holds the
-decision, its context, consequences, and the alternatives that were rejected. Change Management
-records only which ADRs were superseded and by what, so the supersession history survives even as
-the SAD is rewritten. Do not delete a superseded ADR; mark it superseded and preserve the reasoning.
+decision, its context, consequences, and the alternatives that were rejected. Change Management records which ADRs were superseded and by what. Once the replacement is established,
+move the full superseded ADR to `docs/archive/adr/` and leave a compact ID/title/superseded-by pointer
+in the SAD or Change Management index. Preserve the reasoning in the archive; do not force every
+future architecture run to reread obsolete decisions.
+
+### 11.1 Documentation temperature and retention
+
+Treat `docs/` as working memory, not an append-only archive.
+
+| Temperature | Normal contents | Agent read policy |
+| --- | --- | --- |
+| **Hot** | `00-ai-context`, current requirements, active architecture/contracts, current plan | May be selected into a bounded context pack |
+| **Warm** | Stable but task-specific sections, active ADRs, runbook/deployment/test material | Read only when the plan cites an exact section |
+| **Cold** | Superseded ADRs, completed/dropped story detail, old incidents/releases, resolved debt | Store under `docs/archive/`; never scan automatically |
+
+Git remains the complete historical record. `docs/archive/` exists for history that must remain
+human-findable without burdening ordinary agent context. Active documents should describe the current
+truth plus compact indexes/pointers to cold history, not reproduce the full history inline.
+
+At plan closeout, move terminal material out of hot documents when it no longer informs current
+implementation. Archive by stable ID/year rather than copying the same entry into multiple places.
 
 ## 12. Visual Profile & Design Tokens
 
