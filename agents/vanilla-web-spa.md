@@ -29,7 +29,7 @@ Guidance for agents working in small single-page web applications without a fram
      where the change belongs
    - `docs/04-data-model-api.md` — when the task touches network behavior or data structures
 
-   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
+   Do not read a document speculatively. Never scan `docs/archive/` unless the task explicitly requires historical evidence. Reading everything is slow and crowds out the code you actually need.
 3. If the project has a backend component, confirm the run model before starting anything: is the frontend served
    by the backend process, or does it run as a separate server? If the project documentation does not make this
    clear, ask before assuming. Never start a separate frontend server solely because a backend exists.
