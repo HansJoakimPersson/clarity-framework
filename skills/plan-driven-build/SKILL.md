@@ -315,8 +315,9 @@ Classify every open question. Resolve Delegated questions from repository eviden
 intent, and the least-consequential reversible assumption; write that assumption into the plan and
 continue. Stop only for Escalation or Reserved questions.
 
-When the plan is a decomposition of already-approved project intent, set `Status: Approved` once its
-review objections are resolved — no second human scope approval is required. If the plan materially
+When the plan is a decomposition of the documented project-intent baseline, set `Status: Approved`
+once its review objections are resolved — the status means executable under the authority contract,
+not that another human checkpoint occurred. If the plan materially
 changes intent, present that delta as the single Escalation decision and stop for it.
 
 ## Step 4 — Dispatch the build
