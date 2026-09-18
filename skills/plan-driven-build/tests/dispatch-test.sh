@@ -37,12 +37,15 @@ shift 2
 model=''
 netarg=''
 reasoning=''
+rollout=''
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -c)
       case "$2" in
         model_reasoning_effort=*) reasoning=${2#*=} ;;
-        *) netarg=$2 ;;
+        sandbox_workspace_write.network_access=*) netarg=$2 ;;
+        features.rollout_budget=*) rollout=$2 ;;
+        *) exit 64 ;;
       esac
       shift 2 ;;
     -m) model=$2; shift 2 ;;
@@ -65,6 +68,12 @@ done
 # Visible on stdout even when --out is unset (the --background path never passes -o; its
 # stdout+stderr land in --log instead), so a network-forwarding regression is catchable there too.
 [ -z "$netarg" ] || printf 'CF_NETWORK_ARG=%s\n' "$netarg"
+[ -z "$rollout" ] || printf 'CF_ROLLOUT_ARG=%s\n' "$rollout"
+
+if [ "${CF_TEST_ROLLOUT_EXHAUST:-0}" -eq 1 ]; then
+  printf '%s\n' 'shared rollout token budget exhausted' >&2
+  exit 1
+fi
 
 if [ "${CF_TEST_FAIL:-0}" -eq 1 ]; then
   exit 17
@@ -77,7 +86,7 @@ if [ "${AIMUX_FAKE_PROFILE:-}" = "${CF_FAIL_PROFILE:-__cf_no_match__}" ] && [ "$
 fi
 
 if [ "${CF_TEST_RATE_LIMIT:-0}" -eq 1 ] && [ "${AIMUX_FAKE_PROFILE:-}" = "${CF_FAIL_PROFILE:-__cf_no_match__}" ]; then
-  [ -z "$out" ] || printf 'error: rate limit, try again later\n' > "$out"
+  printf 'error: rate limit, try again later\n' >&2
   exit 17
 fi
 
@@ -86,7 +95,7 @@ fi
 [ -z "${CF_PROMPT_OUT:-}" ] || printf '%s' "$prompt" > "$CF_PROMPT_OUT"
 
 if [ -n "$out" ]; then
-  result="ok${CF_ENV_SEEN:+:$CF_ENV_SEEN}${model:+:model=$model}${AIMUX_FAKE_MODEL:+:aimux-model=$AIMUX_FAKE_MODEL}${netarg:+:net=$netarg}${reasoning:+:reasoning=$reasoning}"
+  result="ok${CF_ENV_SEEN:+:$CF_ENV_SEEN}${model:+:model=$model}${AIMUX_FAKE_MODEL:+:aimux-model=$AIMUX_FAKE_MODEL}${netarg:+:net=$netarg}${reasoning:+:reasoning=$reasoning}${rollout:+:rollout=$rollout}"
   printf '%s\n' "$result" > "$out"
 fi
 FAKE_CODEX
@@ -324,5 +333,78 @@ if "$D" --profile reg --mode read-only --prompt test --model test-model-x \
   printf 'dispatch-test: unexpected model should have failed\n' >&2; exit 1
 fi
 grep -F 'failure_class=model-routing' "$TEST_ROOT/out/models-bad-summary" >/dev/null
+
+# 26. implementation fails closed without an explicit model
+if "$D" --profile reg --phase implementation --mode workspace-write --background --prompt test \
+  --max-rollout-tokens 12345 --log "$TEST_ROOT/out/impl-no-model.log" \
+  2>"$TEST_ROOT/out/impl-no-model.err"; then
+  printf 'dispatch-test: implementation without --model should have failed\n' >&2; exit 1
+fi
+grep -F -- '--phase implementation requires explicit --model' "$TEST_ROOT/out/impl-no-model.err" >/dev/null
+
+# 27. implementation fails closed without an execution budget
+if "$D" --profile reg --phase implementation --mode workspace-write --background --prompt test \
+  --model test-model-x --log "$TEST_ROOT/out/impl-no-budget.log" \
+  2>"$TEST_ROOT/out/impl-no-budget.err"; then
+  printf 'dispatch-test: implementation without --max-rollout-tokens should have failed\n' >&2; exit 1
+fi
+grep -F -- '--phase implementation requires --max-rollout-tokens' "$TEST_ROOT/out/impl-no-budget.err" >/dev/null
+
+# 28. implementation pins model and rollout budget independently of the paying profile
+summary=$("$D" --profile pool-bad,pool-good --phase implementation --mode workspace-write --background \
+  --prompt test --model test-model-x --max-rollout-tokens 12345 \
+  --ledger "$TEST_ROOT/out/impl-ok.ledger" --log "$TEST_ROOT/out/impl-ok.log")
+printf '%s\n' "$summary" | grep -F 'model=test-model-x' >/dev/null
+printf '%s\n' "$summary" | grep -F 'rollout_budget=12345' >/dev/null
+attempt=0
+while [ ! -f "$TEST_ROOT/out/impl-ok.exit" ] && [ "$attempt" -lt 50 ]; do
+  attempt=$((attempt + 1)); sleep 0.02
+done
+test -f "$TEST_ROOT/out/impl-ok.exit"
+test "$(cat "$TEST_ROOT/out/impl-ok.exit")" = '0'
+grep -F 'CF_ROLLOUT_ARG=features.rollout_budget={enabled=true,limit_tokens=12345' "$TEST_ROOT/out/impl-ok.log" >/dev/null
+grep -F 'test-model-x' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
+grep -F '12345' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
+grep -F 'pinned' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
+
+# 29. background model evidence is checked before the sentinel reports success
+printf '%s\n' 'test-model-x' 'gpt-6-astra' > "$TEST_ROOT/models-bg-bad.txt"
+"$D" --profile reg --phase implementation --mode workspace-write --background --prompt test \
+  --model test-model-x --max-rollout-tokens 12345 --model-evidence "$TEST_ROOT/models-bg-bad.txt" \
+  --ledger "$TEST_ROOT/out/impl-model-bad.ledger" --log "$TEST_ROOT/out/impl-model-bad.log" >/dev/null
+attempt=0
+while [ ! -f "$TEST_ROOT/out/impl-model-bad.exit" ] && [ "$attempt" -lt 50 ]; do
+  attempt=$((attempt + 1)); sleep 0.02
+done
+test -f "$TEST_ROOT/out/impl-model-bad.exit"
+test "$(cat "$TEST_ROOT/out/impl-model-bad.exit")" = '78'
+grep -F 'model-routing' "$TEST_ROOT/out/impl-model-bad.ledger" >/dev/null
+grep -F 'failed' "$TEST_ROOT/out/impl-model-bad.ledger" >/dev/null
+
+# 30. rollout-budget exhaustion is classified from raw stderr and is never retried
+CF_TEST_ROLLOUT_EXHAUST=1
+export CF_TEST_ROLLOUT_EXHAUST
+if "$D" --profile pool-bad,pool-good --mode read-only --prompt test --max-rollout-tokens 1 \
+  --out "$TEST_ROOT/out/budget-fail.md" >"$TEST_ROOT/out/budget-fail.summary"; then
+  printf 'dispatch-test: exhausted rollout budget should have failed\n' >&2; exit 1
+fi
+unset CF_TEST_ROLLOUT_EXHAUST
+grep -F 'failure_class=budget' "$TEST_ROOT/out/budget-fail.summary" >/dev/null
+grep -F 'profile=pool-bad' "$TEST_ROOT/out/budget-fail.summary" >/dev/null
+grep -F 'shared rollout token budget exhausted' "$TEST_ROOT/out/budget-fail.md.attempt-1.log" >/dev/null
+
+# 31. rollout budget must be a positive integer
+if "$D" --profile reg --mode read-only --prompt test --max-rollout-tokens 0 \
+  --out "$TEST_ROOT/out/budget-zero.md" 2>"$TEST_ROOT/out/budget-zero.err"; then
+  printf 'dispatch-test: zero rollout budget should have failed\n' >&2; exit 1
+fi
+grep -F -- '--max-rollout-tokens must be a positive integer' "$TEST_ROOT/out/budget-zero.err" >/dev/null
+
+# 32. read-only phases cannot silently widen permissions
+if "$D" --profile reg --phase planning --mode workspace-write --prompt test \
+  --out "$TEST_ROOT/out/phase-mode.md" 2>"$TEST_ROOT/out/phase-mode.err"; then
+  printf 'dispatch-test: planning under workspace-write should have failed\n' >&2; exit 1
+fi
+grep -F -- '--phase planning requires --mode read-only' "$TEST_ROOT/out/phase-mode.err" >/dev/null
 
 printf 'dispatch-test: ok\n'
