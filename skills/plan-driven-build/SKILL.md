@@ -296,7 +296,7 @@ model_args=''
 The command prints `budget=within budget (n/40)` or `OVER BUDGET`. If it is over, read the first 40
 lines only and note the truncation in the journal.
 
-## Step 3 — Revise, then stop
+## Step 3 — Revise and classify decisions
 
 Write the objections you agree with into the plan yourself — a bounded edit, unlike reading source
 docs or diffs. Briefly justify the ones you dismiss; silent dismissal hides that the review happened.
@@ -304,11 +304,12 @@ docs or diffs. Briefly justify the ones you dismiss; silent dismissal hides that
 Before presenting it, scan the plan itself once more: placeholders ("TBD", "handle appropriately",
 a step with no file path or verification command), tasks that contradict each other or the stated
 `Excluded` list, and requirements a reader could take two ways. This is a bounded read of the plan
-you already hold, not the source-diff reading the budget forbids. Fix what you can inline; turn what
-you can't fix into a `BLOCKING` question rather than presenting it unresolved.
+you already hold, not the source-diff reading the budget forbids. Fix what you can inline; classify anything you cannot resolve as Escalation or Reserved rather
+than using uncertainty itself as a blocker.
 
-Show the user: the goal, `Included` / `Excluded`, all `BLOCKING` questions, and what the review
-changed.
+Record the goal, `Included` / `Excluded`, material assumptions, and what the review changed in the
+journal. Present them to the user only when an impact-gate decision actually requires input or when
+the selected supervision profile calls for an informational checkpoint.
 
 Classify every open question. Resolve Delegated questions from repository evidence, documented
 intent, and the least-consequential reversible assumption; write that assumption into the plan and
@@ -497,8 +498,10 @@ Report it to the user: what is done, what is not, and what was built outside `In
 a single hunk for a high-risk change or a report that looks wrong — a judgment call, not the
 default.
 
-**Do not finish the build yourself if Implementation stopped.** Report why and let the user decide.
-Taking over is the silent failure that makes the whole workflow pointless.
+If Implementation stops, classify the cause. For a Delegated implementation or environment failure,
+apply the debugging/retry rules and re-dispatch rather than asking the user what to do. For an
+Escalation or Reserved decision, report that decision and stop. The orchestrator still does not take
+over production coding itself.
 
 ## Step 6 — Commit and integrate internally
 
@@ -531,17 +534,19 @@ external code review.
 
 ## Step 8 — Close out
 
-After the merge transition recorded in step 7, go through the plan's **At closeout** section with
-the user. The answers drive real changes: if an architectural decision belongs in
-`docs/03-sad.md`, write it there now. "Nothing" is
-a valid answer to every question, but do not skip a question because the answer seems obvious —
-this is the last point where the lesson still exists.
+After the transition recorded in step 7, answer the plan's **At closeout** section from the run
+evidence and project documents. Write durable results immediately: architectural decisions to
+`docs/03-sad.md`, status/traceability to requirements, and durable change records where applicable.
+Escalate only when a closeout item itself crosses the authority boundary; do not turn bookkeeping
+into a user questionnaire.
 
 Use `finishing-a-development-branch` when it is installed. Give it the final verification result,
-changed-path summary, open findings, branch state, and release requirement. It provides closeout
-options; the gate profile and the user still decide whether to merge, push, delete, or retain work.
+changed-path summary, open findings, branch state, authority contract, and release requirement. It
+performs Delegated integration/cleanup and returns only any remaining Escalation/Reserved transition.
 
-Then delete the plan and its journal in their own commit, and remove `$RUN`. `plan-template.md` and
+Then delete the plan and its journal in their own commit, and remove `$RUN` when that cleanup is
+Delegated by the project. If plan deletion is explicitly Reserved, leave the artifacts and report
+that single pending transition. `plan-template.md` and
 `journal-template.md` stay in the skill directory — they are templates, not artifacts.
 
 ## Resuming an interrupted run
