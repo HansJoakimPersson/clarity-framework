@@ -5,440 +5,252 @@ description: Use when a project is on an older Clarity Framework version, a new 
 
 # Framework Update (framework-update)
 
-Bring this project to the shape the **current** Clarity Framework release prescribes, without losing
-a word of what is already written.
+Bring this project to the shape the current stable Clarity release prescribes without losing
+project-owned content.
 
-The target state is concrete: the project should end up looking the way it would have looked if the
-framework had been applied at today's version from the start — same files, in the same places, with
-the same structure — except that every filled-in passage is the one that was already there. When a
-Clarity skill is installed, identical copies exist under `.agents/skills/` for Codex and
-`.claude/skills/` for Claude Code.
+The installed copy of this skill is only the bootstrap entry point. Once the latest stable target tag
+is resolved, that tag's `skills/framework-update/SKILL.md` and scripts govern the rest of the run.
 
-This skill has nothing to do with the plan-driven build workflow. Do not dispatch anything and do
-not involve other agents or accounts. You do this yourself, in this session.
+Do not dispatch other agents. Perform the update in this session.
 
-## The ownership rule
+## Ownership and authority
 
-Every path has exactly one owner, and that decides what happens to it:
+Read the target release's `README.md` **Ownership** section first; it is normative.
 
-- **Framework-owned** files are replaced wholesale. They are never edited in a project, so there is
-  nothing in them worth preserving. Do not diff them, do not merge them — replace the approved
-  managed path so files removed upstream are removed locally too.
-- **Project-owned** files hold the user's work. Their *content* is preserved and their *structure*
-  is lifted to the new template.
-- Everything else is untouched.
+- **Framework-owned:** `AGENTS.md`, `CLAUDE.md`, and each Clarity-managed skill name listed in the
+  project's `docs/00-ai-context.md`. Replace these from the target release.
+- **Project-owned:** `docs/`. Preserve its authored content while lifting active standard documents
+  to the target template structure.
+- **Everything else:** untouched.
 
-Do not carry a copy of the mapping in this file. Read it from the release you fetched, in
-`README.md` under **Project structure** and **Ownership** — that section is normative and is what
-this skill follows. If it disagrees with anything below, it wins.
+Never delete project-owned content, never touch source code, and never wildcard across all skills.
 
-Three rules hold throughout: **never delete project-owned content**, **never touch source code**,
-and **never discard anything a project wrote in `CLAUDE.md`**. `CLAUDE.md` is framework-owned and
-must end up containing exactly `@AGENTS.md`, but any project-specific lines it currently holds are
-project-owned content: move each rule into the unambiguous `docs/` document that governs it before
-reducing the file to the import. Stop only when the destination or meaning is materially ambiguous.
+Routine upgrades are **Delegated** when every write is deterministic, reversible, and
+content-preserving. Stop only for an **Escalation** or **Reserved** condition such as ambiguous skill
+ownership, ambiguous document mapping, project-authored content inside a retired managed-skill
+directory, or a project rule that reserves framework commits.
 
-Skill ownership is name-scoped, not wildcard-scoped. Only Clarity skill names listed on the `skills:`
-line of the **Clarity-managed setup** block in the project's `docs/00-ai-context.md` are managed by
-Clarity. Skills with any other name are project- or third-party-owned and must remain untouched. If no block or list exists, ownership is ambiguous: present the discovered Clarity-looking skill
-names as one Escalation decision before replacing anything, then write the resolved list into that
-block so the next run does not have to ask again.
+`CLAUDE.md` must end as exactly `@AGENTS.md`. If it currently contains project-specific rules,
+move each rule first to its unambiguous home under `docs/`. If destination or meaning is ambiguous,
+leave `CLAUDE.md` untouched and escalate before deleting anything.
+
+Skill ownership is name-scoped. If the Clarity-managed setup block or its `skills:` line is absent,
+ownership is ambiguous: present the discovered Clarity-looking names as one Escalation decision and
+record the resolved list before replacing any skill.
 
 ## Preconditions
 
+- Run from the project root of a Git repository.
 - `git` is available and github.com is reachable.
-- Run from the project root of a Git repository. Existing source, dependency, test and application
-  configuration changes may remain dirty; this skill must neither stage nor modify them.
-- A dirty path is a blocker only when it is in the **update surface**: `AGENTS.md`, `CLAUDE.md`,
-  `.gitignore`, `docs/NN-*.md`, or a runtime copy of a skill shipped by
-  the fetched release. A newly copied, untracked `framework-update` directory under either
-  runtime root is a bootstrap artifact and is allowed.
+- Unrelated source/build/test/application changes may remain dirty and staged.
+- A dirty update-surface path is a blocker: `AGENTS.md`, `CLAUDE.md`, `.gitignore`,
+  `docs/NN-*.md`, or either runtime copy of a skill shipped by the target release or already listed
+  as managed by the project.
+- An untracked `framework-update` directory copied only to bootstrap this run is allowed.
 
-## Step 1 — Fetch the framework and read the rules
+## Step 1 — Resolve and pin the target release
 
 ```bash
 TMP=$(mktemp -d)
 git clone --quiet --filter=blob:none https://github.com/HansJoakimPersson/clarity-framework "$TMP/cf"
 NEW=$(git -C "$TMP/cf" tag -l --sort=-v:refname 'v*' \
-  | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+
-```
-
-The detached checkout is now the only release source for the run: read `$TMP/cf/README.md` first
-and copy files only from that checkout. Never copy from an untagged branch. If the installed
-`framework-update/SKILL.md` differs from `$TARGET_UPDATE_SKILLDIR/SKILL.md`, the target release's
-procedure and scripts are authoritative from this point; the installed copy was only the bootstrap
-entry point. Clean up `$TMP` when you are done, whatever the outcome.
-
-The checker prints the pre-existing source paths it will leave untouched. If it reports a conflict,
-stop before inspecting or modifying the affected update-surface file. Do not ask the user to clean
-unrelated `src/`, build, dependency, test or application-configuration changes.
-
-## Step 2 — Establish the project's current version
-
-Look in this order and use the first that answers:
-
-1. The **Framework version** field in `docs/00-ai-context.md`.
-2. A `*Clarity Framework vX.Y.Z*` footer in any project document.
-3. Nothing found — say so, and treat every document as needing a structure check against `$NEW`.
-   You do not need the old version to do the work; it only tells you how much to expect.
-
-Normalize a leading `v` before comparing. If the project version equals `$NEW_VERSION`, also verify
-that every managed skill exists and is identical in both runtime locations before saying it is up
-to date. In a Git project, also verify neither copy is ignored. A matching version with a missing,
-divergent, or ignored runtime copy still needs repair.
-
-## Step 3 — Decide what happens to each file
-
-**Framework-owned — replace or add, no comparison needed:**
-
-| File | How to place it |
-| --- | --- |
-| `AGENTS.md` | Copy the matching starter from `$NEW:agents/`. Identify the stack from the project file's own title line or from `00-ai-context.md` — every starter begins `# AGENTS.md - <Stack> vX.Y`. If the project has none, ask which stack rather than guessing |
-| `.agents/skills/<managed-name>/` | Replace the whole directory from `$NEW:skills/<managed-name>/`, including removal of files no longer shipped |
-| `.claude/skills/<managed-name>/` | Create an identical copy of the same release directory for Claude Code |
-
-If a framework-owned file in the project differs from the new release, that is expected — it is an
-older version. Replace it. Do not report the difference as a conflict and do not try to preserve
-anything from it. Deleting stale files is allowed only inside one of the approved managed skill
-directories, immediately before replacing that directory. Never use a wildcard over all skills.
-
-**Cross-client instructions:** `CLAUDE.md` must contain exactly `@AGENTS.md`. If it is missing,
-propose creating that one-line file. If it holds anything else, do not silently replace it: read
-what is there, propose a destination in `docs/` for each project-specific rule, and present that
-migration as part of the scope. Reducing the file to the import is approved together with the
-migration, never before it.
-
-**Project-owned — merge, one document at a time:**
-
-`docs/NN-*.md` hold the user's writing. For each, compare the project's document against the new
-template and work out what structurally differs — added sections, renamed headings, reordered
-parts. You do not need the project's old template version for this: a template section is
-recognisable by its placeholder text and its heading, and the user's prose is recognisable by being
-prose. Trust that judgment; it is more reliable than inferring a baseline.
-
-A framework update is a structural migration, **not a documentation-retention sweep**. New lifecycle
-rules such as moving completed stories, superseded ADRs, resolved debt, or old incidents into
-`docs/archive/` apply to subsequent project work. Do not retroactively relocate historical project
-content during the upgrade unless the user separately asked for that cleanup.
-
-**New framework skills** that exist in the target release but are not listed in the project's
-marker: report them as available with one-line trigger/use information. Do not install them
-automatically and do not adopt a same-named third-party skill as framework-owned.
-
-**Retired managed skills** listed in the project's marker but absent from the target release: report
-them as a framework removal. Removing both exact runtime directories and the name from the managed
-setup block is Delegated when the directories contain only the previously managed framework copy.
-If either directory has project-authored content or ownership is unclear, stop as Escalation.
-
-**New templates** the project should have but does not: report them as available; do not add them
-merely because a release ships them. Add one autonomously only when existing documented project
-intent makes it clearly required and the addition does not invent product content; otherwise leave
-it as a non-blocking follow-up.
-
-**Orphans** — a file in the project that the framework no longer ships: report it with a
-recommendation. Check `git -C "$TMP/cf" log --follow --name-status` before calling something an
-orphan; it may have been renamed.
-
-## Step 4 — Classify the update and continue
-
-Build the same compact scope summary internally:
-
-- detected version → `$NEW`;
-- exact framework-owned paths to replace/add/remove;
-- `CLAUDE.md` migration destinations, if any;
-- project-owned documents needing structural merge;
-- new optional skills/templates and orphans;
-- unrelated dirty paths accepted by the checker.
-
-Routine version upgrades are **Delegated**. Continue directly when every write is deterministic,
-reversible, and content-preserving. Do not create a universal pre-update approval gate.
-
-Stop only for an **Escalation** or **Reserved** condition, such as ambiguous skill ownership, an
-ambiguous document mapping that could change meaning, project-authored content inside a retired
-managed-skill directory, or a project rule that reserves framework commits. Present only the
-material decision that blocks safe continuation. New optional skills/templates and reported orphans
-are non-blocking; leave them unchanged unless existing documented intent resolves them.
-
-## Step 5 — Apply
-
-**Framework-owned:** replace verbatim from the detached target checkout. For each managed skill name
-that still exists in the release, remove only the two exact target directories, recreate them from
-`$TMP/cf/skills/<name>/`, then verify the copies with `diff -qr`. No edits, adaptation, merging, unresolved globs, or deletion outside those exact paths.
-
-For `CLAUDE.md`, write every unambiguous migrated rule into its `docs/` destination first, then
-reduce `CLAUDE.md` to the single line `@AGENTS.md`. If any rule's destination or meaning is
-ambiguous, leave the file untouched and escalate before deleting a byte — an unmigrated rule
-silently deleted is the one failure this step must never produce.
-
-If `.gitignore` excludes either managed runtime path, narrow the ignore rule so both copies are
-versioned when that edit is unambiguous and preserves ignores for local settings, caches,
-credentials, and machine-only state. Preserve ignores for local settings, caches, credentials, and machine-only
-state; never unignore those as a side effect.
-
-**Project-owned:** one document at a time, and never mechanically.
-
-1. Take the new template as the target structure.
-2. Move every filled-in passage from the project's document into the matching section, **unchanged**.
-   Same words, new place. You are moving text, not improving it.
-3. New sections the project has no content for: keep the template's placeholder text, so it is
-   visible that they need filling. Do not invent content, and do not drop a section because it looks
-   irrelevant — that is the user's call, and Step 6 asks them.
-4. Content with no home in the new structure: keep it under a heading titled exactly
-   `## Parked content (no matching section in current template)` at the end of the document, and
-   flag it. Losing it is worse than an untidy document. If the document already carries that heading
-   from a prior run, re-attempt to place each existing parked entry into the current template's
-   structure before parking anything new — a section renamed back, or a new section added since, may
-   now give it a home — and re-park only what still has none. Left unattempted, parked content
-   accumulates under that heading indefinitely across releases.
-5. Preserve the document's front-matter table (dates, status, owner) — those are the project's, not
-   the template's, except the framework version field which Step 6 rewrites.
-
-Report each document as you finish it.
-
-## Step 6 — Stamp, verify, and commit
-
-Update Framework version markers in the **active standard project documents**
-(`docs/NN-*.md`) only, including the version field in `docs/00-ai-context.md` and their
-`*Clarity Framework vX.Y.Z*` footers. Do not rewrite `docs/archive/`; archived records describe the
-historical state in which they were written. A stale marker in an active standard document makes the
-next run report the wrong starting point.
-
-Refresh the **Clarity-managed setup** block in `docs/00-ai-context.md` when this run added or removed
-a managed skill or replaced the starter. The block holds no version or date of its own — those are
-the header-table fields above — so an unchanged skill set means an unchanged block.
-
-Now finalize the exact `UPDATE_PATHS` list: framework-owned paths, merged/stamped
-`docs/NN-*.md`, and any `CLAUDE.md` or `.gitignore` changes made by this run. Never use
-`git add .`, `git add -A`, or a broad `git add docs/`. Pre-existing staged source changes may
-remain in the index. If `git diff --cached --name-only` reveals an update-surface path that was
-already staged before this run, stop instead of trying to repair the user's index.
-
-Generate the commit block **after stamping** with the target release's renderer:
-
-```bash
-bash "$TARGET_UPDATE_SKILLDIR/scripts/render-update-commit.sh" --version "$NEW_VERSION" \
-  --path AGENTS.md \
-  --path <each-other-update-path>
-```
-
-The renderer also auto-includes tracked active `docs/NN-*.md` files carrying a Clarity version
-marker. That compatibility safeguard makes upgrades from older updater procedures safe even when
-they render the block before version stamping.
-
-If commits are Delegated, write the renderer output to a temporary script, inspect that its
-`UPDATE_PATHS` contain only this update surface, and execute it. If commits are Reserved, preserve
-the block for handoff instead. In either case, verify afterward that unrelated pre-existing staged
-paths remain uncommitted and untouched.
-
-## Step 7 — Hand back
-
-Tell the user, in this order:
-
-1. **What needs them now** — new empty sections in merged documents, content you had to park at the
-   end of a file, and new templates they may want to adopt.
-2. What was replaced verbatim, as a count, and that both runtime copies passed `diff -qr` and are
-   not excluded by `.gitignore`.
-3. Orphans, with a recommendation for each.
-
-If the update commit was Delegated, report its SHA. If committing is Reserved, paste the renderer's
-exact block as the only required action. Keep the framework update in its own commit — mixing it with
-project work makes it impossible to undo cleanly, and this is a change that occasionally needs
-undoing.
-
-## Notes
-
-- If a merge is genuinely ambiguous — the new structure splits a section the project filled in as
-  one — stop on that document and ask. One question is cheaper than a document the user has to
-  reconstruct.
-- Two releases apart is not two runs. Go straight to the newest release; stepping through
-  intermediate versions re-merges the same documents several times and loses formatting each round.
-- A project that edited a framework-owned file will lose that edit here. That is the intended
-  behaviour, not an accident: the framework's `README.md` states that such files are never edited in
-  a project, and `docs/` is where a project's own rules belong. Mention it once in the report if you
-  notice it, so the user can move the content into the governing `docs/` document before approving.
- | head -1)
+  | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
 [ -n "$NEW" ] || { printf '%s\n' 'No stable Clarity Framework release tag found' >&2; exit 2; }
 NEW_VERSION=${NEW#v}
+
 git -C "$TMP/cf" checkout --quiet --detach "$NEW"
 TARGET_UPDATE_SKILLDIR="$TMP/cf/skills/framework-update"
 [ -r "$TARGET_UPDATE_SKILLDIR/SKILL.md" ] || {
-  printf '%s\n' "Release $NEW is missing framework-update" >&2; exit 2;
+  printf '%s\n' "Release $NEW is missing framework-update" >&2
+  exit 2
 }
+
 FRAMEWORK_SKILLS=$(git -C "$TMP/cf" ls-tree -d --name-only "$NEW:skills" | tr '\n' ',' | sed 's/,$//')
 PROJECT_MANAGED_SKILLS=''
 if [ -r docs/00-ai-context.md ]; then
-  PROJECT_MANAGED_SKILLS=$(sed -n 's/^skills:[[:space:]]*//p' docs/00-ai-context.md | head -1 | tr -d '[:space:]')
+  PROJECT_MANAGED_SKILLS=$(sed -n 's/^skills:[[:space:]]*//p' docs/00-ai-context.md \
+    | head -1 | tr -d '[:space:]')
 fi
+
 bash "$TARGET_UPDATE_SKILLDIR/scripts/check-update-scope.sh" \
   --framework-skills "$FRAMEWORK_SKILLS" \
   --managed-skills "$PROJECT_MANAGED_SKILLS"
 ```
 
-Read `README.md` at `$NEW` first. Clean up `$TMP` when you are done, whatever the outcome.
-The checker prints the pre-existing source paths it will leave untouched. If it reports a conflict,
-stop before inspecting or modifying the affected update-surface file. Do not ask the user to clean
-unrelated `src/`, build, dependency, test or application-configuration changes.
+The detached checkout is the **only** release source for this run. Never copy from `main` or another
+branch. Read `$TMP/cf/README.md` and then the target release's copy of this skill. If it differs
+from the installed copy, continue using the target procedure; do not combine old procedure text with
+new release files.
 
-## Step 2 — Establish the project's current version
+Clean up `$TMP` when the run completes or aborts.
 
-Look in this order and use the first that answers:
+## Step 2 — Establish current project state
 
-1. The **Framework version** field in `docs/00-ai-context.md`.
-2. A `*Clarity Framework vX.Y.Z*` footer in any project document.
-3. Nothing found — say so, and treat every document as needing a structure check against `$NEW`.
-   You do not need the old version to do the work; it only tells you how much to expect.
+Determine the current framework version in this order:
 
-Normalize a leading `v` before comparing. If the project version equals `$NEW_VERSION`, also verify
-that every managed skill exists and is identical in both runtime locations before saying it is up
-to date. In a Git project, also verify neither copy is ignored. A matching version with a missing,
-divergent, or ignored runtime copy still needs repair.
+1. `Framework version` in `docs/00-ai-context.md`;
+2. a `*Clarity Framework vX.Y.Z*` footer in an active standard project document;
+3. no marker — treat every active standard document as needing a structural check.
 
-## Step 3 — Decide what happens to each file
+Normalize a leading `v` before comparison.
 
-**Framework-owned — replace or add, no comparison needed:**
+Read the project's Clarity-managed setup block when present:
 
-| File | How to place it |
-| --- | --- |
-| `AGENTS.md` | Copy the matching starter from `$NEW:agents/`. Identify the stack from the project file's own title line or from `00-ai-context.md` — every starter begins `# AGENTS.md - <Stack> vX.Y`. If the project has none, ask which stack rather than guessing |
-| `.agents/skills/<managed-name>/` | Replace the whole directory from `$NEW:skills/<managed-name>/`, including removal of files no longer shipped |
-| `.claude/skills/<managed-name>/` | Create an identical copy of the same release directory for Claude Code |
+```text
+agents-starter: <name or none>
+skills: <comma-separated managed names>
+skill-paths: .agents/skills, .claude/skills
+```
 
-If a framework-owned file in the project differs from the new release, that is expected — it is an
-older version. Replace it. Do not report the difference as a conflict and do not try to preserve
-anything from it. Deleting stale files is allowed only inside one of the approved managed skill
-directories, immediately before replacing that directory. Never use a wildcard over all skills.
+If the project already reports `$NEW_VERSION`, still verify that the selected starter and every
+managed skill exist, match the target release, exist identically in both runtime roots, and are not
+ignored by Git. A matching version marker alone is not proof of a complete update.
 
-**Cross-client instructions:** `CLAUDE.md` must contain exactly `@AGENTS.md`. If it is missing,
-propose creating that one-line file. If it holds anything else, do not silently replace it: read
-what is there, propose a destination in `docs/` for each project-specific rule, and present that
-migration as part of the scope. Reducing the file to the import is approved together with the
-migration, never before it.
+## Step 3 — Build the update set
 
-**Project-owned — merge, one document at a time:**
+### Framework-owned
 
-`docs/NN-*.md` hold the user's writing. For each, compare the project's document against the new
-template and work out what structurally differs — added sections, renamed headings, reordered
-parts. You do not need the project's old template version for this: a template section is
-recognisable by its placeholder text and its heading, and the user's prose is recognisable by being
-prose. Trust that judgment; it is more reliable than inferring a baseline.
+- Replace `AGENTS.md` with the matching starter from `$TMP/cf/agents/`.
+- For each managed skill still shipped by the target release, replace both exact runtime directories
+  from `$TMP/cf/skills/<name>/`; remove stale files inside those two directories first.
+- Verify each runtime pair with `diff -qr`.
+- Ensure `CLAUDE.md` contains exactly `@AGENTS.md`, migrating existing project rules first.
+- Narrow `.gitignore` only when required to keep managed runtime copies versioned; preserve ignores
+  for local settings, caches, credentials, and machine-only state.
 
-**New framework skills** that exist at `$NEW:skills/` but are not listed in the project's marker:
-offer them individually. Do not install them automatically and do not adopt a same-named third-party
-skill as framework-owned.
+A framework-owned difference from the target release is expected. Do not merge or preserve edits
+inside framework-owned copies.
 
-**New templates** the project should have but does not: report them. Copying an unfilled template
-into `docs/` is a decision about scope, so let the user choose per file rather than adding all of
-them.
+### Retired managed skills
 
-**Orphans** — a file in the project that the framework no longer ships: report it with a
-recommendation. Check `git -C "$TMP/cf" log --follow --name-status` before calling something an
-orphan; it may have been renamed.
+If a project-managed skill name is absent from the target release, it is retired. Removing its two
+exact runtime directories and the name from the managed setup block is Delegated **only** when both
+directories contain framework-owned copies with no project-authored additions. Otherwise escalate
+before removal.
 
-## Step 4 — Report, then stop
+### Project-owned active documents
 
-Present, in this order:
+For each existing `docs/NN-*.md` with a corresponding target template:
 
-- Detected version → `$NEW`, and how the version was determined.
-- Framework-owned files to be replaced or added — a count and the exact managed paths, no diffs.
-- Any stale files that will be removed inside those managed paths, plus the proposed `CLAUDE.md`
-  change: the import when the file is missing, or the migration of its project-specific rules into
-  named `docs/` documents followed by reduction to the import.
-- Project-owned documents needing a merge, each with one line on what structurally changed.
-- New framework skills available, new templates available, and orphans.
-- Existing unrelated dirty paths that were accepted by the scope checker, explicitly saying they
-  will remain unstaged and untouched.
+1. Use the target template as the structural destination.
+2. Move filled-in project passages to the matching section **unchanged**.
+3. Keep new template sections with their placeholder text when the project has no content yet.
+4. Re-attempt placement of any existing
+   `## Parked content (no matching section in current template)` entries.
+5. Put content that still has no matching home under that exact parked-content heading.
+6. Preserve project metadata such as owner/status/date except the framework version fields stamped
+   later.
 
-**Stop and wait for approval.** Nothing is written before this point. The user is approving a scope,
-not a diff — keep it short enough to actually read.
+If a target structure splits one existing passage in a way that has materially different reasonable
+mappings, stop on that document as Escalation. Straightforward heading/semantic mappings are
+Delegated.
+
+A framework update is a **structural migration, not a retention sweep**. New lifecycle rules such as
+archiving completed stories, superseded ADRs, resolved debt, or old incidents apply to subsequent
+project work. Do not retroactively move historical content to `docs/archive/` during the upgrade
+unless the user separately requested that cleanup.
+
+### New optional artifacts and orphans
+
+- New framework skills not already managed: report them as available with a one-line use/trigger
+  description. Do not install them automatically.
+- New templates not already used: report them as available. Add one autonomously only when existing
+  documented project intent makes it clearly required without inventing product content.
+- Files no longer shipped by the framework but not covered by retired managed-skill handling:
+  report them with a recommendation. Check target/history before calling a rename an orphan.
+
+These are non-blocking unless ownership is ambiguous.
+
+## Step 4 — Classify and continue
+
+Record a compact update summary: detected version → target tag, exact framework-owned replacements
+and removals, active document structural merges, unrelated dirty paths accepted by the checker, and
+non-blocking optional/orphan findings.
+
+Continue directly when all operations are Delegated. Do not create a universal "approve update"
+checkpoint.
+
+For one real Escalation/Reserved condition, present only that decision and stop. Resume the same run
+after it is resolved.
 
 ## Step 5 — Apply
 
-**Framework-owned:** replace verbatim. For each approved managed skill name, remove only the two
-exact target directories, recreate them from `$NEW:skills/<name>/`, then verify the copies with
-`diff -qr`. No edits, adaptation, merging, unresolved globs, or deletion outside those exact paths.
+Apply only the update set from Step 3 using files from the detached target checkout.
 
-For `CLAUDE.md`, perform only what was approved in step 4. Write the migrated rules into their
-`docs/` destinations first, then reduce `CLAUDE.md` to the single line `@AGENTS.md`. If the
-migration was not approved, leave the file untouched and report it as outstanding — an unmigrated
-rule silently deleted is the one failure this step must never produce.
+Never use broad deletion or copy commands over `.agents/`, `.claude/`, `skills/`, or `docs/`.
+A managed skill replacement may delete only:
 
-If `.gitignore` excludes either managed runtime path, narrow the ignore rule as approved so both
-copies are versioned. Preserve ignores for local settings, caches, credentials, and machine-only
-state; never unignore those as a side effect.
-
-**Project-owned:** one document at a time, and never mechanically.
-
-1. Take the new template as the target structure.
-2. Move every filled-in passage from the project's document into the matching section, **unchanged**.
-   Same words, new place. You are moving text, not improving it.
-3. New sections the project has no content for: keep the template's placeholder text, so it is
-   visible that they need filling. Do not invent content, and do not drop a section because it looks
-   irrelevant — that is the user's call, and Step 6 asks them.
-4. Content with no home in the new structure: keep it under a heading titled exactly
-   `## Parked content (no matching section in current template)` at the end of the document, and
-   flag it. Losing it is worse than an untidy document. If the document already carries that heading
-   from a prior run, re-attempt to place each existing parked entry into the current template's
-   structure before parking anything new — a section renamed back, or a new section added since, may
-   now give it a home — and re-park only what still has none. Left unattempted, parked content
-   accumulates under that heading indefinitely across releases.
-5. Preserve the document's front-matter table (dates, status, owner) — those are the project's, not
-   the template's, except the framework version field which Step 6 rewrites.
-
-Report each document as you finish it.
-
-**Staging and committing:** Keep an exact `UPDATE_PATHS` list containing only approved files and
-directories this run changed: framework-owned paths, merged `docs/NN-*.md`,
-and approved `CLAUDE.md` or `.gitignore` changes. Never use `git add .`,
-`git add -A`, or a broad `git add docs/`. Pre-existing staged source changes may remain in the
-index. If `git diff --cached --name-only` reveals an update-surface path that was already staged
-before this run, stop instead of trying to repair the user's index.
-
-Before handing back, generate the commit block with the installed skill's renderer, one complete
-relative path per `--path` argument:
-
-```bash
-bash "$UPDATE_SKILLDIR/scripts/render-update-commit.sh" --version "$NEW_VERSION" \
-  --path AGENTS.md \
-  --path <each-other-approved-update-path>
+```text
+.agents/skills/<managed-name>/
+.claude/skills/<managed-name>/
 ```
 
-Paste the renderer's output verbatim in the handoff. It defines a Bash `UPDATE_PATHS` array, stages
-only that array, and commits with `git commit --only`. Never manually wrap a raw path across lines,
-never emit a directory prefix such as `.agents/skills/` by itself, and never replace the array with
-a hand-written command.
+Keep a logical `UPDATE_PATHS` set containing every path changed by this run. Pre-existing staged
+source changes may remain staged; do not reset, unstage, or include them.
 
-## Step 6 — Stamp the version
+## Step 6 — Stamp, verify, and commit
 
-Then update the Framework version markers already present in the project's files, including the
-version field in `docs/00-ai-context.md` and any `*Clarity Framework vX.Y.Z*` footers. A stale
-marker left behind makes the next run report the wrong starting point.
+Stamp the target version in **active standard project documents only** (`docs/NN-*.md`):
 
-Refresh the **Clarity-managed setup** block in `docs/00-ai-context.md` when this run added or removed
-a managed skill or replaced the starter. The block holds no version or date of its own — those are
-the header-table fields above — so an unchanged skill set means an unchanged block.
+- update the `Framework version` field in `docs/00-ai-context.md`;
+- update existing `*Clarity Framework vX.Y.Z*` footers;
+- refresh the Clarity-managed setup block when the starter or managed skill list changed.
+
+Do **not** rewrite `docs/archive/`; archived records describe historical states.
+
+Add every stamped active document to `UPDATE_PATHS`, even when version stamping is its only change.
+A stale active marker makes the next update report the wrong starting point.
+
+Before committing, verify:
+
+- `CLAUDE.md` is exactly `@AGENTS.md`;
+- every managed skill pair passes `diff -qr`;
+- neither managed runtime copy is ignored by Git;
+- all active standard framework markers equal `$NEW_VERSION`;
+- no source/build/test/application path was modified by this run;
+- unrelated pre-existing staged paths remain staged but outside `UPDATE_PATHS`.
+
+Generate the exact commit script **after stamping** with the target release renderer:
+
+```bash
+bash "$TARGET_UPDATE_SKILLDIR/scripts/render-update-commit.sh" --version "$NEW_VERSION" \
+  --path AGENTS.md \
+  --path <each-other-update-path> > "$TMP/commit-update.sh"
+bash -n "$TMP/commit-update.sh"
+```
+
+The renderer also auto-includes tracked active `docs/NN-*.md` carrying a Clarity marker. That is a
+backward-compatibility safeguard for older updater procedures that rendered before stamping.
+
+Inspect the generated `UPDATE_PATHS`. If commits are Delegated, execute:
+
+```bash
+bash "$TMP/commit-update.sh"
+```
+
+If commits are Reserved, do not execute it; preserve the generated block for handoff.
+
+After a Delegated commit, verify the commit contains only update paths and unrelated previously staged
+paths remain staged and uncommitted.
 
 ## Step 7 — Hand back
 
-Tell the user, in this order:
+Report, in this order:
 
-1. **What needs them now** — new empty sections in merged documents, content you had to park at the
-   end of a file, and new templates they may want to adopt.
-2. What was replaced verbatim, as a count, and that both runtime copies passed `diff -qr` and are
-   not excluded by `.gitignore`.
-3. Orphans, with a recommendation for each.
+1. Anything that still needs human action: Escalation/Reserved items, new empty sections, parked
+   content, and optional new skills/templates worth considering.
+2. Framework-owned replacements/removals and confirmation that both runtime copies match and are not
+   ignored.
+3. Active project documents structurally merged/stamped, plus orphans/recommendations.
+4. The update commit SHA when Delegated; otherwise the renderer's exact commit block.
 
-Then paste the renderer's exact output and wait. Keep the framework update in its own commit —
-mixing it with project work makes it impossible to undo cleanly, and this is a change that
-occasionally needs undoing.
+Do not ask for routine confirmation after a successful Delegated update.
 
 ## Notes
 
-- If a merge is genuinely ambiguous — the new structure splits a section the project filled in as
-  one — stop on that document and ask. One question is cheaper than a document the user has to
-  reconstruct.
-- Two releases apart is not two runs. Go straight to the newest release; stepping through
-  intermediate versions re-merges the same documents several times and loses formatting each round.
-- A project that edited a framework-owned file will lose that edit here. That is the intended
-  behaviour, not an accident: the framework's `README.md` states that such files are never edited in
-  a project, and `docs/` is where a project's own rules belong. Mention it once in the report if you
-  notice it, so the user can move the content into the governing `docs/` document before approving.
+- Upgrade directly to the newest stable tag; do not replay intermediate releases.
+- A project edit inside a framework-owned file is not preserved by default. Project rules belong in
+  `docs/`; if you discover such content before replacement, move it only when its destination is
+  unambiguous, otherwise escalate.
+- A new optional skill is not a migration requirement merely because the target release ships it.
+- The target tag, not the installed updater version and not repository `main`, defines the run.
