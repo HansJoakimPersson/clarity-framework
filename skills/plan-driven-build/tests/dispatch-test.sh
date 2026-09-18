@@ -370,7 +370,13 @@ grep -F 'CF_ROLLOUT_ARG=features.rollout_budget={enabled=true,limit_tokens=12345
 grep -F 'test-model-x' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
 grep -F '12345' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
 grep -F 'pinned' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
-grep -F "$(printf '100\t40\t10\t25\t5\t125')" "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
+if ! grep -F "$(printf '100\t40\t10\t25\t5\t125')" "$TEST_ROOT/out/impl-ok.ledger" >/dev/null; then
+  printf 'dispatch-test: background native usage missing; ledger follows\n' >&2
+  cat "$TEST_ROOT/out/impl-ok.ledger" >&2
+  printf 'dispatch-test: background event stream follows\n' >&2
+  cat "$TEST_ROOT/out/impl-ok.log.events.jsonl" >&2
+  exit 1
+fi
 grep -F '"type":"turn.completed"' "$TEST_ROOT/out/impl-ok.log.events.jsonl" >/dev/null
 
 # 29. background model evidence is checked before the sentinel reports success
