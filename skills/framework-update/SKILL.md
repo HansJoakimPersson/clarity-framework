@@ -265,7 +265,13 @@ TARGET_UPDATE_SKILLDIR="$TMP/cf/skills/framework-update"
   printf '%s\n' "Release $NEW is missing framework-update" >&2; exit 2;
 }
 FRAMEWORK_SKILLS=$(git -C "$TMP/cf" ls-tree -d --name-only "$NEW:skills" | tr '\n' ',' | sed 's/,$//')
-bash "$TARGET_UPDATE_SKILLDIR/scripts/check-update-scope.sh" --framework-skills "$FRAMEWORK_SKILLS"
+PROJECT_MANAGED_SKILLS=''
+if [ -r docs/00-ai-context.md ]; then
+  PROJECT_MANAGED_SKILLS=$(sed -n 's/^skills:[[:space:]]*//p' docs/00-ai-context.md | head -1 | tr -d '[:space:]')
+fi
+bash "$TARGET_UPDATE_SKILLDIR/scripts/check-update-scope.sh" \
+  --framework-skills "$FRAMEWORK_SKILLS" \
+  --managed-skills "$PROJECT_MANAGED_SKILLS"
 ```
 
 Read `README.md` at `$NEW` first. Clean up `$TMP` when you are done, whatever the outcome.
