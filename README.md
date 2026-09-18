@@ -53,6 +53,8 @@ clarity-framework/
 │   ├── README.md                   # Skill catalog, ownership, installation, and precedence
 │   ├── clarity-bootstrap/           # Need-driven setup of a new or unmanaged project
 │   │   └── SKILL.md
+│   ├── project-driver/               # Outer loop: project intent → successive verified increments
+│   │   └── SKILL.md
 │   ├── framework-update/            # Upgrade framework-owned files without losing project content
 │   │   ├── SKILL.md
 │   │   ├── scripts/                 # Update-scope and commit-rendering helpers
@@ -145,9 +147,9 @@ cp .agents/skills/clarity-bootstrap/SKILL.md .claude/skills/clarity-bootstrap/SK
 ```
 
 Then invoke `$clarity-bootstrap` in Codex or `/clarity-bootstrap` in Claude Code. The skill inspects
-the project, proposes the smallest coherent document set, and stops for approval before writing —
-this command only places the skill; it fetches from `main` since the skill itself always fetches the
-latest **stable tagged** release when it runs.
+the project, infers the smallest coherent setup, asks only for material Escalation/Reserved gaps, and
+applies Delegated setup choices directly. This command only places the skill; it fetches from `main`
+since the skill itself always fetches the latest **stable tagged** release when it runs.
 
 Manual setup:
 
@@ -163,12 +165,20 @@ Copy `skills/framework-update/` to both runtime skill roots and invoke `$framewo
 `/framework-update`. It fetches the latest stable release, preserves completed project content,
 updates framework-owned files, reports required document changes, and proposes a dedicated commit.
 
+### Project-driven work
+
+When the user wants to describe the product and let the orchestrator drive delivery, install
+`skills/project-driver/` together with `skills/plan-driven-build/`. The project driver derives the
+next ready increment from the documented intent, runs it through the governed build workflow,
+integrates verified internal work, updates project state, and continues until the outcome is complete
+or a material Escalation/Reserved decision is reached.
+
 ### Plan-driven work
 
-When a task is large enough to need scope approval, install `skills/plan-driven-build/` in both
-runtime roots. It uses the four-level runtime contract, separate aimux profiles where
-available, bounded reports, a committed run journal, and human gates for scope, merge, release, and
-plan deletion.
+For a non-trivial increment, install `skills/plan-driven-build/` in both runtime roots. It uses the
+four-level runtime contract, separate aimux profiles where available, bounded reports, a committed run
+journal, and impact gates only for Escalation/Reserved decisions. Routine commits, temporary
+branches/worktrees, and internal integration are Delegated by default.
 
 It requires a second AI CLI, because the orchestrator dispatches the work instead of doing it.
 `codex` is the dispatch adapter implemented today; which CLI runs each level comes from its aimux
