@@ -120,29 +120,25 @@ debugging, and a run with no external review does not invoke the review-request 
 skills. The orchestrator still owns phase order, dispatch, journal state, model policy, and human
 gates.
 
-## Gate profiles
+## Authority and gate profiles
 
-The plan's `Gate profile` field decides where you stop. Step 1 proposes the project's declared
-default from `docs/00-ai-context.md` ('Default gate profile'), or `semi-automatic` if the project
-has not declared one.
+The plan's `Gate profile` field controls how much routine execution is surfaced, but **authority
+comes first**. Classify decisions as Delegated, Escalation, or Reserved from
+`docs/00-ai-context.md`. A gate exists only for an unresolved Escalation or Reserved transition.
 
-| Profile | Stops at |
+| Profile | Behavior |
 | --- | --- |
-| `semi-automatic` *(default)* | Step 3 (scope) and 7 (merge). Commit happens automatically, closeout is proposed |
-| `interactive` | Step 3, 6 (commit), 7, and 8 (closeout) |
-| `unattended` | Step 7 only. Requires every Definition of Done condition to be command-checkable |
+| `semi-automatic` *(default)* | Execute Delegated work end-to-end; surface meaningful assumptions in the report; stop only for Escalation/Reserved decisions |
+| `interactive` | Also pause before committing or externally integrating when the extra inspection has been explicitly chosen for this plan |
+| `unattended` | Execute every Delegated transition, including commits, temporary worktrees/branches, and internal integration; notify only on completion, failure, or Escalation/Reserved decisions |
 
-A gate exists where a decision is the user's and hard to walk back: **scope**, before any code
-exists, and **merge**, before the work reaches the shared branch. Everything between those two is
-execution against a scope the user already approved. A commit inside a round is reversible and
-touches nobody else, so stopping there buys a confirmation rather than a decision — it interrupts
-the user without giving them anything they could not still change at the merge gate.
+Scope decomposition is Delegated when it is derived from already-documented project intent and does
+not materially alter it. Commits and merges from an orchestrator-created worktree back into the
+work branch are Delegated. A push to a shared branch, release, production deployment, or other
+externally visible transition is gated only when the project's authority contract reserves it.
 
-Choose `interactive` when the extra stop earns something concrete: unfamiliar territory, a risky
-migration, or a first run in a new project where you want to see the shape of a commit before it
-lands. Choose by risk, not by nerves.
-
-A profile never removes the merge gate. You never approve on the user's behalf.
+Choose `interactive` for deliberately supervised work, not because the framework is uncertain about
+normal implementation detail.
 
 ## Prerequisites
 
@@ -314,10 +310,13 @@ you can't fix into a `BLOCKING` question rather than presenting it unresolved.
 Show the user: the goal, `Included` / `Excluded`, all `BLOCKING` questions, and what the review
 changed.
 
-**Stop here** unless `Gate profile` is `unattended` and the scope was approved in advance. Approving
-scope before code exists is the entire point. Blocking questions are answered by the user — not by
-you, and not by Reasoning. On go-ahead, set `Status: Approved` — not before; the field records a
-decision, not an expectation.
+Classify every open question. Resolve Delegated questions from repository evidence, documented
+intent, and the least-consequential reversible assumption; write that assumption into the plan and
+continue. Stop only for Escalation or Reserved questions.
+
+When the plan is a decomposition of already-approved project intent, set `Status: Approved` once its
+review objections are resolved — no second human scope approval is required. If the plan materially
+changes intent, present that delta as the single Escalation decision and stop for it.
 
 ## Step 4 — Dispatch the build
 
@@ -443,22 +442,17 @@ If the runtime has neither task notifications nor a bounded wait mechanism, do n
 watching the build. Record the exact sentinel command and stop at that handoff. Never use an
 arbitrary wake-up delay as a substitute for either mechanism.
 
-### If Implementation stops because the plan is wrong
+### If Implementation discovers a plan gap
 
-Implementation owns execution, not diagnosis of scope. When it stops because the approved plan is
-internally inconsistent, omits a file authorization needed by another step, cites a missing document,
-or forbids the only bounded change that satisfies the plan, do not hand the problem back as an open
-choice.
+Implementation may correct a local, reversible plan defect when the correction is necessary to
+satisfy the existing Goal and Included scope and does not change a requirement, ADR, runtime
+baseline, excluded area, security boundary, cost commitment, or externally visible product behavior.
+It must record the correction in its final report.
 
-Classify it as a scope correction. Propose the smallest concrete plan edit that resolves the
-contradiction, explain why it changes scope, and stop for scope approval. After approval, patch the
-plan yourself, update the journal with the approved correction, and re-dispatch Implementation.
-
-Keep the correction narrow. It may authorize the minimum file, query, command, or document handling
-needed to make the existing plan coherent. It may not change a requirement, ADR, runtime baseline,
-excluded area, or product behavior without presenting that as a blocking scope question. If partial
-work already exists, state whether it falls inside the corrected scope; do not revert or bless it
-silently.
+For a material change, Implementation stops with the smallest concrete Escalation decision. The
+orchestrator updates the plan after that decision and re-dispatches. Do not escalate a missing file
+path, ordinary refactor, local test adjustment, or equivalent implementation detail that can be
+resolved safely from repository evidence.
 
 ### If a dispatched call hits a usage limit mid-run
 
@@ -506,27 +500,29 @@ default.
 **Do not finish the build yourself if Implementation stopped.** Report why and let the user decide.
 Taking over is the silent failure that makes the whole workflow pointless.
 
-## Step 6 — Commit
+## Step 6 — Commit and integrate internally
 
-Never leave the build uncommitted — a dirty tree blocks the next round and erases the boundary
-between this round's changes and the next.
+Never leave the build as an ambiguous dirty tree. Commit verified Delegated work automatically
+unless `interactive` explicitly selected a commit pause. If the work ran in an orchestrator-created
+temporary branch or `.worktree`, integrate it back into the task's owning branch, verify the
+resulting commit contains the work, and remove the temporary worktree/branch when safe. This is
+internal execution plumbing, not a human decision.
 
-Under `interactive`, propose the commit and wait. Under `semi-automatic` and `unattended`, commit and
-report. If the project follows Clarity Framework commit discipline, affected `docs/` files go in the
-same commit. If more rounds are needed, the plan and journal stay until everything is built.
+Do not merge unrelated concurrent work or overwrite a dirty target branch. That is a repository
+safety failure, not permission to guess.
 
-## Step 7 — Gate before merge
+## Step 7 — Impact gate
 
-The build is committed, not approved. Ask outright whether it may be merged, using the step 5 report
-to make the question answerable: which conditions are met, which are not, what you are unsure about.
-This gate holds in every profile. Never approve on the user's behalf.
+Determine the next transition from the project's authority contract.
 
-If the gate fails, the plan stays and the flow returns to step 4 with what remains.
+- If it is Delegated (for example local integration, an allowed push to the task branch, or continued
+  work on the next increment), perform it and continue.
+- If it is Escalation or Reserved (for example a material scope/architecture change, production
+  publication, destructive migration, or a project-reserved shared-branch push), present only that
+  decision and stop.
+- If no further transition is needed, continue directly to closeout.
 
-If the gate passes, the merge is a separate, explicit transition: the user performs it through the
-project's normal workflow, or explicitly authorizes an agent to do it. Record the merge commit in
-the journal and verify that it contains the build commit. For a direct-to-main workflow, record that
-no merge was required. Do not enter step 8 until one of those states is recorded.
+There is no universal merge gate.
 
 If an external code review is requested, use `requesting-code-review` to prepare the review package.
 When findings return, use `receiving-code-review` to disposition each finding before entering a fix
