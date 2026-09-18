@@ -26,6 +26,17 @@ tag, so an untagged heading here is a version no project can reach.
 
 ### Changed
 
+- `framework-update` now treats the resolved stable target tag as authoritative for both procedure
+  and helper scripts, checks it out detached, and continues routine reversible/content-preserving
+  upgrades autonomously instead of imposing a universal pre-update approval gate.
+- Update commits now include every active standard document carrying a Clarity version marker,
+  even for legacy updater flows that rendered the commit list before stamping. Archived history is
+  excluded from version stamping/automatic commit discovery, and retired managed skills remain in
+  the preflight conflict surface until safely removed.
+- Framework updates are explicitly structural migrations rather than documentation-retention sweeps:
+  new archive lifecycle rules apply to subsequent project work and do not retroactively relocate
+  project history during an upgrade.
+
 - Clarity now uses Delegated / Escalation / Reserved decision classes. Reversible implementation,
   commit, temporary branch/worktree, bounded replanning, and internal-integration choices are
   Delegated by default; uncertainty alone no longer creates an approval gate.
