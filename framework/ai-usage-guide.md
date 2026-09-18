@@ -3,13 +3,28 @@
 ## Clarity Framework – governed agent execution
 
 AI agents are a first-class execution layer in Clarity Framework. They are optional for simple work,
-but when used they operate under documented decisions, explicit permissions, verification gates, and
-human accountability. AI may propose, draft, implement, and verify; it does not own product decisions.
+but when used they operate under documented intent, explicit permissions, verification, and human
+accountability. Agents are expected to exercise delegated authority rather than turn reversible
+implementation choices into user approval prompts.
 
 ## 1. Principles
 
-**AI owns no decisions.** Architecture, priorities, and scope remain human decisions. An agent may
-propose, challenge, and draft, but it must not silently decide.
+**Authority follows consequence, not category.** Agents may make reversible decisions inside the
+project's documented intent, constraints, architecture, security policy, and risk tolerance. Human
+approval is reserved for decisions that materially change intent, create significant external or
+irreversible consequences, or cross a boundary the project explicitly reserves.
+
+Clarity uses three decision classes:
+
+| Class | Agent behavior | Typical examples |
+| --- | --- | --- |
+| **Delegated** | Decide, act, record, and continue | Local design choices, file/class structure, tests, commits, temporary branches/worktrees, internal integration, bounded replanning inside approved intent |
+| **Escalation** | Propose the smallest decision needed and stop only for that decision | Material scope change, significant architecture trade-off, new external dependency or cost, security/privacy trade-off, incompatible product behavior choices |
+| **Reserved** | Never perform without explicit human authorization | Destructive/irreversible operations, production publication, credential/permission changes, destructive data migrations, other boundaries named by the project |
+
+Uncertainty alone is not an escalation condition. Resolve ordinary ambiguity from repository evidence,
+documented intent, established conventions, and the least-consequential reversible choice; record the
+assumption and continue.
 
 **Documents are the agent's memory.** Separate sessions do not share memory. The project documents
 are the context that lets a new agent understand the product and continue safely.
@@ -71,12 +86,12 @@ The following four levels are the only AI runtime model in Clarity Framework:
 
 | Level | Responsibility | Must not |
 | --- | --- | --- |
-| **Orchestrator** | Sequences work, keeps context small, presents distillates, owns approval gates, and maintains the run journal | Read the entire codebase or diff itself; write production code |
+| **Orchestrator** | Sequences work, keeps context small, exercises delegated authority, presents material escalations, and maintains the run journal | Read the entire codebase or diff itself; write production code |
 | **Reasoning** | Reads deep context and produces a plan, blocking questions, or pass/fail evidence | Approve its own work, speak directly to the user, or decide scope |
 | **Review** *(optional)* | Reviews the plan cold against the code before implementation | Write the plan it reviews |
 | **Implementation** | Builds the approved plan in full and reports verification | Re-plan; stop on a blocking question |
 
-A single agent may fill multiple levels, but the contracts and approval boundaries still apply.
+A single agent may fill multiple levels, but the contracts and decision boundaries still apply.
 Review does not need a different profile from the level that authored the plan: what keeps a review
 from repeating the author's blind spots is a different prompt and a stateless invocation, not a
 different subscription. Profiles distribute cost; prompts distribute judgment.
@@ -116,8 +131,14 @@ polling loop merely to check a task the harness already tracks. In a plain CLI e
 task notifications, a bounded sentinel wait remains the fallback. A notification or sentinel only
 establishes completion; the exit code still determines success or failure.
 
-Human gates belong on decisions: scope, merge, release, and plan deletion. Tool calls inside the
-approved sandbox should not become artificial approval gates.
+Human gates belong on **impact boundaries**, not implementation mechanics. Commits, temporary
+branches/worktrees, merges back from an orchestrator-created worktree, bounded replanning inside
+documented intent, and other reversible internal transitions are Delegated by default. Scope,
+merge, release, push, or plan deletion are human gates only when the project's runtime contract
+classifies that specific transition as Escalation or Reserved.
+
+A plan derived from already-approved project intent does not require a second scope approval merely
+because the orchestrator decomposed the project into another increment.
 
 For governed execution, use a bounded preflight before dispatch, classify failures by cause, and
 retry only explicitly retryable conditions. Verify the effective model for parent and child agents;
@@ -158,13 +179,14 @@ artifact.
 
 `skills/plan-driven-build/` implements this model for Claude Code and Codex. It dispatches planning,
 review, implementation, and verification through separate aimux profiles, preserves the state in a
-run journal, and stops at human approval gates. The plan is a transient work order, not an archive of
+run journal, and stops only at Escalation or Reserved impact gates. The plan is a transient work order, not an archive of
 project documentation. Decisions worth keeping move into the SAD, requirements, change-management,
 or other permanent project documents before the plan is deleted.
 
-**Scope one plan as one mergeable increment.** The plan is the unit of the merge gate and the unit
-of verification: a whole diff is checked against its Definition of Done in a single bounded pass, and
-that increment is approved and merged as one. Scope it to the smallest change that can merge without
+**Scope one plan as one mergeable increment.** The plan is the unit of verification and internal
+integration: a whole diff is checked against its Definition of Done in a single bounded pass, and
+that increment is committed and integrated as one. Human approval is required only when that
+integration crosses an Escalation or Reserved boundary. Scope it to the smallest change that can merge without
 leaving the product broken or half-migrated — usually one user story, and more than one only when
 they cannot merge separately.
 
@@ -172,8 +194,8 @@ A milestone-sized plan fails quietly rather than loudly. It cannot state concret
 plan's line budget, so the steps become vague to fit; verification then compares a milestone-sized
 diff against a Definition of Done it cannot cover, and reports conditions as met without real
 evidence. The milestone belongs in the story map's release slices and in Change Management, and a
-sequence of plans delivers it. At the other end, a change too small to need scope approval before
-code is written does not need this workflow at all — the dispatches and gates cost more than the
+sequence of plans delivers it. At the other end, a change too small to justify separate planning, review, implementation, and
+verification does not need this workflow at all — orchestration overhead would cost more than the
 change.
 
 ## 10. Continuous improvement of governed execution
