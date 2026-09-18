@@ -63,17 +63,21 @@ architecture, key NFRs, boundaries, open decisions, and the project's runtime co
 
 ### Solo developer with agents
 
-1. Start a session with `00-ai-context.md`.
-2. State the concrete outcome for the session.
-3. Let the agent draft or implement within the stated scope.
-4. Review the result yourself.
-5. Update the affected document when a decision or state change occurred.
-6. Update `00-ai-context.md` when the project state changed materially.
+For one bounded task, start with `00-ai-context.md`, state the outcome, and let the agent execute
+Delegated work through verification. Human review is required when the authority contract reserves
+it or when the result crosses a material impact boundary; it is not a mandatory checkpoint after
+every reversible step.
+
+For a project-level request, use `project-driver`: provide the product/project intent once, let the
+orchestrator derive the next coherent increment, execute it through `plan-driven-build`, integrate
+verified internal work, update the authoritative documents, and continue until the requested outcome
+is complete or an Escalation/Reserved decision is reached.
 
 ### Team using agents
 
-The team remains the source of truth. Decisions are made by the team, generated drafts are reviewed
-by a human, and one named owner keeps `00-ai-context.md` current.
+The team remains the source of product intent and accountability. Delegated implementation decisions
+may still be made by agents within the documented authority contract; team review and approval belong
+at the material boundaries the team reserves. One named owner keeps `00-ai-context.md` current.
 
 ### Project without agents
 
