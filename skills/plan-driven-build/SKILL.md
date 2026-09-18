@@ -40,6 +40,10 @@ Everything below exists to keep **your** context small. Per round you may read:
 
 If the plan sets a `Report budget` other than the default, pass it to `--max-lines` instead.
 
+That is the **orchestrator reading budget**. Implementation has a separate **execution budget**:
+its model must be pinned explicitly and `dispatch.sh` must receive a positive
+`--max-rollout-tokens` value. Report length limits do not cap model consumption.
+
 You may **not** read: `git diff`, source files, the full build log, the prompt files, or a report
 that exceeds its budget — truncate it and say you did. If you find yourself reading the codebase
 "to be sure", the workflow has already failed; say so rather than continue.
@@ -53,8 +57,8 @@ preflight -> planning -> implementation -> verification -> review -> finalizatio
 ```
 
 Use the phase that matches the dispatch and record its status in the journal. The shared failure
-classes are `environment`, `configuration`, `routing`, `timeout`, `verification`, `implementation`,
-and `unknown`; a failure is retryable only when the dispatch evidence says it is. Rate limits,
+classes are `environment`, `environment.rate_limit`, `environment.preflight`, `configuration`,
+`model-routing`, `timeout`, `budget`, `verification`, `implementation`, `plan`, and `unknown`; a failure is retryable only when the dispatch evidence says it is. Rate limits,
 temporary service unavailability, and timeouts may be retryable. Runtime, repository, model-routing,
 verification, and plan failures are not automatically retryable.
 
@@ -85,8 +89,9 @@ file contains one observed parent or child model per non-empty line:
 Any observed model different from the effective model fails closed with `failure_class=model-routing`.
 An explicit model handoff must be documented in the journal before it is accepted. A compact ledger
 is written automatically beside `--out` or `--log` unless `--ledger` overrides that path. It records
-the job, phase, profile, requested and effective model, reasoning effort, attempt count, retryability,
-failure class, model policy, token usage when supplied by the runtime, and exit status. If the
+the job, phase, profile, requested and effective model, reasoning effort, rollout-budget ceiling,
+attempt count, retryability, failure class, model policy, token usage when supplied by the runtime,
+and exit status. If the
 runtime exports `CF_INPUT_TOKENS`, `CF_OUTPUT_TOKENS`, or `CF_TOTAL_TOKENS`, those values are copied;
 otherwise the ledger records `unavailable`. Raw output remains a debugging artifact, not the primary
 run record.
@@ -159,8 +164,8 @@ Check, and if anything is missing: report it and stop.
   the journal's Deviations.
 - `docs/00-ai-context.md` names an aimux profile pool for each level — one profile or several,
   comma-separated, tried in priority order. `aimux profile list` (or `~/.aimux/config.yaml`) shows
-  the profiles that exist. **A profile carries its own CLI, model, and subscription — it is not a
-  role**: the same profile may fill several levels or appear in several pools, and Review does not
+  the profiles that exist. **A profile selects its CLI, authentication and paying subscription; its stored model is only a
+  default for levels that do not pin one — it is not a role**: the same profile may fill several levels or appear in several pools, and Review does not
   need a pool distinct from Reasoning's. Step 0 verifies the mapping; without it cost is not
   separated, only context. When a pool entry is missing from `~/.aimux/config.yaml`, `dispatch.sh`
   prints a `FALLBACK:` line — pass it on to the user and record it in the journal rather than
@@ -198,8 +203,9 @@ order, and the skill has no defaults to fall back on:
 PROFILE_REASONING=<profile pool from docs/00-ai-context.md, e.g. codework1,codework2>
 PROFILE_IMPLEMENTATION=<profile pool from docs/00-ai-context.md>
 PROFILE_REVIEW=<profile pool from docs/00-ai-context.md, or reuse $PROFILE_REASONING>
-MODEL_REASONING=          # from docs/00-ai-context.md; leave assigned-but-empty to use the profile's own model
-MODEL_IMPLEMENTATION=     # same — assign the variable even when you have no override to set
+MODEL_REASONING=          # from docs/00-ai-context.md; may be empty to use the profile default
+MODEL_IMPLEMENTATION=     # REQUIRED: exact model from docs/00-ai-context.md, e.g. gpt-5.6-luna
+MAX_ROLLOUT_TOKENS_IMPLEMENTATION= # REQUIRED: positive execution ceiling from docs/00-ai-context.md
 REASONING_EFFORT_REASONING=      # optional: none, low, medium, high, or xhigh
 REASONING_EFFORT_IMPLEMENTATION= # optional: none, low, medium, high, or xhigh
 
@@ -220,7 +226,9 @@ dispatch will fail unless the pool ends in a `cli:NAME` fallback entry — fix t
 this per dispatch, but catch it here before the run starts. Which subscriptions fill which level,
 and in what order, is the project's decision: one profile may fill several levels, any profile may
 fill any level, and a pool exists to spread load across interchangeable subscriptions — not to give
-a level its own identity. Review does not need to differ from Reasoning's pool; the prompt file is
+a level its own identity. For Implementation, the profile answers **who pays**; the explicit
+`MODEL_IMPLEMENTATION` and rollout budget answer **what may run and how much it may consume**.
+Review does not need to differ from Reasoning's pool; the prompt file is
 what keeps a review from sharing the drafting level's blind spots, not the profile.
 
 Every dispatch goes through `$SKILLDIR/dispatch.sh`, which takes its instructions from
@@ -351,8 +359,10 @@ build_env_args=
 [ -f .agents/build-env.sh ] && build_env_args='--env-file .agents/build-env.sh'
 [ -f .agents/build-env.local.sh ] && build_env_args='--env-file .agents/build-env.local.sh'
 
-model_args=''
-[ -n "${MODEL_IMPLEMENTATION:-}" ] && model_args="--model $MODEL_IMPLEMENTATION"
+test -n "${MODEL_IMPLEMENTATION:-}" || { printf '%s\n' 'MODEL_IMPLEMENTATION is required' >&2; exit 2; }
+test -n "${MAX_ROLLOUT_TOKENS_IMPLEMENTATION:-}" || { printf '%s\n' 'MAX_ROLLOUT_TOKENS_IMPLEMENTATION is required' >&2; exit 2; }
+
+model_args="--model $MODEL_IMPLEMENTATION --max-rollout-tokens $MAX_ROLLOUT_TOKENS_IMPLEMENTATION"
 [ -n "${REASONING_EFFORT_IMPLEMENTATION:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_IMPLEMENTATION"
 
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
@@ -366,6 +376,10 @@ model_args=''
 resolves from `~/.aimux/config.yaml` to start the build, but never retries a failed build on the
 next one — see `dispatch.sh`'s
 own header comment for why.
+
+The dispatcher refuses an Implementation phase with no explicit model or rollout budget. This is a
+mechanical invariant, not a prompt convention: changing or borrowing the paying profile never changes
+`MODEL_IMPLEMENTATION` or the budget.
 
 The sandbox still confines writes to the workspace. Network access widens what the build can reach,
 not what it can overwrite, which is why it is granted per dispatch rather than stored on the
@@ -453,7 +467,9 @@ what a pool is for. Only once the whole pool is exhausted do the options below a
 
 Before stopping, consider borrowing a profile from a different level's pool for this one blocked
 call: dispatch it under that profile instead, and record the borrow and the reason in the journal's
-Deviations. Revert to the normal split on the next dispatch — the borrow is a one-off, not a standing
+Deviations. **Keep the blocked level's explicit model and rollout budget unchanged**: borrowing a
+profile changes the payer, never the execution policy. Revert to the normal split on the next
+dispatch — the borrow is a one-off, not a standing
 reassignment. This was needed in both directions on a real project when one level's pool ran out
 mid-plan and the other level's pool still had headroom.
 
