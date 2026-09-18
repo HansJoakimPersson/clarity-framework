@@ -117,10 +117,28 @@ The orchestrator must not read the full codebase, source files, full diff, promp
 Where possible, dispatch commands should enforce the limits and permissions should deny accidental
 diff reads.
 
-These ceilings are **reading budgets**, not execution budgets. A short final report does not prevent
-a build agent from consuming an entire model allowance. Mutating Implementation dispatches therefore
-pin an exact model and a positive rollout-token ceiling before they start. Profile selection chooses
-the paying subscription; execution policy chooses the model and maximum consumption.
+These ceilings are **orchestrator reading budgets**, not dispatched-agent context budgets or
+execution budgets. Clarity therefore controls three independent resources:
+
+| Budget | Controls | Default mechanism |
+| --- | --- | --- |
+| **Output/read budget** | What the orchestrator consumes from reports | line ceilings |
+| **Context budget** | Project-document input available to dispatched agents | frozen context pack, 64 KiB default; whole-file refs ≤ 24 KiB |
+| **Execution budget** | Model work performed during a mutating dispatch | pinned model + rollout-token ceiling |
+
+Planning may inspect the project to discover the smallest necessary context. Review, implementation,
+and verification then receive the same frozen context pack compiled from exact `path#heading`
+references in the plan. They do not independently rescan `docs/`. Material under `docs/archive/`
+is cold history and is never included automatically.
+
+Documentation also has a temperature. Hot documents describe current truth; warm material is
+task-specific and read only by exact reference; cold superseded/completed history lives under
+`docs/archive/`. Git remains the complete history. Keeping obsolete detail in every active document
+turns each parallel workflow into another copy of the same context cost.
+
+Mutating Implementation dispatches pin an exact model and positive rollout-token ceiling before they
+start. Profile selection chooses the paying subscription; execution policy chooses the model and
+maximum consumption.
 
 ## 7. State, handovers, and permissions
 
@@ -149,8 +167,10 @@ retry only explicitly retryable conditions. Verify the effective model for paren
 the requested model is not sufficient evidence by itself. Background dispatches apply the same
 model-evidence check before their completion sentinel can report success. Keep a compact attempt ledger beside the
 raw output, and stop on non-retryable environment, routing, verification, budget, or repository
-safety failures. The executable contract and flags live in `skills/plan-driven-build/SKILL.md` and
-its `dispatch.sh`.
+safety failures. For Codex, `dispatch.sh` runs `exec --json` and records native
+`turn.completed.usage` fields — input, cached input, cache-write input, output, and reasoning output
+tokens — so optimization is based on measured usage rather than assumed cost. The executable
+contract and flags live in `skills/plan-driven-build/SKILL.md` and its `dispatch.sh`.
 
 Discipline skills are modular policy modules. `plan-driven-build` invokes them conditionally at
 failure, verification, review, and closeout boundaries through their documented integration
@@ -179,6 +199,11 @@ If a run reaches a subscription or token limit, an aimux handoff may continue it
 profile. The handoff summary is lossy; the committed run journal is the authoritative handover
 artifact.
 
+For a parallel project wave, lease distinct interchangeable profiles to concurrent workers before
+launch rather than letting both independently choose the first pool member. Release the lease when
+the worker reaches a terminal state. Profile availability is a capacity constraint, never a reason
+to create extra parallel work.
+
 ## 9. Plan-driven build
 
 `skills/plan-driven-build/` implements this model for Claude Code and Codex. It dispatches planning,
@@ -193,6 +218,22 @@ that increment is committed and integrated as one. Human approval is required on
 integration crosses an Escalation or Reserved boundary. Scope it to the smallest change that can merge without
 leaving the product broken or half-migrated — usually one user story, and more than one only when
 they cannot merge separately.
+
+### Parallel increments
+
+Parallelize across **independent increments**, not inside one plan. Planning, review, build, and
+verification have real causal dependencies and normally stay sequential within an increment.
+
+The default project-driver wave is at most two workflows. Run two only when their dependency and
+write surfaces are independent and they do not both change an order-sensitive shared contract such
+as migrations, dependency manifests, global configuration, or a public schema. Workers run in
+separate worktrees from the same baseline and do not synchronize with each other. Their verified
+commits are integrated serially, with verification after each merge and after the combined wave.
+
+Shared coordination documents use a single-writer rule during a wave. Workers return bounded
+documentation deltas; the orchestrator applies those deltas once after integration. If workers would
+need to exchange evolving context, run the work sequentially instead. Parallelism should reduce wall
+clock time, not manufacture synchronization tokens.
 
 A milestone-sized plan fails quietly rather than loudly. It cannot state concrete steps within the
 plan's line budget, so the steps become vague to fit; verification then compares a milestone-sized
