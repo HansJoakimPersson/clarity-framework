@@ -63,7 +63,7 @@ EOF
 git add .
 git commit -qm initial
 
-"$PACKER" --plan docs/plans/test.md --out docs/plans/context.md > pack.out
+sh "$PACKER" --plan docs/plans/test.md --out docs/plans/context.md > pack.out
 grep -F 'Compact project state.' docs/plans/context.md >/dev/null
 grep -F 'FR-017 · Export report' docs/plans/context.md >/dev/null
 grep -F 'AC-017-1: export succeeds.' docs/plans/context.md >/dev/null
@@ -85,7 +85,7 @@ cat > docs/plans/large.md <<'EOF'
 | `docs/large.md` | Too large whole-file read |
 ## Steps
 EOF
-if "$PACKER" --plan docs/plans/large.md --out docs/plans/large-context.md 2> large.err; then
+if sh "$PACKER" --plan docs/plans/large.md --out docs/plans/large-context.md 2> large.err; then
   printf 'context-pack-test: oversized whole-file reference should fail\n' >&2
   exit 1
 fi
@@ -99,13 +99,13 @@ cat > docs/plans/archive.md <<'EOF'
 | `docs/archive/old.md` | Cold history |
 ## Steps
 EOF
-if "$PACKER" --plan docs/plans/archive.md --out docs/plans/archive-context.md 2> archive.err; then
+if sh "$PACKER" --plan docs/plans/archive.md --out docs/plans/archive-context.md 2> archive.err; then
   printf 'context-pack-test: archive reference should fail\n' >&2
   exit 1
 fi
 grep -F 'cold context' archive.err >/dev/null
 
-if "$PACKER" --plan docs/plans/test.md --out docs/plans/tiny.md --max-bytes 100 2> tiny.err; then
+if sh "$PACKER" --plan docs/plans/test.md --out docs/plans/tiny.md --max-bytes 100 2> tiny.err; then
   printf 'context-pack-test: pack byte ceiling should fail\n' >&2
   exit 1
 fi
