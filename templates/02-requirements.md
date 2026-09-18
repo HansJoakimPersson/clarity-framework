@@ -196,7 +196,10 @@ journey. A column crowded with Must-have stories usually hides a step that shoul
 > **Splitting this document:** when the backlog passes roughly 20 active stories, or more than one
 > person maintains it, move §2.6 to `docs/02-user-stories.md` and leave a pointer here. Sections
 > 2.1–2.5 and 3–5 stay in this document; they are the stable contract, while §2.6 is the churning
-> part. Very large backlogs may shard further into one file per epic under `docs/stories/`.
+> part. Very large **active** backlogs may shard further into one file per epic under `docs/stories/`.
+> After release closeout, move full detail for Done/Dropped stories to
+> `docs/archive/stories/YYYY.md` and retain only ID/title/status/release/archive pointer in active
+> traceability. Archive is history, not normal agent context.
 
 ---
 

@@ -47,7 +47,7 @@ profiles.
    - `docs/02-requirements.md` — when the task touches functional behavior or product scope
    - `docs/05-deployment-view.md` — when the task affects builds, signing, packaging, or releases
 
-   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
+   Do not read a document speculatively. Never scan `docs/archive/` unless the task explicitly requires historical evidence. Reading everything is slow and crowds out the code you actually need.
 3. Read relevant source, build settings, package files, entitlements, and resources before proposing changes.
 4. Identify the affected surface: domain logic, UI, persistence, permissions, sandboxing, signing, packaging,
    distribution, hot paths, or external integration.

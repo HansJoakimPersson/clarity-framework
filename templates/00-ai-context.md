@@ -170,6 +170,14 @@ and gitignored.
 **Orchestrator budget:** [What the orchestrator may read per round, e.g. “plan + review ≤ 40 lines +
 verification ≤ DoD + 10 lines”. If it reads the codebase or diff, cost separation is illusory.]
 
+**Context-pack budget:** [default `65536` bytes total; whole-file references default to at most
+`24576` bytes. Larger material must be cited by exact Markdown heading. `docs/archive/` is cold
+context and is never packed automatically.]
+
+**Parallelism:** [default `max-workflows: 2`; only dependency-independent increments with disjoint
+write surfaces may share a wave. Prefer sequential execution when synchronization or shared-contract
+work would erase the latency benefit.]
+
 **Default gate profile:** [semi-automatic (default) / interactive / unattended — supervision level
 for `plan-driven-build`. Authority below still controls which decisions can stop the run.]
 
@@ -204,6 +212,7 @@ chooses to reserve it]
 | How is it tested? | `docs/06-test-documentation.md` |
 | How is it operated? | `docs/07-runbook.md` |
 | What is being built now? | `docs/plans/` (when the plan-driven workflow is used) |
+| Historical/superseded material? | `docs/archive/` — explicit lookup only; never normal session context |
 
 ---
 

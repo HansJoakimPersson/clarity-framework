@@ -1,4 +1,4 @@
-Read AGENTS.md, the project rules in docs/ that the plan cites, and {{PLAN}}, in that order. Build the plan.
+Project/runtime instructions are already loaded. Read {{CONTEXT_PACK}} and {{PLAN}}, in that order. The context pack is the complete project-document input for this run: do not scan docs/ or docs/archive/ for additional background unless the plan explicitly escalates because required material context is missing. Build the plan.
 
 The plan's Goal, Included, Excluded, requirements, and documented architectural boundaries are
 authoritative. Do not change them. You may resolve local, reversible implementation gaps when the

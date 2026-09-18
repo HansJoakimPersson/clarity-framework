@@ -37,12 +37,16 @@ changes rarely while this backlog changes constantly:
 | Priority overview and traceability (§4–5) | |
 
 When this file is adopted, replace §2.6 of the Requirements Documentation with a pointer to it. Do
-not maintain stories in both places. If the backlog grows past what one file can hold comfortably,
-shard it into one file per epic under `docs/stories/` and keep the epic overview in
+not maintain stories in both places. If the **active** backlog grows past what one file can hold
+comfortably, shard it into one file per epic under `docs/stories/` and keep the epic overview in
 `docs/02-requirements.md` §2.5 as the index.
 
+This file is active working memory, not the permanent story archive. After release closeout, move
+full detail for Done/Dropped stories to `docs/archive/stories/YYYY.md` (or an epic-specific archive)
+and keep only ID/title/terminal status/release/archive pointer in the active index/traceability.
+
 **Status values:** Draft · Ready · In progress · In review · Done · Dropped.
-A Dropped story keeps its ID and its reason; IDs are never reused.
+A Dropped story keeps its ID and reason in the archive/index; IDs are never reused.
 
 ---
 

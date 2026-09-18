@@ -51,6 +51,7 @@ Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see D
 | **Baseline commit** | `[SHA]` – step 5 verifies against this |
 | **Build env file** | `[none / .agents/build-env.sh / .agents/build-env.local.sh / other]` |
 | **Preflight** | `[none / path / passed / blocked]` |
+| **Context pack** | `[path]` / `[bytes]` / `[hash]` |
 | **Implementation model / rollout budget** | `[exact model]` / `[token ceiling]` |
 | **Build PID / exit** | `[PID]` / `[exit code, or “running”]` |
 | **Next step** | [Step number and concrete next action] |
@@ -79,13 +80,15 @@ keeps its context budget.
 | Step | Artifact read | Lines | Over budget? |
 | --- | --- | --- | --- |
 | 1 | Plan | | |
+| 1 | Context pack (limit 64 KiB by default) | | |
 | 2 | Review (limit 40) | | |
 | 4 | Build log (limit 30, only on failure) | | |
 | 5 | Verification (limit: DoD conditions + 10) | | |
 
-> Consistent overruns mean the workflow is not saving what it claims. Tighten dispatch prompt limits;
-> do not raise the ceilings. This table covers orchestrator reading only; the Implementation model
-> and rollout-token ceiling are recorded above and enforced by the dispatcher.
+> Consistent overruns mean the workflow is not saving what it claims. Tighten prompt/report limits
+> or narrow context references; do not raise ceilings as the default response. The context-pack row
+> measures dispatched project-document input. Implementation model and rollout-token ceiling are
+> recorded above and enforced separately.
 
 ---
 

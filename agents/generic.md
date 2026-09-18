@@ -23,7 +23,7 @@ Project-specific rules belong in `docs/`; keep this framework-owned file unchang
 
 1. Read `AGENTS.md` before starting.
 2. In a Clarity project, read `docs/00-ai-context.md` first when it exists. If it is absent, use
-   `README.md` and the task-relevant numbered documents. Do not read every document speculatively.
+   `README.md` and the task-relevant numbered documents. Do not read every document speculatively. Never scan `docs/archive/` unless the task explicitly requires historical evidence.
    Read `docs/03-sad.md` when the change adds or moves a component, crosses a module boundary, or
    you are unsure where it belongs; `docs/09-visual-profile.md` before visual UI work;
    `docs/04-data-model-api.md` before changing data or API contracts; and `docs/07-runbook.md`

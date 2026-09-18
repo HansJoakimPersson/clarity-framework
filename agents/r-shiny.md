@@ -40,7 +40,7 @@ optional profiles that match the project in front of you.
    - `docs/02-requirements.md` — when the task touches functional behavior
    - `docs/04-data-model-api.md` — when the task touches persistence, data structures, or API contracts
 
-   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
+   Do not read a document speculatively. Never scan `docs/archive/` unless the task explicitly requires historical evidence. Reading everything is slow and crowds out the code you actually need.
 3. Read relevant source code before proposing changes — never guess reactive variable names, module IDs, or function signatures.
 4. For non-trivial logic: write or update the failing test first with testthat, implement the smallest change, then refactor
    while keeping tests green.

@@ -1,4 +1,4 @@
-Read AGENTS.md, the project rules in docs/ that the plan cites, {{PLAN}}, {{BUILD_LOG}}, and the diff between the current working tree and commit {{SHA}}.
+Project/runtime instructions are already loaded. Read {{CONTEXT_PACK}}, {{PLAN}}, {{BUILD_LOG}}, and the diff between the current working tree and commit {{SHA}}. The context pack is the frozen project-document baseline for the run; do not scan docs/ or docs/archive/ for additional context.
 
 This is a read-only verification pass. Use command results already recorded in the build log as evidence. You may run genuinely read-only checks, but do not rerun builds or tests that write caches or artifacts. If a condition has no reliable evidence in the diff or build log, mark it uncertain rather than guessing.
 

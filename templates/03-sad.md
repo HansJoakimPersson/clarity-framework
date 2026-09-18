@@ -148,10 +148,11 @@ sequenceDiagram
 
 ## 6. Architecture decisions (ADR)
 
-> This document is where ADRs are written — the decision lives next to the architecture it explains.
-> Document every significant architectural decision here. Mark superseded ADRs with
-> `Status: Superseded`; never delete them, and add a row to `docs/08-change-management.md` §2 so the
-> supersession stays findable when this section is rewritten.
+> This document is where active ADRs are written — the decision lives next to the architecture it
+> explains. When an ADR is superseded, mark it first, add the supersession index entry to
+> `docs/08-change-management.md` §2, then move its full body to `docs/archive/adr/`. Leave a compact
+> ID/title/superseded-by/archive-pointer entry here if current architecture readers still need the
+> lineage. Preserve reasoning in cold history without forcing it into every architecture context.
 
 ### ADR-001 · [Decision title]
 

@@ -18,6 +18,11 @@ tag, so an untagged heading here is a version no project can reach.
 - New `project-driver` skill provides the outer autonomous loop from documented product intent to
   successive verified increments, invoking `plan-driven-build` as the execution engine and stopping
   only for material Escalation/Reserved decisions.
+- New `context-pack.sh` compiles exact plan references into a frozen 64 KiB-default project-document
+  context shared by review, implementation, and verification; whole-file reads over 24 KiB and
+  automatic reads from `docs/archive/` fail closed.
+- New context-budget CI check caps stack `AGENTS.md` starters at 24 KiB and
+  `templates/00-ai-context.md` at 16 KiB to prevent silent instruction truncation and context creep.
 
 ### Changed
 
@@ -29,6 +34,18 @@ tag, so an untagged heading here is a version no project can reach.
 - `plan-driven-build` replaces universal scope/merge gates with impact gates, allows local reversible
   plan corrections inside approved intent, and treats merges from orchestrator-created worktrees
   back to the owning task branch as internal execution plumbing.
+- Review/build/verification now consume the same frozen context pack instead of independently scanning
+  project documentation; plans must cite exact Markdown headings for large documents.
+- Project documentation now has hot/warm/cold lifecycle rules. Superseded ADR bodies, terminal story
+  detail, resolved debt, and historical incident/release records move under `docs/archive/` while
+  active documents retain only current truth and compact indexes.
+- `project-driver` may form waves of at most two dependency-independent increments, using separate
+  worktrees, distinct profile leases where available, no worker-to-worker synchronization, serialized
+  integration, and a single writer for shared coordination documents.
+- Codex dispatch now uses JSONL execution events and records native input, cached-input,
+  cache-write-input, output, reasoning-output, and total token usage in the ledger.
+- The Java agent starter was reduced from roughly 40 KiB to about 14 KiB while retaining its core and
+  stack-profile rules, leaving headroom for nested project instructions.
 - Discipline skills now expose integration contracts for conditional use by `plan-driven-build`,
   keeping verification, debugging, review, and branch-closeout policy modular while the orchestrator
   retains workflow state, dispatch, runtime policy, and material impact gates.

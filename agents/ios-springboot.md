@@ -53,7 +53,7 @@ boundary.
    - `docs/02-requirements.md` — when the task touches functional behavior
    - `docs/05-deployment-view.md` — when the task affects builds, deployment, or distribution
 
-   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
+   Do not read a document speculatively. Never scan `docs/archive/` unless the task explicitly requires historical evidence. Reading everything is slow and crowds out the code you actually need.
 3. Determine which side the task primarily affects — backend, frontend, or both — before writing any code.
 4. If the task crosses the API boundary, read `docs/04-data-model-api.md` and all affected endpoint definitions
    before proceeding.

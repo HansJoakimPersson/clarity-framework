@@ -63,14 +63,18 @@
 
 ## Context to read first
 
-| Document | Why |
+> These references are compiled into one frozen context pack before review/build/verification.
+> Runtime instructions are already injected, so do not list `AGENTS.md` or `CLAUDE.md`. Prefer
+> `path#heading selector` over whole-file reads. Whole files over 24 KiB and anything under
+> `docs/archive/` are rejected automatically.
+
+| Reference | Why |
 | --- | --- |
-| `AGENTS.md` | Applies in full: style, security, and test requirements |
-| `docs/00-ai-context.md` | Project orientation, runtime contract, and deviations from framework defaults |
-| `docs/02-requirements.md` § [story IDs] | Acceptance criteria for the stories in **Delivers**; authoritative over this plan |
-| `docs/03-sad.md` § [section] | Architecture decision governing this change |
-| `docs/04-data-model-api.md` | When the change concerns data models or API contracts |
-| `docs/09-visual-profile.md` | When the change affects anything visual |
+| `docs/00-ai-context.md` | Compact project orientation, runtime/authority contract, and active state |
+| `docs/02-requirements.md#FR-[ID]` | Acceptance criteria for the story in **Delivers** |
+| `docs/03-sad.md#ADR-[ID]` | Architectural decision governing this change |
+| `docs/04-data-model-api.md#[exact heading]` | Only the affected data/API contract section |
+| `docs/09-visual-profile.md#[exact heading]` | Only the visual rules the change actually touches |
 
 ## Steps
 

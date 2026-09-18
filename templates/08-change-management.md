@@ -19,10 +19,11 @@
 
 ## Decision log
 
-> Record a decision at the plan closeout that made it, not after the fact. Each entry is a single
-> decision with the reasoning behind it — not a technical-debt compromise (§1) and not an ADR (which
-> belongs in `docs/03-sad.md` §6); use this for the many smaller calls a build makes that are worth
-> finding later but do not rise to architecture-decision weight.
+> Record a decision at the plan closeout that made it, not after the fact. Keep only decisions that
+> still constrain current work in this hot document. When a decision is superseded and no longer
+> informs active implementation, move its full record to `docs/archive/decisions/YYYY.md` and leave
+> only a compact pointer if needed. This is not a technical-debt compromise (§1) and not an ADR
+> (which belongs in `docs/03-sad.md` §6).
 
 ### Decision record: [short topic]
 
@@ -38,8 +39,9 @@
 
 ## 1. Technical debt
 
-> Document deliberate compromises. Visible technical debt is manageable. Always link to the ADR or
-> story that motivated the compromise.
+> Document unresolved deliberate compromises. Visible technical debt is manageable. When debt is
+> resolved, move its closed record to `docs/archive/debt/YYYY.md` and keep the active table focused
+> on debt that can still affect a decision. Always link to the ADR or story that motivated it.
 
 | ID | Description | Component | Reason | Impact | Planned action | Date added |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -50,8 +52,9 @@
 
 ## 2. Superseded decisions
 
-> An index of ADRs replaced by newer decisions. The ADRs themselves live in `docs/03-sad.md` §6 and
-> are never deleted; this table is what keeps a supersession findable after the SAD is rewritten.
+> An index of ADRs replaced by newer decisions. Full superseded ADR bodies move to
+> `docs/archive/adr/`; this compact index keeps their lineage findable without making obsolete
+> reasoning part of normal architecture context.
 
 | ADR ID | Title | Superseded by | Date |
 | --- | --- | --- | --- |
@@ -61,8 +64,10 @@
 
 ## 3. Release history
 
-> Link each version to its GitHub Release. Detailed release notes belong in the GitHub Release or
-> `CHANGELOG.md`; this table records what reached production and the outcome.
+> Keep the current release window here and link each version to its GitHub Release. Detailed release
+> notes belong in the GitHub Release or `CHANGELOG.md`. Move older closed release rows to
+> `docs/archive/releases/YYYY.md`; this table is operationally useful state, not an append-only
+> duplicate of Git history.
 
 | Version | Production date | Type | GitHub Release | Commit / artifact | Outcome | Summary |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -74,8 +79,9 @@
 
 ## 4. Incident log
 
-> Short summaries of incidents. This table is the record; if an incident warrants a longer
-> post-mortem, link to it here rather than assuming a location the framework does not define.
+> Keep open/recent incident summaries here. Move closed historical incidents to
+> `docs/archive/incidents/YYYY.md`; if one warrants a longer post-mortem, link to its archived
+> record. Do not make every future run carry old incident detail.
 
 | Date | Severity | Description | Root cause | Resolved |
 | --- | --- | --- | --- | --- |

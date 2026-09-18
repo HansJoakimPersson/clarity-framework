@@ -48,7 +48,7 @@ like a website in a window" as a defect, not a starting point.
    - `docs/04-data-model-api.md` — when the task touches IPC contracts, data structures, or external APIs
    - `docs/05-deployment-view.md` — when the task affects packaging, signing, target platforms, or the update channel
 
-   Do not read a document speculatively. Reading everything is slow and crowds out the code you actually need.
+   Do not read a document speculatively. Never scan `docs/archive/` unless the task explicitly requires historical evidence. Reading everything is slow and crowds out the code you actually need.
 3. Determine which process the change belongs in — main, preload, or renderer — before writing any code. If a change
    appears to need code in more than one process, define the IPC contract first.
 4. Confirm the development run model before starting anything (see **Development Run Model**).

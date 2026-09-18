@@ -22,7 +22,7 @@ Guidance for agents editing shell scripts, aliases, functions, and dotfiles.
    authoritative for Goal, Included, Excluded, requirements, and documented boundaries. Resolve local,
    reversible implementation gaps from repository evidence and record them; stop only when continuing
    would materially change one of those boundaries. Read `docs/03-sad.md` only when the script is part of a larger system and the change touches how
-   it fits in. Do not read a document speculatively.
+   it fits in. Do not read a document speculatively. Never scan `docs/archive/` unless the task explicitly requires historical evidence.
 3. Identify whether the change affects behavior, formatting, portability, or security.
 4. Implement the task in full, within its stated scope.
 5. Run `shellcheck` when available.

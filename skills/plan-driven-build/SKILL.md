@@ -32,6 +32,7 @@ Everything below exists to keep **your** context small. Per round you may read:
 | Artifact | Ceiling |
 | --- | --- |
 | `docs/00-ai-context.md` | 1 page, once |
+| Context pack | Generated mechanically; do not read unless diagnosing a pack failure |
 | The plan | Once, after step 1 |
 | Critique report | 40 lines |
 | Build log | `tail -30`, only on failure |
@@ -40,9 +41,12 @@ Everything below exists to keep **your** context small. Per round you may read:
 
 If the plan sets a `Report budget` other than the default, pass it to `--max-lines` instead.
 
-That is the **orchestrator reading budget**. Implementation has a separate **execution budget**:
-its model must be pinned explicitly and `dispatch.sh` must receive a positive
-`--max-rollout-tokens` value. Report length limits do not cap model consumption.
+That is the **orchestrator reading budget**. Dispatched agents have a separate **context budget**:
+review, implementation, and verification receive one frozen pack built from the plan's exact
+`path#heading` references, capped by default at 64 KiB; they do not independently wander through
+`docs/`. Implementation also has an **execution budget**: its model must be pinned explicitly and
+`dispatch.sh` must receive a positive `--max-rollout-tokens` value. Output, context, and execution
+budgets are distinct controls.
 
 You may **not** read: `git diff`, source files, the full build log, the prompt files, or a report
 that exceeds its budget — truncate it and say you did. If you find yourself reading the codebase
@@ -90,8 +94,10 @@ Any observed model different from the effective model fails closed with `failure
 An explicit model handoff must be documented in the journal before it is accepted. A compact ledger
 is written automatically beside `--out` or `--log` unless `--ledger` overrides that path. It records
 the job, phase, profile, requested and effective model, reasoning effort, rollout-budget ceiling,
-attempt count, retryability, failure class, model policy, token usage when supplied by the runtime,
-and exit status. If the
+attempt count, retryability, failure class, model policy, and token usage. Codex dispatches collect
+native JSONL `turn.completed.usage` fields (input, cached input, cache-write input, output, reasoning
+output); environment `CF_*` values remain a fallback for other runtimes. The ledger also records
+exit status. If the
 runtime exports `CF_INPUT_TOKENS`, `CF_OUTPUT_TOKENS`, or `CF_TOTAL_TOKENS`, those values are copied;
 otherwise the ledger records `unavailable`. Raw output remains a debugging artifact, not the primary
 run record.
@@ -187,6 +193,9 @@ fi
 PLAN=docs/plans/$ID.md
 JOURNAL=docs/plans/$ID.run.md
 RUN=docs/plans/.runs/$ID
+CONTEXT_PACK=$RUN/context.md
+MAX_CONTEXT_PACK_BYTES=65536
+MAX_CONTEXT_FILE_BYTES=24576
 mkdir -p "$RUN" && cp "$SKILLDIR/journal-template.md" "$JOURNAL"
 ```
 
@@ -266,6 +275,19 @@ model_args=''
 `TASK` is the only thing you contribute here, so make it carry the intent — the plan is only as good
 as this sentence. Build nothing in this step.
 
+Immediately compile the plan's document references into the bounded context pack:
+
+```bash
+sh "$SKILLDIR/context-pack.sh" --plan "$PLAN" --out "$CONTEXT_PACK" \
+  --max-bytes "$MAX_CONTEXT_PACK_BYTES" \
+  --max-file-bytes "$MAX_CONTEXT_FILE_BYTES"
+```
+
+A pack failure is a planning defect, not permission to raise the ceiling. Narrow an oversized
+whole-file reference to an exact heading, remove irrelevant context, or split the increment. Record
+the resulting byte count and `git hash-object "$CONTEXT_PACK"` in the journal. The pack is local run state under `.runs/`; it is not
+committed and is never a new source of truth.
+
 When `TASK` fixes a defect, leak, or regression suspected to recur across a family of similar units
 (test classes, endpoints, migrations, and the like), run or dispatch a full diagnostic sweep of that
 family before writing `TASK`, so the plan's scope covers every affected instance up front. A `TASK`
@@ -289,7 +311,8 @@ model_args=''
 
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_REVIEW,$PROFILE_REASONING" $model_args --mode read-only \
   --phase review \
-  --prompt-file "$SKILLDIR/prompts/2-review.txt" --var PLAN="$PLAN" \
+  --prompt-file "$SKILLDIR/prompts/2-review.txt" \
+  --var PLAN="$PLAN" --var CONTEXT_PACK="$CONTEXT_PACK" \
   --out "$RUN/review.md" --max-lines 40
 ```
 
@@ -317,8 +340,12 @@ continue. Stop only for Escalation or Reserved questions.
 
 When the plan is a decomposition of the documented project-intent baseline, set `Status: Approved`
 once its review objections are resolved — the status means executable under the authority contract,
-not that another human checkpoint occurred. If the plan materially
-changes intent, present that delta as the single Escalation decision and stop for it.
+not that another human checkpoint occurred. If the plan materially changes intent, present that delta
+as the single Escalation decision and stop for it.
+
+If revision changed any `Context to read first` reference, rebuild `$CONTEXT_PACK` now with the same
+limits. From this point through verification the pack is frozen. Document changes produced by the
+build are outputs visible in the diff, not an excuse to silently expand the run's input context.
 
 ## Step 4 — Dispatch the build
 
@@ -369,7 +396,8 @@ model_args="--model $MODEL_IMPLEMENTATION --max-rollout-tokens $MAX_ROLLOUT_TOKE
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
   --phase implementation \
   $build_env_args \
-  --prompt-file "$SKILLDIR/prompts/4-build.txt" --var PLAN="$PLAN" \
+  --prompt-file "$SKILLDIR/prompts/4-build.txt" \
+  --var PLAN="$PLAN" --var CONTEXT_PACK="$CONTEXT_PACK" \
   --log "$RUN/build.log"
 ```
 
@@ -490,7 +518,8 @@ model_args=''
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" $model_args --mode read-only \
   --phase verification \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
-  --var PLAN="$PLAN" --var SHA="<baseline SHA from the journal>" \
+  --var PLAN="$PLAN" --var CONTEXT_PACK="$CONTEXT_PACK" \
+  --var SHA="<baseline SHA from the journal>" \
   --var BUILD_LOG="$RUN/build.log" \
   --out "$RUN/verification.md"
 ```
