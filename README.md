@@ -59,7 +59,7 @@ clarity-framework/
 │   │   ├── SKILL.md
 │   │   ├── scripts/                 # Update-scope and commit-rendering helpers
 │   │   └── tests/                   # Regression tests for update safety
-│   └── plan-driven-build/           # Approval-gated planning, review, build, and verification
+│   └── plan-driven-build/           # Governed planning, review, build, verification, and impact gates
 │       ├── SKILL.md                 # Orchestrator procedure
 │       ├── prompts/                 # Instructions for dispatched agents
 │       ├── dispatch.sh              # Bounded dispatch with sandbox, pinned models, rollout budgets, and profile selection
@@ -189,7 +189,7 @@ profile, so a project never edits the skill to change tools.
 ```text
 00-ai-context          ← Updated continuously; pasted into a new AI session.
       ↕
-01-vision-scope        ← Start here; approve before all other documents.
+01-vision-scope        ← Start here; establish the project intent baseline.
         ↓
 02-requirements        ← Define NFRs before functional requirements.
 02-user-stories        ← Optional; split the backlog out when it outgrows 02-requirements.
