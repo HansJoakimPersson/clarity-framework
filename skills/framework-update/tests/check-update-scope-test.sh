@@ -23,8 +23,8 @@ make_repo() {
 }
 
 run_checker() {
-  local repo=$1
-  (cd "$repo" && "$CHECKER" --framework-skills framework-update,plan-driven-build)
+  local repo=$1 managed=${2:-}
+  (cd "$repo" && bash "$CHECKER" --framework-skills framework-update,plan-driven-build --managed-skills "$managed")
 }
 
 source_repo=$(make_repo source-dirty)
@@ -55,5 +55,17 @@ if run_checker "$skill_repo" > "$TEST_ROOT/skill.out" 2>&1; then
   exit 1
 fi
 grep -F '.agents/skills/plan-driven-build/SKILL.md' "$TEST_ROOT/skill.out" >/dev/null
+
+retired_repo=$(make_repo retired-skill-conflict)
+mkdir -p "$retired_repo/.agents/skills/retired-skill"
+printf '%s\n' 'old framework copy' > "$retired_repo/.agents/skills/retired-skill/SKILL.md"
+git -C "$retired_repo" add .agents/skills/retired-skill/SKILL.md
+git -C "$retired_repo" commit -qm retired
+printf '// local edit\n' >> "$retired_repo/.agents/skills/retired-skill/SKILL.md"
+if run_checker "$retired_repo" retired-skill > "$TEST_ROOT/retired.out" 2>&1; then
+  printf '%s\n' 'expected retired managed skill conflict' >&2
+  exit 1
+fi
+grep -F '.agents/skills/retired-skill/SKILL.md' "$TEST_ROOT/retired.out" >/dev/null
 
 printf '%s\n' 'check-update-scope-test: ok'
