@@ -18,7 +18,7 @@ Clarity uses three decision classes:
 
 | Class | Agent behavior | Typical examples |
 | --- | --- | --- |
-| **Delegated** | Decide, act, record, and continue | Local design choices, file/class structure, tests, commits, temporary branches/worktrees, internal integration, bounded replanning inside approved intent |
+| **Delegated** | Decide, act, record, and continue | Local design choices, file/class structure, tests, commits, temporary branches/worktrees, internal integration, bounded replanning inside documented intent |
 | **Escalation** | Propose the smallest decision needed and stop only for that decision | Material scope change, significant architecture trade-off, new external dependency or cost, security/privacy trade-off, incompatible product behavior choices |
 | **Reserved** | Never perform without explicit human authorization | Destructive/irreversible operations, production publication, credential/permission changes, destructive data migrations, other boundaries named by the project |
 
@@ -141,7 +141,7 @@ documented intent, and other reversible internal transitions are Delegated by de
 merge, release, push, or plan deletion are human gates only when the project's runtime contract
 classifies that specific transition as Escalation or Reserved.
 
-A plan derived from already-approved project intent does not require a second scope approval merely
+A plan derived from the documented project-intent baseline does not require a separate scope approval merely
 because the orchestrator decomposed the project into another increment.
 
 For governed execution, use a bounded preflight before dispatch, classify failures by cause, and
