@@ -87,9 +87,9 @@ The following four levels are the only AI runtime model in Clarity Framework:
 | Level | Responsibility | Must not |
 | --- | --- | --- |
 | **Orchestrator** | Sequences work, keeps context small, exercises delegated authority, presents material escalations, and maintains the run journal | Read the entire codebase or diff itself; write production code |
-| **Reasoning** | Reads deep context and produces a plan, blocking questions, or pass/fail evidence | Approve its own work, speak directly to the user, or decide scope |
+| **Reasoning** | Reads deep context and produces a plan, material escalations, assumptions, or pass/fail evidence | Change documented project intent or cross an authority boundary |
 | **Review** *(optional)* | Reviews the plan cold against the code before implementation | Write the plan it reviews |
-| **Implementation** | Builds the approved plan in full and reports verification | Re-plan; stop on a blocking question |
+| **Implementation** | Builds the approved plan in full and reports verification | Change Goal/Included/Excluded, requirements, or architectural boundaries; may resolve local reversible plan gaps |
 
 A single agent may fill multiple levels, but the contracts and decision boundaries still apply.
 Review does not need a different profile from the level that authored the plan: what keeps a review
