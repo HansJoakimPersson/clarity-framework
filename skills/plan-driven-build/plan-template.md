@@ -44,8 +44,8 @@
 > **Size test:** if every step cannot state a real file path and a runnable verification command
 > within 200 lines, the plan is too large. Steps going vague to fit is the symptom, not the
 > workaround. Split by increment, not by layer — the rule that governs splitting a story governs
-> splitting a plan. Below the other end, a change too small to need scope approval does not need a
-> plan at all; five dispatches and four gates cost more than the change.
+> splitting a plan. Below the other end, a change too small to justify separate planning, review, implementation, and
+> verification does not need a plan at all; orchestration overhead costs more than the change.
 
 **Included:**
 
