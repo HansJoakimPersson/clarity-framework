@@ -132,8 +132,9 @@ When the resolved setup has no outstanding Escalation/Reserved decision:
    clutter. Initialize only when `GIT_STATE=none`; never run it for `repo-root` or `inside-repo`.
 2. Create or update `README.md` from the resolved setup, preserving all existing content, then
    create `docs/` and copy only the selected templates from the stable tag.
-3. Fill only facts established by the user's answers or existing project evidence. Leave visible
-   placeholders for unknown decisions.
+3. Fill established facts from the user's description and project evidence. For unknown Delegated
+   details, choose the least-consequential reversible assumption and mark it as an assumption.
+   Leave a visible unresolved item only for an Escalation or Reserved decision.
 4. Never overwrite an existing project document. Merge the selected template structure around its
    content. Resolve straightforward mappings from headings and semantics; escalate only when
    alternative mappings would materially change meaning or ownership.
