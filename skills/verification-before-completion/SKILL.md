@@ -27,3 +27,10 @@ Not a call for more testing than the task needs. A one-line change verified by r
 and the test that already covers it is enough. The rule is about evidence, not volume: whatever
 level of checking the task warrants, that checking has to have actually happened before the words
 "done" or "complete" appear.
+
+## Integration contract
+
+When used by `plan-driven-build`, receive the Definition of Done and verification report as inputs.
+Return one result per condition with the command, exit status, and evidence path. A failed or
+unavailable check keeps the condition unverified and tells the orchestrator whether the next action
+is debugging, another bounded verification attempt, or human intervention.

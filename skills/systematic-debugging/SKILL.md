@@ -31,3 +31,9 @@ work hide the actual defect until it resurfaces somewhere else.
 A one-line typo with an obvious cause does not need a hypothesis write-up. The discipline scales
 with the uncertainty: a bug that took ten minutes to spot needs a sentence of reasoning, not a
 report.
+
+## Integration contract
+
+When used by `plan-driven-build`, receive the bounded failure output, phase, and reproduction
+command. Return the root cause, `failure_class`, `retryable` decision, evidence path, and one next
+action. Do not change the retry loop or dispatch another agent; the orchestrator owns those choices.

@@ -121,6 +121,10 @@ raw output, and stop on non-retryable environment, routing, verification, budget
 safety failures. The executable contract and flags live in `skills/plan-driven-build/SKILL.md` and
 its `dispatch.sh`.
 
+Discipline skills are modular policy modules. `plan-driven-build` invokes them conditionally at
+failure, verification, review, and closeout boundaries through their documented integration
+contracts; they are not additional always-on phases.
+
 ## 8. aimux profiles
 
 Moving token usage away from an interactive session requires separate subscriptions or accounts, not
@@ -173,4 +177,4 @@ project documentation should contain only the resulting stable execution rules.
 
 ---
 
-*Clarity Framework v4.2.0 – AI Usage Guide*
+*Clarity Framework v4.3.0 – AI Usage Guide*

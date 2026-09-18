@@ -96,6 +96,25 @@ Retries are bounded by the remaining read-only profile pool and may be further l
 Stop and record the next action when preflight, routing, environment, verification, budget, or
 repository safety fails.
 
+## Optional discipline hooks
+
+The five discipline skills remain independently installable, but `plan-driven-build` invokes them
+when their trigger is present. Their contracts keep the workflow modular:
+
+| Event | Skill | Required result |
+| --- | --- | --- |
+| Bug, build failure, test failure, or unexpected behavior | `systematic-debugging` | Root cause, failure class, retryability, next action |
+| Verification or completion claim | `verification-before-completion` | Evidence and result for every condition |
+| External review requested | `requesting-code-review` | Review package and bounded request |
+| Review findings received | `receiving-code-review` | Disposition and evidence for every finding |
+| Branch or plan work is complete | `finishing-a-development-branch` | Closeout options and merge/cleanup evidence |
+
+If a hooked skill is not installed, follow the equivalent guardrail in this workflow and record the
+missing module in the journal. A hook is conditional: a successful implementation does not invoke
+debugging, and a run with no external review does not invoke the review-request or review-reception
+skills. The orchestrator still owns phase order, dispatch, journal state, model policy, and human
+gates.
+
 ## Gate profiles
 
 The plan's `Gate profile` field decides where you stop. Step 1 proposes the project's declared
@@ -402,6 +421,10 @@ stuck network call holds a live PID indefinitely. Compare `build.log`'s size acr
 if it has not grown, treat the still-alive report as a likely stall (observed silently hanging three
 separate times on a real project) and say so instead of quietly starting another 60-minute wait.
 
+If the build or verification fails, apply `systematic-debugging` before proposing a code fix when
+that skill is installed. Pass it the bounded failure report and reproduction command; record its
+root cause and retryability result in the journal.
+
 If the runtime has neither task notifications nor a bounded wait mechanism, do not claim to be
 watching the build. Record the exact sentinel command and stop at that handoff. Never use an
 arbitrary wake-up delay as a substitute for either mechanism.
@@ -442,6 +465,10 @@ end-to-end here; if it misbehaves, stop and report rather than improvising a fix
 ## Step 5 — Dispatch verification against the plan
 
 Do not read the diff yourself.
+
+Before reporting the result, apply `verification-before-completion` when it is installed. It owns
+the evidence check for each Definition of Done condition; this workflow owns dispatching the
+verification agent and deciding which gate comes next.
 
 ```bash
 model_args=''
@@ -485,6 +512,11 @@ project's normal workflow, or explicitly authorizes an agent to do it. Record th
 the journal and verify that it contains the build commit. For a direct-to-main workflow, record that
 no merge was required. Do not enter step 8 until one of those states is recorded.
 
+If an external code review is requested, use `requesting-code-review` to prepare the review package.
+When findings return, use `receiving-code-review` to disposition each finding before entering a fix
+round. The internal plan review in step 2 remains part of this workflow and does not replace an
+external code review.
+
 ## Step 8 — Close out
 
 After the merge transition recorded in step 7, go through the plan's **At closeout** section with
@@ -492,6 +524,10 @@ the user. The answers drive real changes: if an architectural decision belongs i
 `docs/03-sad.md`, write it there now. "Nothing" is
 a valid answer to every question, but do not skip a question because the answer seems obvious —
 this is the last point where the lesson still exists.
+
+Use `finishing-a-development-branch` when it is installed. Give it the final verification result,
+changed-path summary, open findings, branch state, and release requirement. It provides closeout
+options; the gate profile and the user still decide whether to merge, push, delete, or retain work.
 
 Then delete the plan and its journal in their own commit, and remove `$RUN`. `plan-template.md` and
 `journal-template.md` stay in the skill directory — they are templates, not artifacts.

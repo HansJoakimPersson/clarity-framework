@@ -26,3 +26,10 @@ and just enough context to judge it — not a narrative of how the work went.
 Not a request to pad the review with justification for every line. State the change and let the
 diff speak for the mechanics; reserve prose for what a diff cannot show — intent, tradeoffs, what
 was deliberately left out.
+
+## Integration contract
+
+When used by `plan-driven-build`, receive the plan, review base, current head, verification evidence,
+and global constraints. Produce a uniquely named review package and a request containing the change,
+risk, verification status, and open questions. Do not implement fixes or decide whether a finding is
+accepted.

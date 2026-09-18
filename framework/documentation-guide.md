@@ -1,6 +1,6 @@
 # The Clarity Framework Documentation Guide
 
-## Clarity Framework v4.2.0
+## Clarity Framework v4.3.0
 
 Documentation should make decisions easier, not create bureaucracy. Use the smallest coherent set of
 documents that lets the people and agents working on the product make safe, consistent decisions.
@@ -251,6 +251,10 @@ background polling, use the pattern to improve the central framework. Keep the i
 backlog local and unversioned; project logs remain project-owned evidence and do not create an
 obligation to update older projects.
 
+When AI work uses `plan-driven-build`, keep orchestration rules in that skill and place conditional
+quality rules in the relevant discipline skill. This avoids duplicating verification, debugging,
+review, and branch-closeout rules across workflows.
+
 ## 14. Documentation completeness checklist
 
 - Vision and scope are approved.
@@ -265,4 +269,4 @@ obligation to update older projects.
 
 ---
 
-*Clarity Framework v4.2.0 – Documentation Guide*
+*Clarity Framework v4.3.0 – Documentation Guide*

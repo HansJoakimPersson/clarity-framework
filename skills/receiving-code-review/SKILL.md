@@ -27,3 +27,10 @@ as dismissing it because a fix feels inconvenient.
 Not a mandate to implement every suggestion verbatim. A reviewer can be wrong, out of context, or
 proposing a preference rather than a defect — the obligation is to engage with the finding visibly,
 not to comply with it unconditionally.
+
+## Integration contract
+
+When used by `plan-driven-build`, receive the review findings, task brief, and relevant diff. Return
+one disposition per finding: `accepted`, `rejected`, or `needs-clarification`, with technical
+evidence and the required fix or re-review scope. The orchestrator owns fix-round limits and human
+gates; this skill owns the quality of each disposition.

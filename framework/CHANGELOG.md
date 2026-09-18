@@ -11,6 +11,14 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## Unreleased
+
+### Changed
+
+- Discipline skills now expose integration contracts for conditional use by `plan-driven-build`,
+  keeping verification, debugging, review, and branch-closeout policy modular while the orchestrator
+  retains workflow state, dispatch, runtime policy, and human gates.
+
 ## [4.2.0] – 2026-09-17
 
 ### Changed
@@ -21,6 +29,8 @@ tag, so an untagged heading here is a version no project can reach.
 - `plan-driven-build` dispatches now run a bounded Git/environment preflight, classify retryable
   failures, cap read-only retries, record a compact attempt ledger, and support fail-closed model
   evidence for parent and child agents. Dispatches also carry an explicit execution phase.
+- The five discipline skills now expose integration contracts and `plan-driven-build` invokes them
+  conditionally at debugging, verification, review, and branch-closeout boundaries.
 
 ## [4.1.0] – 2026-09-12
 

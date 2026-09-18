@@ -29,3 +29,10 @@ the branch being finished.
 Not a requirement to squash history or follow one specific Git workflow — the project's own
 branching convention decides that. This is about the branch's actual state matching what everyone
 believes about it before it disappears.
+
+## Integration contract
+
+When used by `plan-driven-build`, receive the final verification result, changed-path summary, open
+findings, branch state, and release requirement. Return the available closeout options and the
+evidence for each. Do not merge, push, delete a branch, or delete a plan without the human decision
+required by the project's gate profile.

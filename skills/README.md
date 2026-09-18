@@ -43,8 +43,11 @@ the second CLI noted above.
 
 The five discipline skills (`verification-before-completion/` through
 `finishing-a-development-branch/`) are single-file, self-contained, and apply to any task an agent
-performs in the project — not only work started through one of the three named workflows. Install
-whichever ones fit the project; they do not depend on each other or on the workflow skills.
+performs in the project — not only work started through one of the three named workflows. They also
+expose small integration contracts for `plan-driven-build`: debugging classifies failures,
+verification validates completion claims, review skills handle review boundaries, and branch-finish
+handles closeout. Install whichever ones fit the project; the contracts are optional outside that
+workflow and do not make the skills depend on one another.
 
 Unrelated changes in project code, build files, tests, or application configuration do not need to
 be committed first. `framework-update` protects its own write surface and proposes a separate
@@ -127,4 +130,4 @@ blindly.
 
 ---
 
-*Clarity Framework v4.2.0*
+*Clarity Framework v4.3.0*
