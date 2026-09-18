@@ -39,7 +39,7 @@ Read, in order and only as needed:
 4. `docs/03-sad.md` for architectural boundaries
 5. other numbered documents only when they govern the next work
 
-Treat the user's project description plus these documents as the approved project intent. Fill
+Treat the user's project description plus these documents as the documented project-intent baseline. Fill
 obvious documentation gaps from evidence. Escalate only when a missing fact is material under the
 authority contract.
 
@@ -67,7 +67,7 @@ Clarity documents rather than in a private backlog.
 Choose the highest-priority ready Delegated increment.
 
 For a non-trivial increment, invoke `plan-driven-build`. The plan is a work order generated from
-already-approved project intent; it does not need a second human scope approval unless it introduces
+the documented project-intent baseline; it does not need a separate human scope approval unless it introduces
 an Escalation or Reserved decision.
 
 For a trivial change where the planning workflow would cost more than the change, execute it under
