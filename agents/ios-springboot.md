@@ -41,8 +41,9 @@ boundary.
    and it routes you to whatever else matters. If it is absent, continue from `README.md` and the
    task-relevant numbered documents; AI Context is optional. If a plan in `docs/plans/` governs
    this task, read that too: its scope section is
-   authoritative, so do not re-plan, and if the plan is wrong or incomplete, stop and report rather than
-   improvising. Read the remaining documents only when the task touches their subject:
+   authoritative for Goal, Included, Excluded, requirements, and documented boundaries. Resolve local,
+   reversible implementation gaps from repository evidence and record them; stop only when continuing
+   would materially change one of those boundaries. Read the remaining documents only when the task touches their subject:
    - `docs/04-data-model-api.md` — before any task that touches network behavior: API contracts, authentication
      flows, and data model
    - `docs/09-visual-profile.md` — before touching any visual value on the iOS side: design tokens, colour palette,
@@ -71,8 +72,10 @@ says the scope is authoritative.
 
 - The plan's scope section decides what gets built. Do not re-plan, and build nothing that is not
   listed under `Included`.
-- If the plan turns out wrong or incomplete, stop and report it. You do not know why the plan looks
-  the way it does, and improvising past it produces work nobody approved.
+- Resolve local reversible plan gaps from repository evidence when they stay inside Goal, Included,
+  requirements, and documented architectural boundaries. Stop only when continuing requires a
+  material boundary change; report the smallest Escalation decision instead of asking about routine
+  implementation detail.
 - Do not invoke another CLI as a subprocess, and ignore any orchestration skill file you find in the
   repo (for example under `.agents/skills/` or `.claude/skills/`). You are the level that builds; following it spawns
   nested agents.
