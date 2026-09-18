@@ -662,8 +662,8 @@ if [ "$BACKGROUND" -eq 1 ]; then
     fi
     printf "%s\n" "$status" > "$CFD_EXIT_FILE"
     if [ -n "$CFD_LEDGER" ]; then
-      printf 'job_id\tstatus\tphase\tprofile\tcli\trequested_model\teffective_model\treasoning_effort\trollout_budget_tokens\tattempts\tretryable\tfailure_class\tmodel_policy\tinput_tokens\tcached_input_tokens\tcache_write_input_tokens\toutput_tokens\treasoning_output_tokens\ttotal_tokens\texit_status\n' > "$CFD_LEDGER"
-      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t1\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      printf "job_id\\tstatus\\tphase\\tprofile\\tcli\\trequested_model\\teffective_model\\treasoning_effort\\trollout_budget_tokens\\tattempts\\tretryable\\tfailure_class\\tmodel_policy\\tinput_tokens\\tcached_input_tokens\\tcache_write_input_tokens\\toutput_tokens\\treasoning_output_tokens\\ttotal_tokens\\texit_status\\n" > "$CFD_LEDGER"
+      printf "%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t1\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n" \
         "$CFD_JOB_ID" "$([ "$status" -eq 0 ] && printf passed || printf failed)" "$CFD_PHASE" \
         "${CFD_PROFILE:-cli:$CFD_CLI}" "$CFD_CLI" "${CFD_MODEL:-profile-default}" \
         "$CFD_EFFECTIVE_MODEL" "${CFD_REASONING_EFFORT:-profile-default}" \
