@@ -15,13 +15,15 @@ generate application code.
 - If Clarity version markers already exist in the project's documents, stop and invoke `framework-update` instead.
 - If this is a Git repository and the tree has unrelated uncommitted changes, report them and stop
   before writing.
-- If the directory is not under version control, put initialization in the step 4 proposal and
-  initialize in step 5 once approved. Never initialize silently, and never initialize a directory
-  that already sits inside another repository — that would nest one repository in another.
+- If the directory is not under version control, infer initialization as the default Delegated
+  choice and initialize in step 5 unless evidence makes repository ownership an Escalation decision.
+  Never initialize a directory that already sits inside another repository — that would nest one
+  repository in another.
 - Fetch only a stable tagged Clarity release. Never bootstrap from untagged `main` or a prerelease.
 - Treat templates as starting structures, not permission to invent product decisions.
 - Install every selected Clarity skill identically in both `.agents/skills/<name>/` and
-  `.claude/skills/<name>/`. Never overwrite a same-named non-Clarity skill without approval.
+  `.claude/skills/<name>/`. A same-named non-Clarity skill is an ownership conflict: treat it as
+  Escalation rather than overwriting it.
 
 ## Step 1 — Inspect, infer, then ask only for material gaps
 
@@ -123,19 +125,21 @@ setup into an approval checklist.
 
 ## Step 5 — Apply without losing existing work
 
-After approval:
+When the resolved setup has no outstanding Escalation/Reserved decision:
 
 1. When initialization is selected under the authority rules above, run `git init` before writing anything, so every file this
    skill creates is captured by the bootstrap commit rather than arriving as pre-existing untracked
    clutter. Initialize only when `GIT_STATE=none`; never run it for `repo-root` or `inside-repo`.
-2. Create or update `README.md` as approved, preserving all existing content, then create `docs/`
-   and copy only the approved templates from the stable tag.
+2. Create or update `README.md` from the resolved setup, preserving all existing content, then
+   create `docs/` and copy only the selected templates from the stable tag.
 3. Fill only facts established by the user's answers or existing project evidence. Leave visible
    placeholders for unknown decisions.
-4. Never overwrite an existing project document. Merge the approved template structure around its
-   content, or stop and ask if the mapping is ambiguous.
+4. Never overwrite an existing project document. Merge the selected template structure around its
+   content. Resolve straightforward mappings from headings and semantics; escalate only when
+   alternative mappings would materially change meaning or ownership.
 5. If `AGENTS.md` or `CLAUDE.md` already contains project-specific instructions, move them into the
-   `docs/` document that governs each one, only as approved. Then copy the selected starter verbatim
+   `docs/` document that clearly governs each one. Escalate only ambiguous ownership or conflicting
+   rules. Then copy the selected starter verbatim
    to `AGENTS.md`.
 6. Write `CLAUDE.md` containing exactly `@AGENTS.md` and nothing else. Never reduce an existing
    `CLAUDE.md` to the import until its content has been migrated under step 5; losing a project's
@@ -177,7 +181,7 @@ Verify:
 - both runtime copies of each managed skill are identical;
 - `git check-ignore` confirms that neither managed skill copy is excluded;
 - existing Framework version markers match the fetched tag;
-- no source file or unapproved documentation file changed.
+- no source file or documentation outside the resolved setup changed.
 
 Report remaining placeholders and material decisions first, then created/merged artifacts and
 verification results. A bootstrap commit is Delegated unless the project explicitly reserves commits
