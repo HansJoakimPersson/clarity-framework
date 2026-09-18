@@ -1,4 +1,4 @@
-Read AGENTS.md. If docs/00-ai-context.md exists, read it; otherwise use README.md as the entry point. Project-specific rules live in docs/, never in CLAUDE.md. From there read only what this task touches: {{TASK}}
+Project/runtime instructions are already loaded by the Codex harness; do not reread AGENTS.md or CLAUDE.md. If docs/00-ai-context.md exists, use it as the project entry point; otherwise use README.md. From there inspect only the project documents and code needed to plan this task: {{TASK}}
 
 Then read {{PLAN_TEMPLATE}} and reproduce its structure exactly, filled in — do not invent a different structure. Today's date is {{DATE}}.
 
@@ -15,6 +15,8 @@ choice. Record those choices as assumptions. Label unresolved material choices a
 architecture, security/privacy, cost, reversibility, or another project-reserved boundary. Definition of Done must be checkable conditions, not judgment calls — prefer "command X exits 0" over "works well".
 
 Keep the whole plan under 200 lines. It is a work order for an agent that was not part of the planning and has no tacit context, so be more explicit than you would be writing for yourself.
+
+In "Context to read first", cite the smallest stable project context that another agent needs. Use a backticked reference in one of two forms: `path/to/file.md` for a genuinely small whole file, or `path/to/file.md#heading selector` for one Markdown section. Prefer IDs in headings such as `docs/02-requirements.md#FR-017` or `docs/03-sad.md#ADR-012`. Never cite AGENTS.md/CLAUDE.md (the runtime already injects them), never cite `docs/archive/`, and never cite a whole permanent document merely for convenience. Whole-file references over 24 KiB are rejected by the context-pack builder; the complete pack is capped separately at 64 KiB.
 
 Build nothing. You have no file-write access in this sandbox — do not attempt to create, edit, save, or patch any file, including the plan itself. Reply with the complete, finished plan as your final chat message text; the orchestrator captures that reply and writes it to file for you.
 
