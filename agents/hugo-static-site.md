@@ -32,7 +32,7 @@ Guidance for agents working in static websites built with Hugo.
    - `docs/03-sad.md` — when the change adds a content type, a taxonomy, a build step, or an integration
    - `docs/05-deployment-view.md` — when the change touches the build command, `baseURL`, or how the site is published
 
-   Do not read a document speculatively. Reading everything is slow and crowds out the templates you actually need.
+   Do not read a document speculatively. Never scan `docs/archive/` unless the task explicitly requires historical evidence. Reading everything is slow and crowds out the templates you actually need.
 3. Establish the theme model before editing any template: are layouts owned by the project, provided by a Hugo
    Module, or vendored as a Git submodule? Check `hugo.toml` for a `module.imports` or `theme` setting and look for
    `themes/`. The answer decides where your edit belongs; see the optional profiles below.
