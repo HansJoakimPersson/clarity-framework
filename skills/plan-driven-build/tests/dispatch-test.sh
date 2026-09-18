@@ -55,20 +55,21 @@ while [ "$#" -gt 0 ]; do
 done
 out=''
 prompt=''
+json=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -o) out=$2; shift 2 ;;
     -m) model=$2; shift 2 ;;
     -s) shift 2 ;;
+    --json) json=1; shift ;;
     -*) exit 64 ;;
     *) prompt=$1; shift ;;
   esac
 done
 
-# Visible on stdout even when --out is unset (the --background path never passes -o; its
-# stdout+stderr land in --log instead), so a network-forwarding regression is catchable there too.
-[ -z "$netarg" ] || printf 'CF_NETWORK_ARG=%s\n' "$netarg"
-[ -z "$rollout" ] || printf 'CF_ROLLOUT_ARG=%s\n' "$rollout"
+# Adapter diagnostics go to stderr so --json stdout remains a valid event stream.
+[ -z "$netarg" ] || printf 'CF_NETWORK_ARG=%s\n' "$netarg" >&2
+[ -z "$rollout" ] || printf 'CF_ROLLOUT_ARG=%s\n' "$rollout" >&2
 
 if [ "${CF_TEST_ROLLOUT_EXHAUST:-0}" -eq 1 ]; then
   printf '%s\n' 'shared rollout token budget exhausted' >&2
@@ -97,6 +98,9 @@ fi
 if [ -n "$out" ]; then
   result="ok${CF_ENV_SEEN:+:$CF_ENV_SEEN}${model:+:model=$model}${AIMUX_FAKE_MODEL:+:aimux-model=$AIMUX_FAKE_MODEL}${netarg:+:net=$netarg}${reasoning:+:reasoning=$reasoning}${rollout:+:rollout=$rollout}"
   printf '%s\n' "$result" > "$out"
+fi
+if [ "$json" -eq 1 ]; then
+  printf '%s\n' '{"type":"turn.completed","usage":{"input_tokens":100,"cached_input_tokens":40,"cache_write_input_tokens":10,"output_tokens":25,"reasoning_output_tokens":5}}'
 fi
 FAKE_CODEX
 chmod +x "$TEST_ROOT/bin/codex"
@@ -366,6 +370,8 @@ grep -F 'CF_ROLLOUT_ARG=features.rollout_budget={enabled=true,limit_tokens=12345
 grep -F 'test-model-x' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
 grep -F '12345' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
 grep -F 'pinned' "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
+grep -F "$(printf '100\t40\t10\t25\t5\t125')" "$TEST_ROOT/out/impl-ok.ledger" >/dev/null
+grep -F '"type":"turn.completed"' "$TEST_ROOT/out/impl-ok.log.events.jsonl" >/dev/null
 
 # 29. background model evidence is checked before the sentinel reports success
 printf '%s\n' 'test-model-x' 'gpt-6-astra' > "$TEST_ROOT/models-bg-bad.txt"
@@ -406,5 +412,12 @@ if "$D" --profile reg --phase planning --mode workspace-write --prompt test \
   printf 'dispatch-test: planning under workspace-write should have failed\n' >&2; exit 1
 fi
 grep -F -- '--phase planning requires --mode read-only' "$TEST_ROOT/out/phase-mode.err" >/dev/null
+
+# 33. foreground Codex JSON usage populates the ledger without CF_* environment variables
+"$D" --profile reg --phase planning --mode read-only --prompt test \
+  --ledger "$TEST_ROOT/out/native-usage.ledger" --out "$TEST_ROOT/out/native-usage.md" >/dev/null
+grep -F "$(printf '100\t40\t10\t25\t5\t125')" "$TEST_ROOT/out/native-usage.ledger" >/dev/null
+grep -F 'cached_input_tokens' "$TEST_ROOT/out/native-usage.ledger" >/dev/null
+grep -F '"type":"turn.completed"' "$TEST_ROOT/out/native-usage.md.attempt-1.jsonl" >/dev/null
 
 printf 'dispatch-test: ok\n'
