@@ -159,10 +159,16 @@ Choose the highest-priority ready Delegated work. For non-trivial work invoke `p
 The generated plan is a work order derived from the mission baseline and does not need separate
 human scope approval unless it introduces a Reserved consequence.
 
-For trivial work where the planning workflow costs more than the change, use the project's normal
-verification discipline directly.
+Every non-trivial **writing** increment launched by project-driver runs in an orchestrator-owned
+temporary worktree created from a recorded baseline SHA, even when the mission is executing
+sequentially rather than as a wave. Isolation is not only for concurrency: it is the recovery
+boundary that lets a timed-out or corrupted implementation be discarded without touching already
+integrated project state.
 
-Temporary branches/worktrees are execution plumbing. Integrate verified wave members serially and
+For trivial work where the planning workflow costs more than the change, use the project's normal
+verification discipline directly when it is safe to do so.
+
+Temporary branches/worktrees are execution plumbing. Integrate verified increments serially and
 verify after each integration and after the whole wave. If an integration invalidates another
 worker's assumptions, replan from the new baseline; do not turn that into a human continuation
 question.
@@ -182,6 +188,25 @@ on shared coordination documents.
 
 Progress reporting is allowed and encouraged for long missions. A status message is **not** a gate
 and must not contain a question that blocks continuation.
+
+### Dispatch liveness and self-healing
+
+A background implementation is never "fine until proven otherwise". Its supervisor health and
+sentinel are active runtime state.
+
+When `plan-driven-build` reports `timeout.stalled` or `timeout.wall`:
+
+- treat the current worktree as tainted;
+- allow the inner workflow's single clean restart from the same baseline;
+- if that restart succeeds, continue normally;
+- if recovery is exhausted, remove/quarantine the tainted worktree and mark that increment blocked;
+- immediately re-evaluate the backlog. Another independent Delegated increment may continue the
+  mission; do not let one wedged implementation freeze unrelated ready work;
+- if no useful independent work remains, checkpoint with `--recoverable no` and report the concrete
+  environment blocker.
+
+A stale/lost supervisor heartbeat is likewise an environment failure, never evidence that the job
+is still healthy. Do not wait for hours for a sentinel after liveness has been lost.
 
 ## Step 4 — Mandatory continuation checkpoint
 
@@ -209,7 +234,9 @@ Possible decisions:
 | `STOP_BLOCKED` | Stop because no ready or recoverable work exists; report the concrete blocker. It is not automatically an approval request. |
 
 A failed test/build/CI step is normally recoverable. Diagnose, fix, and re-run within the normal
-execution budget. Use `--recoverable yes` while a Delegated recovery path exists.
+execution budget. A supervised timeout is recoverable only while a clean-worktree restart remains.
+Use `--recoverable yes` while a Delegated recovery path exists; never use it to justify waiting on
+a stale/lost dispatcher.
 
 Mark completion only when the requested mission outcome is actually complete:
 
