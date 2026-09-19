@@ -93,9 +93,11 @@ framework update.
 | --- | --- |
 | `SKILL.md` | The procedure; the only file the orchestrator reads when invoked |
 | `prompts/*.txt` | Instructions for dispatched agents, kept outside the orchestrator's context |
-| `dispatch.sh` | The only dispatch entry point; sets sandbox/approval, enforces execution policy, and records native usage |
+| `dispatch.sh` | Dispatch entry point; sets sandbox/approval, pins execution policy, starts supervised background jobs, and records native usage |
+| `background-supervisor.sh` | Owns a background worker, writes health heartbeats, detects no-progress and wall-clock timeouts, terminates the process tree, and always produces a classified completion sentinel |
+| `dispatch-health.sh` | Reads sentinel/health state mechanically as finished, healthy, stale, or lost without tailing the worker log |
 | `context-pack.sh` | Compiles exact plan references into the frozen bounded document context used by review/build/verification |
-| `tests/dispatch-test.sh` | Regression test for profile resolution, CLI flag ordering, telemetry, and failure sentinels |
+| `tests/dispatch-test.sh` | Regression test for profile resolution, CLI flag ordering, telemetry, sentinels, silent hangs, hard wall timeouts, and watchdog recovery |
 | `tests/context-pack-test.sh` | Regression test for heading extraction, byte ceilings, and cold-context rejection |
 | `plan-template.md` | The plan template, identical to `templates/plan.md` |
 | `journal-template.md` | The run journal template and handover state |
