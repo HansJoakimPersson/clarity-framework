@@ -11,6 +11,40 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## Unreleased
+
+### Added
+
+- `project-driver` now ships `scripts/mission-control.sh`, which persists a Mission Mandate across
+  increments and resumed sessions, enforces mandatory continuation checkpoints, supports explicit
+  deadlines, and issues durable human-gate tokens only for Reserved actions.
+- `project-driver` now ships `scripts/authority.sh`, a central consequence-based resolver that
+  classifies actions as Delegated, Orchestrator Escalation, or Reserved `HUMAN_GATE`. Projects can
+  override named actions through the machine-readable `clarity-authority` block in
+  `docs/00-ai-context.md`.
+- Regression tests now cover authority classification, mission resume/continuation, deadline stops,
+  and the invariant that Escalations do not create human gates.
+
+### Changed
+
+- An active Mission Mandate takes precedence over routine gate-profile pauses. Successful increments,
+  retries, debugging, replanning, commits, local worktree integration, and selection of the next
+  ready increment no longer become "should I continue?" approval checkpoints.
+- Escalation is now explicitly an orchestrator-routing class rather than a synonym for human
+  approval. `plan-driven-build` and `clarity-bootstrap` return Escalations to the outer
+  orchestrator during project-driven work; only Reserved consequences may cross the approval
+  firewall to the human.
+- Dirty working trees encountered during an active mission are isolated with clean worktrees when
+  safe instead of automatically becoming user decisions. Unsafe overlap is reported as a repository
+  blocker rather than a routine approval request.
+
+### Fixed
+
+- Long project-driving instructions such as "build the whole app", "continue until it is finished",
+  or "keep going overnight" are no longer treated as conversational context that can be forgotten
+  after an increment. They become persisted execution mandates with no normal `ASK_TO_CONTINUE`
+  transition.
+
 ## [4.3.0] – 2026-09-18
 
 ### Added

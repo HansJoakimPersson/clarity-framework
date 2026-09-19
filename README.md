@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 4.3.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 4.3.1 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -54,7 +54,9 @@ clarity-framework/
 │   ├── clarity-bootstrap/           # Need-driven setup of a new or unmanaged project
 │   │   └── SKILL.md
 │   ├── project-driver/               # Outer loop: project intent → successive verified increments
-│   │   └── SKILL.md
+│   │   ├── SKILL.md                 # Mission Mandate and continuation contract
+│   │   ├── scripts/                 # Authority resolver and persistent mission state machine
+│   │   └── tests/                   # Approval-firewall and continuation regression tests
 │   ├── framework-update/            # Upgrade framework-owned files without losing project content
 │   │   ├── SKILL.md
 │   │   ├── scripts/                 # Update-scope and commit-rendering helpers
@@ -179,10 +181,16 @@ Escalation/Reserved condition.
 ### Project-driven work
 
 When the user wants to describe the product and let the orchestrator drive delivery, install
-`skills/project-driver/` together with `skills/plan-driven-build/`. The project driver derives the
-next ready increment from the documented intent, runs it through the governed build workflow,
-integrates verified internal work, updates project state, and continues until the outcome is complete
-or a material Escalation/Reserved decision is reached.
+`skills/project-driver/` together with `skills/plan-driven-build/`. The project driver persists the
+user's instruction as a **Mission Mandate**, derives the next ready increment, runs it through the
+governed build workflow, integrates verified work, updates project state, and treats continuation as
+mandatory until completion, an explicit deadline, or a real stop condition.
+
+Its approval firewall separates Escalation from human approval: Escalations are resolved by the
+orchestrator first, while only Reserved actions can issue a `HUMAN_GATE` token. A successful
+increment therefore transitions directly to the next ready increment; there is no normal
+"should I continue?" transition. Mission state is local under `docs/plans/.runs/`, so it survives
+long multi-increment runs without becoming project documentation.
 
 Independent increments may run as a two-workflow wave when their dependency/write surfaces are
 disjoint. Workers use separate worktrees and do not synchronize live; integration is serialized and
@@ -232,4 +240,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v4.3.0*
+*Clarity Framework v4.3.1*

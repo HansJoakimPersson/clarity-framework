@@ -19,8 +19,8 @@ Clarity uses three decision classes:
 | Class | Agent behavior | Typical examples |
 | --- | --- | --- |
 | **Delegated** | Decide, act, record, and continue | Local design choices, file/class structure, tests, commits, temporary branches/worktrees, internal integration, bounded replanning inside documented intent |
-| **Escalation** | Propose the smallest decision needed and stop only for that decision | Material scope change, significant architecture trade-off, new external dependency or cost, security/privacy trade-off, incompatible product behavior choices |
-| **Reserved** | Never perform without explicit human authorization | Destructive/irreversible operations, production publication, credential/permission changes, destructive data migrations, other boundaries named by the project |
+| **Escalation** | Route to the orchestrator for resolution; do not ask the human directly | Material scope change, significant architecture trade-off, new external dependency or cost, security/privacy trade-off, incompatible product behavior choices |
+| **Reserved** | Cross the approval firewall only with explicit human authorization | Destructive/irreversible operations, production publication, credential/permission changes, destructive data migrations, economic commitments, material mission changes, other boundaries named by the project |
 
 Uncertainty alone is not an escalation condition. Resolve ordinary ambiguity from repository evidence,
 documented intent, established conventions, and the least-consequential reversible choice; record the
@@ -68,10 +68,12 @@ Delegated work through verification. Human review is required when the authority
 it or when the result crosses a material impact boundary; it is not a mandatory checkpoint after
 every reversible step.
 
-For a project-level request, use `project-driver`: provide the product/project intent once, let the
-orchestrator derive the next coherent increment, execute it through `plan-driven-build`, integrate
-verified internal work, update the authoritative documents, and continue until the requested outcome
-is complete or an Escalation/Reserved decision is reached.
+For a project-level request, use `project-driver`: provide the product/project intent once and let
+the orchestrator persist it as a Mission Mandate. It derives the next coherent increment, executes it
+through `plan-driven-build`, integrates verified work, updates authoritative documents, and must
+continue after successful checkpoints until completion, an explicit deadline, or a real stop
+condition. Escalations are resolved by the orchestrator first; only Reserved actions may create a
+human gate.
 
 ### Team using agents
 
@@ -90,7 +92,7 @@ The following four levels are the only AI runtime model in Clarity Framework:
 
 | Level | Responsibility | Must not |
 | --- | --- | --- |
-| **Orchestrator** | Sequences work, keeps context small, exercises delegated authority, presents material escalations, and maintains the run journal | Read the entire codebase or diff itself; write production code |
+| **Orchestrator** | Sequences work, keeps context small, persists Mission Mandates, exercises delegated authority, resolves Escalations, and presents only Reserved human gates | Read the entire codebase or diff itself; write production code |
 | **Reasoning** | Reads deep context and produces a plan, material escalations, assumptions, or pass/fail evidence | Change documented project intent or cross an authority boundary |
 | **Review** *(optional)* | Reviews the plan cold against the code before implementation | Write the plan it reviews |
 | **Implementation** | Builds the approved plan in full and reports verification | Change Goal/Included/Excluded, requirements, or architectural boundaries; may resolve local reversible plan gaps |
@@ -153,14 +155,29 @@ polling loop merely to check a task the harness already tracks. In a plain CLI e
 task notifications, a bounded sentinel wait remains the fallback. A notification or sentinel only
 establishes completion; the exit code still determines success or failure.
 
-Human gates belong on **impact boundaries**, not implementation mechanics. Commits, temporary
-branches/worktrees, merges back from an orchestrator-created worktree, bounded replanning inside
-documented intent, and other reversible internal transitions are Delegated by default. Scope,
-merge, release, push, or plan deletion are human gates only when the project's runtime contract
-classifies that specific transition as Escalation or Reserved.
+Human gates belong on **Reserved impact boundaries**, not implementation mechanics. Commits,
+temporary branches/worktrees, merges back from an orchestrator-created worktree, bounded replanning
+inside documented intent, and other reversible internal transitions are Delegated by default.
+Escalation is an orchestrator routing class, not a human-approval synonym. During an active mission,
+a user-facing question is valid only after `project-driver/scripts/mission-control.sh authorize`
+issues a `HUMAN_GATE` token for a Reserved action.
 
 A plan derived from the documented project-intent baseline does not require a separate scope approval merely
 because the orchestrator decomposed the project into another increment.
+
+### Mission Mandate and continuation
+
+For project-driven work, continuation state is explicit runtime data under
+`docs/plans/.runs/project-driver-mission/`. `mission-control.sh` persists the goal, continuation
+mode, optional deadline, and open human gates. Every completed increment, recovery step, or resumed
+session reaches a checkpoint: `CONTINUE` obligates the orchestrator to select the next ready work;
+`COMPLETE`, `STOP_DEADLINE`, `STOP_BLOCKED`, or an already-issued `HUMAN_GATE` are the only
+normal terminal decisions. There is no `ASK_TO_CONTINUE` transition.
+
+`authority.sh` consumes the machine-readable `clarity-authority` block in `00-ai-context.md`.
+Unknown reversible local actions default to Delegated; unknown externally consequential actions
+default to Orchestrator Escalation. Production, irreversible, credential/permission, and economic
+impacts default to Reserved. Project policy may explicitly override named action classifications.
 
 For governed execution, use a bounded preflight before dispatch, classify failures by cause, and
 retry only explicitly retryable conditions. Verify the effective model for parent and child agents;
@@ -206,16 +223,17 @@ to create extra parallel work.
 
 ## 9. Plan-driven build
 
-`skills/plan-driven-build/` implements this model for Claude Code and Codex. It dispatches planning,
-review, implementation, and verification through separate aimux profiles, preserves the state in a
-run journal, and stops only at Escalation or Reserved impact gates. The plan is a transient work order, not an archive of
-project documentation. Decisions worth keeping move into the SAD, requirements, change-management,
+`skills/plan-driven-build/` implements the bounded inner execution model for Claude Code and Codex.
+It dispatches planning, review, implementation, and verification through separate aimux profiles and
+preserves state in a run journal. During an active project-driver mission, Escalations return to the
+outer orchestrator and only Reserved actions may become human gates. The plan is a transient work
+order, not an archive of project documentation. Decisions worth keeping move into the SAD, requirements, change-management,
 or other permanent project documents before the plan is deleted.
 
 **Scope one plan as one mergeable increment.** The plan is the unit of verification and internal
 integration: a whole diff is checked against its Definition of Done in a single bounded pass, and
 that increment is committed and integrated as one. Human approval is required only when that
-integration crosses an Escalation or Reserved boundary. Scope it to the smallest change that can merge without
+integration crosses a Reserved boundary after the authority firewall issues a human gate. Scope it to the smallest change that can merge without
 leaving the product broken or half-migrated — usually one user story, and more than one only when
 they cannot merge separately.
 
@@ -253,4 +271,4 @@ project documentation should contain only the resulting stable execution rules.
 
 ---
 
-*Clarity Framework v4.3.0 – AI Usage Guide*
+*Clarity Framework v4.3.1 – AI Usage Guide*

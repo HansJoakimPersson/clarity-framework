@@ -38,8 +38,11 @@ answers a different question from the other Clarity documents:
 `clarity-bootstrap/`, `project-driver/`, `plan-driven-build/`, and `framework-update/` are
 multi-step workflows dispatched by name. `project-driver/` is the outer project loop: it turns
 documented intent into successive increments and invokes `plan-driven-build/` for each non-trivial
-one. `clarity-bootstrap/` sets up an unmanaged project, while `framework-update/` upgrades a
-managed one. `plan-driven-build/` is the execution engine that requires the second CLI noted above.
+one. `project-driver/` persists a Mission Mandate across increments and resumed sessions; its
+`scripts/mission-control.sh` continuation state machine and `scripts/authority.sh` approval
+firewall make "continue until complete" executable policy rather than conversational memory.
+`clarity-bootstrap/` sets up an unmanaged project, while `framework-update/` upgrades a managed
+one. `plan-driven-build/` is the execution engine that requires the second CLI noted above.
 
 The five discipline skills (`verification-before-completion/` through
 `finishing-a-development-branch/`) are single-file, self-contained, and apply to any task an agent
@@ -73,6 +76,16 @@ commit using an explicit path list.
 Step 2 concerns the machine, not the copied files. Project deviations belong in
 `docs/00-ai-context.md`; leave the copied files unchanged so they can be replaced at the next
 framework update.
+
+### What the files in `project-driver/` do
+
+| File | Role |
+| --- | --- |
+| `SKILL.md` | Outer delivery loop and Mission Mandate contract |
+| `scripts/mission-control.sh` | Persists mission state, continuation checkpoints, deadlines, and human-gate tokens |
+| `scripts/authority.sh` | Resolves actions as Delegated, Orchestrator Escalation, or Reserved HUMAN_GATE |
+| `tests/authority-test.sh` | Regression test for policy/default authority classification |
+| `tests/mission-control-test.sh` | Regression test that successful increments continue and only Reserved actions create human gates |
 
 ### What the files in `plan-driven-build/` do
 
@@ -132,4 +145,4 @@ blindly.
 
 ---
 
-*Clarity Framework v4.3.0*
+*Clarity Framework v4.3.1*

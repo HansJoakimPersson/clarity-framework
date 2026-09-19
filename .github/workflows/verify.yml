@@ -18,6 +18,8 @@ jobs:
         run: |
           sh skills/plan-driven-build/tests/dispatch-test.sh
           sh skills/plan-driven-build/tests/context-pack-test.sh
+          bash skills/project-driver/tests/authority-test.sh
+          bash skills/project-driver/tests/mission-control-test.sh
           bash skills/framework-update/tests/check-update-scope-test.sh
           bash skills/framework-update/tests/render-update-commit-test.sh
           bash framework/scripts/tests/check-version-consistency-test.sh
