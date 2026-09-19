@@ -104,9 +104,12 @@ started=$(date +%s)
 last_progress=$started
 last_bytes=$(progress_bytes)
 write_health running none "$started" "$last_bytes"
+last_heartbeat=$started
 
 while kill -0 "$worker_pid" 2>/dev/null; do
-  sleep "$CFD_HEARTBEAT_SECONDS"
+  # Process completion and timeout checks use a short poll. The health file itself is written only
+  # at the configured heartbeat cadence, so fast completion is not delayed by a 30-second heartbeat.
+  sleep 1
   now=$(date +%s)
   bytes=$(progress_bytes)
   if [ "$bytes" -gt "$last_bytes" ]; then
@@ -131,7 +134,10 @@ while kill -0 "$worker_pid" 2>/dev/null; do
     break
   fi
 
-  write_health running none "$now" "$bytes"
+  if [ $((now - last_heartbeat)) -ge "$CFD_HEARTBEAT_SECONDS" ]; then
+    write_health running none "$now" "$bytes"
+    last_heartbeat=$now
+  fi
 done
 
 if [ -z "$timeout_class" ]; then
