@@ -498,15 +498,36 @@ progressing.
 `timeout.stalled` and `timeout.wall` are **retryable only from a clean baseline**. Never launch a
 second writer into the same partially modified tree.
 
-When the increment runs in an orchestrator-owned isolated worktree:
+When the increment runs in an orchestrator-owned isolated worktree, persist the restart budget in
+the run directory before recreating anything:
 
-1. record the timeout class, supervisor health, and pre-dispatch baseline SHA;
+```bash
+SELF_HEAL_COUNT_FILE="$RUN/build.self-heal-count"
+SELF_HEAL_COUNT=$(cat "$SELF_HEAL_COUNT_FILE" 2>/dev/null || printf 0)
+case "$SELF_HEAL_COUNT" in *[!0-9]*|'') SELF_HEAL_COUNT=0 ;; esac
+
+if [ "$SELF_HEAL_COUNT" -ge "$MAX_SELF_HEAL_RESTARTS" ]; then
+  printf 'SELF_HEAL exhausted count=%s max=%s\n' "$SELF_HEAL_COUNT" "$MAX_SELF_HEAL_RESTARTS"
+else
+  next_count=$((SELF_HEAL_COUNT + 1))
+  printf '%s\n' "$next_count" > "$SELF_HEAL_COUNT_FILE.tmp"
+  mv -- "$SELF_HEAL_COUNT_FILE.tmp" "$SELF_HEAL_COUNT_FILE"
+  printf 'SELF_HEAL restart=%s/%s\n' "$next_count" "$MAX_SELF_HEAL_RESTARTS"
+fi
+```
+
+That file is local run-state and survives an orchestrator/session handoff. Never infer the retry
+budget from conversational memory.
+
+For an allowed restart:
+
+1. record the timeout class, supervisor health, pre-dispatch baseline SHA, and incremented restart
+   count;
 2. mark the timed-out worktree tainted and remove it after the supervisor has finished;
 3. recreate a fresh temporary worktree from the same pre-dispatch baseline;
 4. reuse the same committed plan and frozen context pack;
-5. re-dispatch at most `MAX_SELF_HEAL_RESTARTS` times (default **1**). If a distinct leased profile
-   from the same interchangeable pool is available, the retry may use it; the model and rollout
-   budget remain pinned;
+5. if a distinct leased profile from the same interchangeable pool is available, the retry may use
+   it; the model and rollout budget remain pinned;
 6. verify normally after a successful restart.
 
 The clean restart is Delegated recovery under an active Mission Mandate. Record it and continue; do
