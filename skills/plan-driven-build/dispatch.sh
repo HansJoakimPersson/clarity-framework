@@ -193,7 +193,7 @@ for timeout_spec in "stall:$STALL_TIMEOUT_SECONDS" "wall:$WALL_TIMEOUT_SECONDS" 
   esac
 done
 [ "$STALL_TIMEOUT_SECONDS" -ge "$HEARTBEAT_SECONDS" ] || die 'dispatch.sh: --stall-timeout-seconds must be >= --heartbeat-seconds'
-[ "$WALL_TIMEOUT_SECONDS" -ge "$STALL_TIMEOUT_SECONDS" ] || die 'dispatch.sh: --wall-timeout-seconds must be >= --stall-timeout-seconds'
+[ "$WALL_TIMEOUT_SECONDS" -ge "$HEARTBEAT_SECONDS" ] || die 'dispatch.sh: --wall-timeout-seconds must be >= --heartbeat-seconds'
 case "$MODE" in
   read-only|workspace-write|danger-full-access) ;;
   *) die "dispatch.sh: --mode must be read-only, workspace-write, or danger-full-access (got '$MODE')" ;;
