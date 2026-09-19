@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v4.3.1 |
+| **Framework version** | Clarity Framework v4.3.2 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -236,4 +236,4 @@ unknown_external=escalation
 
 ---
 
-*Clarity Framework v4.3.1 – AI Context Document*
+*Clarity Framework v4.3.2 – AI Context Document*
