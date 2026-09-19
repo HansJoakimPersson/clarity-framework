@@ -21,39 +21,39 @@ unknown_external=escalation
 <!-- clarity-authority:end -->
 EOF
 
-out=$("$AUTHORITY" --action git.commit --impact reversible-local --policy "$POLICY")
+out=$(bash "$AUTHORITY" --action git.commit --impact reversible-local --policy "$POLICY")
 printf '%s\n' "$out" | grep -F 'decision=DELEGATED' >/dev/null
 
 set +e
-out=$("$AUTHORITY" --action architecture.material-change --impact architecture --policy "$POLICY")
+out=$(bash "$AUTHORITY" --action architecture.material-change --impact architecture --policy "$POLICY")
 rc=$?
 set -e
 [ "$rc" -eq 10 ]
 printf '%s\n' "$out" | grep -F 'decision=ORCHESTRATOR' >/dev/null
 
-out=$("$AUTHORITY" --action production.release --impact production --policy "$POLICY")
+out=$(bash "$AUTHORITY" --action production.release --impact production --policy "$POLICY")
 printf '%s\n' "$out" | grep -F 'decision=DELEGATED' >/dev/null
 printf '%s\n' "$out" | grep -F 'source=policy' >/dev/null
 
 set +e
-out=$("$AUTHORITY" --action production.deploy --impact production --policy "$POLICY")
+out=$(bash "$AUTHORITY" --action production.deploy --impact production --policy "$POLICY")
 rc=$?
 set -e
 [ "$rc" -eq 20 ]
 printf '%s\n' "$out" | grep -F 'decision=HUMAN_GATE' >/dev/null
 
 set +e
-out=$("$AUTHORITY" --action custom.danger --impact reversible-local --policy "$POLICY")
+out=$(bash "$AUTHORITY" --action custom.danger --impact reversible-local --policy "$POLICY")
 rc=$?
 set -e
 [ "$rc" -eq 20 ]
 printf '%s\n' "$out" | grep -F 'source=policy' >/dev/null
 
-out=$("$AUTHORITY" --action local.unknown --impact reversible-local --policy "$POLICY")
+out=$(bash "$AUTHORITY" --action local.unknown --impact reversible-local --policy "$POLICY")
 printf '%s\n' "$out" | grep -F 'decision=DELEGATED' >/dev/null
 
 set +e
-out=$("$AUTHORITY" --action external.unknown --impact external-reversible --policy "$POLICY")
+out=$(bash "$AUTHORITY" --action external.unknown --impact external-reversible --policy "$POLICY")
 rc=$?
 set -e
 [ "$rc" -eq 10 ]
