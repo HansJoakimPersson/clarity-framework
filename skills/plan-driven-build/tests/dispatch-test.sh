@@ -477,7 +477,13 @@ while [ ! -f "$TEST_ROOT/out/wall.exit" ] && [ "$attempt" -lt 100 ]; do
   attempt=$((attempt + 1)); sleep 0.05
 done
 unset CF_TEST_PROGRESS
-test -f "$TEST_ROOT/out/wall.exit"
+if [ ! -f "$TEST_ROOT/out/wall.exit" ]; then
+  printf '%s\n' 'dispatch-test: wall timeout did not produce a sentinel' >&2
+  cat "$TEST_ROOT/out/wall.health" >&2 2>/dev/null || true
+  cat "$TEST_ROOT/out/wall.log" >&2 2>/dev/null || true
+  tail -20 "$TEST_ROOT/out/wall.log.events.jsonl" >&2 2>/dev/null || true
+  exit 1
+fi
 test "$(cat "$TEST_ROOT/out/wall.exit")" = '124'
 grep -F 'timeout.wall' "$TEST_ROOT/out/wall.ledger" >/dev/null
 
