@@ -91,6 +91,21 @@ if [ "${CF_TEST_RATE_LIMIT:-0}" -eq 1 ] && [ "${AIMUX_FAKE_PROFILE:-}" = "${CF_F
   exit 17
 fi
 
+if [ "${CF_TEST_HANG:-0}" -eq 1 ]; then
+  sleep 30
+  exit 0
+fi
+
+if [ "${CF_TEST_PROGRESS:-0}" -eq 1 ]; then
+  i=0
+  while [ "$i" -lt 30 ]; do
+    i=$((i + 1))
+    printf '{"type":"progress","step":%s}\n' "$i"
+    sleep 1
+  done
+  exit 0
+fi
+
 # CF_PROMPT_OUT, when set, captures the exact prompt text codex received — used to verify
 # --var substitution reached the CLI, not just that dispatch exited 0.
 [ -z "${CF_PROMPT_OUT:-}" ] || printf '%s' "$prompt" > "$CF_PROMPT_OUT"
@@ -130,6 +145,7 @@ export PATH
 export HOME="$TEST_ROOT/home"
 
 D="$SCRIPT_DIR/dispatch.sh"
+H="$SCRIPT_DIR/dispatch-health.sh"
 
 # 1. read-only dispatch writes the report
 "$D" --profile reg --mode read-only --prompt test --out "$TEST_ROOT/out/report.md" >/dev/null
@@ -426,4 +442,44 @@ grep -F "$(printf '100\t40\t10\t25\t5\t125')" "$TEST_ROOT/out/native-usage.ledge
 grep -F 'cached_input_tokens' "$TEST_ROOT/out/native-usage.ledger" >/dev/null
 grep -F '"type":"turn.completed"' "$TEST_ROOT/out/native-usage.md.attempt-1.jsonl" >/dev/null
 
-printf 'dispatch-test: ok\n'
+# 34. a silent hung background worker is terminated by the supervisor and classified as stalled
+CF_TEST_HANG=1
+export CF_TEST_HANG
+summary=$("$D" --profile reg --phase implementation --mode workspace-write --background   --prompt test --model test-model-x --max-rollout-tokens 12345   --heartbeat-seconds 1 --stall-timeout-seconds 2 --wall-timeout-seconds 10   --ledger "$TEST_ROOT/out/stall.ledger" --log "$TEST_ROOT/out/stall.log")
+printf '%s
+' "$summary" | grep -F 'health=' >/dev/null
+attempt=0
+while [ ! -f "$TEST_ROOT/out/stall.exit" ] && [ "$attempt" -lt 100 ]; do
+  attempt=$((attempt + 1)); sleep 0.05
+done
+unset CF_TEST_HANG
+test -f "$TEST_ROOT/out/stall.exit"
+test "$(cat "$TEST_ROOT/out/stall.exit")" = '124'
+grep -F 'timeout.stalled' "$TEST_ROOT/out/stall.ledger" >/dev/null
+grep -F "$(printf 'retryable	failure_class')" "$TEST_ROOT/out/stall.ledger" >/dev/null
+grep -F "$(printf '	1	timeout.stalled	')" "$TEST_ROOT/out/stall.ledger" >/dev/null
+set +e
+health=$(sh "$H" --log "$TEST_ROOT/out/stall.log")
+health_rc=$?
+set -e
+test "$health_rc" -eq 0
+printf '%s
+' "$health" | grep -F 'state=finished' >/dev/null
+printf '%s
+' "$health" | grep -F 'reason=timeout.stalled' >/dev/null
+
+# 35. observable progress prevents stall detection but the hard wall ceiling still terminates the job
+CF_TEST_PROGRESS=1
+export CF_TEST_PROGRESS
+"$D" --profile reg --phase implementation --mode workspace-write --background   --prompt test --model test-model-x --max-rollout-tokens 12345   --heartbeat-seconds 1 --stall-timeout-seconds 10 --wall-timeout-seconds 2   --ledger "$TEST_ROOT/out/wall.ledger" --log "$TEST_ROOT/out/wall.log" >/dev/null
+attempt=0
+while [ ! -f "$TEST_ROOT/out/wall.exit" ] && [ "$attempt" -lt 100 ]; do
+  attempt=$((attempt + 1)); sleep 0.05
+done
+unset CF_TEST_PROGRESS
+test -f "$TEST_ROOT/out/wall.exit"
+test "$(cat "$TEST_ROOT/out/wall.exit")" = '124'
+grep -F 'timeout.wall' "$TEST_ROOT/out/wall.ledger" >/dev/null
+
+printf 'dispatch-test: ok
+'
