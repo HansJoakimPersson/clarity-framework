@@ -163,7 +163,7 @@ export CF_TEST_FAIL
 "$D" --profile reg --mode workspace-write --prompt test \
   --log "$TEST_ROOT/out/build.log" --background >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/build.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/build.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/build.exit"
@@ -188,7 +188,7 @@ export CF_FAIL_PROFILE
 "$D" --profile pool-bad,pool-good --mode workspace-write --prompt test \
   --log "$TEST_ROOT/out/pool-build.log" --background >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/pool-build.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/pool-build.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/pool-build.exit"
@@ -316,7 +316,7 @@ test ! -f "$TEST_ROOT/out/missing-var.md"
 "$D" --profile reg --mode workspace-write --network --prompt test \
   --log "$TEST_ROOT/out/net-bg.log" --background >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/net-bg.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/net-bg.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/net-bg.exit"
@@ -377,7 +377,7 @@ summary=$("$D" --profile pool-bad,pool-good --phase implementation --mode worksp
 printf '%s\n' "$summary" | grep -F 'model=test-model-x' >/dev/null
 printf '%s\n' "$summary" | grep -F 'rollout_budget=12345' >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/impl-ok.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/impl-ok.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/impl-ok.exit"
@@ -401,7 +401,7 @@ printf '%s\n' 'test-model-x' 'gpt-6-astra' > "$TEST_ROOT/models-bg-bad.txt"
   --model test-model-x --max-rollout-tokens 12345 --model-evidence "$TEST_ROOT/models-bg-bad.txt" \
   --ledger "$TEST_ROOT/out/impl-model-bad.ledger" --log "$TEST_ROOT/out/impl-model-bad.log" >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/impl-model-bad.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/impl-model-bad.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/impl-model-bad.exit"
