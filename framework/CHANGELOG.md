@@ -24,6 +24,9 @@ tag, so an untagged heading here is a version no project can reach.
   `docs/00-ai-context.md`.
 - Regression tests now cover authority classification, mission resume/continuation, deadline stops,
   and the invariant that Escalations do not create human gates.
+- Background implementation dispatch now has an independent supervisor, atomic health heartbeat, a
+  mechanical health probe, no-progress stall detection, and a hard wall-clock ceiling. Regression
+  coverage includes a worker that never returns and a noisy worker that never finishes.
 
 ### Changed
 
@@ -37,6 +40,13 @@ tag, so an untagged heading here is a version no project can reach.
 - Dirty working trees encountered during an active mission are isolated with clean worktrees when
   safe instead of automatically becoming user decisions. Unsafe overlap is reported as a repository
   blocker rather than a routine approval request.
+- Every non-trivial project-driver writing increment now uses an orchestrator-owned worktree as a
+  recovery boundary, including sequential work. A supervised timeout may receive one clean restart
+  from the same recorded baseline by default; the restart count is persisted in local run state so
+  resumed sessions cannot reset the recovery budget.
+- Dispatch liveness is fail-closed: stale or lost supervisor health is an environment failure rather
+  than an indefinitely healthy-running state. One blocked increment no longer prevents
+  project-driver from continuing independent ready Delegated work.
 
 ### Fixed
 
@@ -44,6 +54,10 @@ tag, so an untagged heading here is a version no project can reach.
   or "keep going overnight" are no longer treated as conversational context that can be forgotten
   after an increment. They become persisted execution mandates with no normal `ASK_TO_CONTINUE`
   transition.
+- A background dispatcher can no longer leave the orchestrator believing a hung worker is healthy
+  for hours simply because no task notification or completion sentinel arrived. The supervisor
+  bounds both silence and total runtime, tears down the worker process tree parent-first to prevent
+  child-respawn races, and writes exit 124 with `timeout.stalled` or `timeout.wall`.
 
 ## [4.3.0] – 2026-09-18
 
