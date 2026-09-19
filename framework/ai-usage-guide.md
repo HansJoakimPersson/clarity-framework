@@ -271,4 +271,4 @@ project documentation should contain only the resulting stable execution rules.
 
 ---
 
-*Clarity Framework v4.3.0 – AI Usage Guide*
+*Clarity Framework v4.3.1 – AI Usage Guide*
