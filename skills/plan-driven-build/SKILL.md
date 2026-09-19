@@ -397,11 +397,19 @@ build_env_args=
 test -n "${MODEL_IMPLEMENTATION:-}" || { printf '%s\n' 'MODEL_IMPLEMENTATION is required' >&2; exit 2; }
 test -n "${MAX_ROLLOUT_TOKENS_IMPLEMENTATION:-}" || { printf '%s\n' 'MAX_ROLLOUT_TOKENS_IMPLEMENTATION is required' >&2; exit 2; }
 
+STALL_TIMEOUT_IMPLEMENTATION=${STALL_TIMEOUT_IMPLEMENTATION:-1800}
+WALL_TIMEOUT_IMPLEMENTATION=${WALL_TIMEOUT_IMPLEMENTATION:-7200}
+HEARTBEAT_IMPLEMENTATION=${HEARTBEAT_IMPLEMENTATION:-30}
+MAX_SELF_HEAL_RESTARTS=${MAX_SELF_HEAL_RESTARTS:-1}
+
 model_args="--model $MODEL_IMPLEMENTATION --max-rollout-tokens $MAX_ROLLOUT_TOKENS_IMPLEMENTATION"
 [ -n "${REASONING_EFFORT_IMPLEMENTATION:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_IMPLEMENTATION"
 
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
   --phase implementation \
+  --stall-timeout-seconds "$STALL_TIMEOUT_IMPLEMENTATION" \
+  --wall-timeout-seconds "$WALL_TIMEOUT_IMPLEMENTATION" \
+  --heartbeat-seconds "$HEARTBEAT_IMPLEMENTATION" \
   $build_env_args \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" \
   --var PLAN="$PLAN" --var CONTEXT_PACK="$CONTEXT_PACK" \
@@ -421,63 +429,97 @@ The sandbox still confines writes to the workspace. Network access widens what t
 not what it can overwrite, which is why it is granted per dispatch rather than stored on the
 profile.
 
-The command returns immediately and prints the PID and the sentinel path. Write both in the journal.
+The command returns immediately and prints the **supervisor PID**, sentinel path, health path,
+heartbeat interval, stall ceiling, and wall-clock ceiling. Record the supervisor PID and artifact
+paths in the journal.
 
-The sentinel is the completion source of truth. Read `tail -30 "$RUN/build.log"` only when the
-exit code is non-zero. Tailing a running build is the unbounded read this workflow exists to avoid.
+The supervisor, not the worker CLI, is the process the harness should track. It launches the CLI as
+its child, samples observable progress once per second, writes a compact `.health` heartbeat at the
+configured cadence, and guarantees that either:
 
-Because the sentinel is a file, a build survives you: if your session hits a usage limit while it
-runs, the build finishes anyway and whoever resumes reads the exit code.
+- the worker exits and a normal sentinel is written;
+- no observable log/event progress for the stall ceiling becomes exit `124` with
+  `failure_class=timeout.stalled`; or
+- the hard wall ceiling becomes exit `124` with `failure_class=timeout.wall`.
 
-### Wait for the build
+Defaults are 30 minutes without observable progress and two hours total for one implementation
+dispatch. These are per-job ceilings, not a limit on an overnight Mission Mandate; a mission may run
+many healthy dispatches in sequence.
 
-If the harness provides task notifications for background processes, record the PID and sentinel,
-yield control, and resume only when the task notification arrives. Do not call `ScheduleWakeup`, add
-an arbitrary delay, or create a second polling loop solely to check a dispatch that the harness is
-already tracking. A task notification is a wake-up signal, not proof that the build passed; always
-read the sentinel after resuming.
+The sentinel remains the completion source of truth. Do not tail a running build. The `.health`
+file is the liveness source of truth while no sentinel exists.
 
-If the harness does not provide task notifications, waiting is the orchestrator's job. Run one
-bounded sentinel wait as a fallback:
+### Wait for the supervised build
+
+If the harness provides task notifications, track the **supervisor** task. A worker hang can no
+longer suppress completion forever because the supervisor terminates it at the configured ceiling
+and then exits itself. On every notification or resumed session, inspect state mechanically:
 
 ```bash
-BUILD_PID=<pid printed by the dispatch>
-LOG_SIZE_BEFORE=$(wc -c < "$RUN/build.log" 2>/dev/null || printf 0)
-deadline=$(( $(date +%s) + 3600 ))
-while [ ! -f "$RUN/build.exit" ] && [ "$(date +%s)" -lt "$deadline" ]; do sleep 20; done
-
-if [ -f "$RUN/build.exit" ]; then
-  printf 'BUILD finished exit=%s\n' "$(cat "$RUN/build.exit")"
-elif kill -0 "$BUILD_PID" 2>/dev/null; then
-  LOG_SIZE_AFTER=$(wc -c < "$RUN/build.log" 2>/dev/null || printf 0)
-  if [ "$LOG_SIZE_AFTER" = "$LOG_SIZE_BEFORE" ]; then
-    printf 'BUILD still running after 60 min, pid %s alive, but build.log has not grown — possible stall\n' "$BUILD_PID"
-  else
-    printf 'BUILD still running after 60 min, pid %s alive, log growing\n' "$BUILD_PID"
-  fi
-else
-  printf 'BUILD process gone, no sentinel written\n'
-fi
+set +e
+HEALTH=$(sh "$SKILLDIR/dispatch-health.sh" --log "$RUN/build.log")
+HEALTH_RC=$?
+set -e
+printf '%s\n' "$HEALTH"
 ```
 
-Three outcomes, three different actions. A sentinel means go to step 5. Still alive means report the
-elapsed time and wait again — a long build is not a stuck build. **Gone with no sentinel means the
-process was killed** before it could write an exit code: say so and stop, because the working tree
-now holds a partial build that no exit code describes. Without the `kill -0` check that case is
-indistinguishable from a slow build, and waiting on it is waiting forever.
+Interpret it as follows:
 
-`kill -0` only proves the process exists, not that it is doing anything — a hung installer or a
-stuck network call holds a live PID indefinitely. Compare `build.log`'s size across the wait window;
-if it has not grown, treat the still-alive report as a likely stall (observed silently hanging three
-separate times on a real project) and say so instead of quietly starting another 60-minute wait.
+| Health result | Action |
+| --- | --- |
+| exit 0 / `state=finished` | Read the sentinel and continue from its exit code. |
+| exit 10 / healthy running | Keep waiting; do not read the log. |
+| exit 20 / stale heartbeat | Treat the supervisor itself as unhealthy; do not assume the worker is fine. |
+| exit 30 / lost or unknown | Treat the dispatch as lost infrastructure state; never wait indefinitely for a sentinel that may never arrive. |
 
-If the build or verification fails, apply `systematic-debugging` before proposing a code fix when
-that skill is installed. Pass it the bounded failure report and reproduction command; record its
-root cause and retryability result in the journal.
+For plain CLI environments without task notifications, use a bounded health loop rather than an
+unbounded sentinel loop:
 
-If the runtime has neither task notifications nor a bounded wait mechanism, do not claim to be
-watching the build. Record the exact sentinel command and stop at that handoff. Never use an
-arbitrary wake-up delay as a substitute for either mechanism.
+```bash
+while :; do
+  set +e
+  sh "$SKILLDIR/dispatch-health.sh" --log "$RUN/build.log"
+  rc=$?
+  set -e
+  case "$rc" in
+    0) break ;;
+    10) sleep 20 ;;
+    20|30) break ;;
+    *) break ;;
+  esac
+done
+```
+
+A stale/lost supervisor is an environment failure, not evidence that implementation is still
+progressing.
+
+### Self-heal a timed-out implementation
+
+`timeout.stalled` and `timeout.wall` are **retryable only from a clean baseline**. Never launch a
+second writer into the same partially modified tree.
+
+When the increment runs in an orchestrator-owned isolated worktree:
+
+1. record the timeout class, supervisor health, and pre-dispatch baseline SHA;
+2. mark the timed-out worktree tainted and remove it after the supervisor has finished;
+3. recreate a fresh temporary worktree from the same pre-dispatch baseline;
+4. reuse the same committed plan and frozen context pack;
+5. re-dispatch at most `MAX_SELF_HEAL_RESTARTS` times (default **1**). If a distinct leased profile
+   from the same interchangeable pool is available, the retry may use it; the model and rollout
+   budget remain pinned;
+6. verify normally after a successful restart.
+
+The clean restart is Delegated recovery under an active Mission Mandate. Record it and continue; do
+not ask the user whether to retry.
+
+If the increment is not isolated in an orchestrator-owned worktree, or the clean restart also times
+out, do **not** reset/stash/overwrite uncertain work. Classify the result as an environment/repository
+blocker and return it to project-driver. Under an active mission, project-driver may choose another
+ready independent increment; it must not continue pretending the hung job is healthy.
+
+For ordinary non-timeout build/verification failures, apply `systematic-debugging` when installed,
+using the bounded failure report and reproduction command. A recoverable diagnosis re-enters the
+mission continuation loop; a non-recoverable blocker is recorded explicitly.
 
 ### If Implementation discovers a plan gap
 
