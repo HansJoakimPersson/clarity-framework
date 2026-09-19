@@ -32,6 +32,7 @@
 #               (--prompt-file FILE [--var KEY=VALUE ...] | --prompt TEXT) [--model NAME]
 #               --log FILE --background [--network] [--env-file FILE]
 #               [--model-evidence FILE] [--max-rollout-tokens N]
+#               [--stall-timeout-seconds N] [--wall-timeout-seconds N] [--heartbeat-seconds N]
 #
 # --profile is an ordered, comma-separated pool of aimux profile names, e.g.
 # `--profile codework1,codework2,codework3`. This is priority order, resolved once per dispatch —
@@ -83,12 +84,16 @@
 # {{KEY}}; every placeholder must be supplied with --var or the dispatch aborts. Values are
 # single-line. Keys are A-Z and underscore.
 #
-# Background mode writes the exit code to the log path with .log replaced by .exit. Poll that
-# sentinel — never tail a running build. It uses `nohup` so the build is not tied to the
-# short-lived shell that launched it; `aimux run <profile> -- <codex exec>` was verified to run to
-# completion under `nohup` with no TTY (aimux 0.25.0). Some CLI harnesses clean up ordinary
-# background children as soon as the spawning command returns; that leaves an empty log and no
-# sentinel.
+# Background mode is supervised. The supervisor writes:
+#   LOG with .log replaced by .exit    completion exit code
+#   LOG with .log replaced by .health  liveness/progress state
+#   LOG.events.jsonl                   native CLI event stream
+# It polls the worker at --heartbeat-seconds (default 30), terminates a worker whose observable
+# log/event output has made no progress for --stall-timeout-seconds (default 1800), and enforces a
+# hard --wall-timeout-seconds ceiling (default 7200). Timeout termination writes exit 124 and a
+# classified ledger entry, so a hung CLI eventually becomes a normal recoverable workflow event
+# instead of waiting forever. The supervisor itself runs under `nohup` so the worker is not tied to
+# the short-lived launcher shell.
 #
 # --env-file sources one project-owned shell file before launching the CLI. Use it for language or
 # toolchain bootstrap such as JAVA_HOME, Node version managers, or Go toolchain variables. The file
@@ -113,6 +118,7 @@ PROFILE=''; MODE=''; OUT=''; LOG=''; PROMPT=''; PROMPT_FILE=''; ENV_FILE=''
 MAX_LINES=''; BACKGROUND=0; NETWORK=0; KEYS=''; MODEL=''; REASONING_EFFORT=''
 PREFLIGHT=''; MODEL_EVIDENCE=''; LEDGER=''; JOB_ID=''; PHASE='dispatch'; MAX_RETRIES=''
 MAX_ROLLOUT_TOKENS=''
+STALL_TIMEOUT_SECONDS=1800; WALL_TIMEOUT_SECONDS=7200; HEARTBEAT_SECONDS=30
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -133,6 +139,9 @@ while [ $# -gt 0 ]; do
     --phase)       PHASE="${2:-}";       shift 2 ;;
     --max-retries) MAX_RETRIES="${2:-}"; shift 2 ;;
     --max-rollout-tokens) MAX_ROLLOUT_TOKENS="${2:-}"; shift 2 ;;
+    --stall-timeout-seconds) STALL_TIMEOUT_SECONDS="${2:-}"; shift 2 ;;
+    --wall-timeout-seconds) WALL_TIMEOUT_SECONDS="${2:-}"; shift 2 ;;
+    --heartbeat-seconds) HEARTBEAT_SECONDS="${2:-}"; shift 2 ;;
     --background)  BACKGROUND=1;         shift ;;
     --network)     NETWORK=1;            shift ;;
     --var)
@@ -173,6 +182,16 @@ case "$REASONING_EFFORT" in
   ''|none|low|medium|high|xhigh) ;;
   *) die "dispatch.sh: --reasoning-effort must be none, low, medium, high, or xhigh (got '$REASONING_EFFORT')" ;;
 esac
+for timeout_spec in "stall:$STALL_TIMEOUT_SECONDS" "wall:$WALL_TIMEOUT_SECONDS" "heartbeat:$HEARTBEAT_SECONDS"; do
+  timeout_name=${timeout_spec%%:*}
+  timeout_value=${timeout_spec#*:}
+  case "$timeout_value" in
+    ''|*[!0-9]*) die "dispatch.sh: watchdog values must be positive integers (got $timeout_name=$timeout_value)" ;;
+    *) [ "$timeout_value" -gt 0 ] || die "dispatch.sh: watchdog values must be positive integers (got $timeout_name=$timeout_value)" ;;
+  esac
+done
+[ "$STALL_TIMEOUT_SECONDS" -ge "$HEARTBEAT_SECONDS" ] || die 'dispatch.sh: --stall-timeout-seconds must be >= --heartbeat-seconds'
+[ "$WALL_TIMEOUT_SECONDS" -ge "$STALL_TIMEOUT_SECONDS" ] || die 'dispatch.sh: --wall-timeout-seconds must be >= --stall-timeout-seconds'
 case "$MODE" in
   read-only|workspace-write|danger-full-access) ;;
   *) die "dispatch.sh: --mode must be read-only, workspace-write, or danger-full-access (got '$MODE')" ;;
