@@ -89,4 +89,4 @@
 
 ---
 
-*Clarity Framework v4.3.0 – Change Management*
+*Clarity Framework v4.3.1 – Change Management*
