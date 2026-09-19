@@ -164,4 +164,4 @@ Answer before deleting the plan. “Nothing” is valid; no answer is not.
 
 ---
 
-*Clarity Framework v4.3.0 – Plan Template*
+*Clarity Framework v4.3.1 – Plan Template*
