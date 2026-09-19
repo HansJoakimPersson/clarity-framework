@@ -130,12 +130,18 @@ gates.
 
 The plan's `Gate profile` field controls how much routine execution is surfaced, but **authority
 comes first**. Classify decisions as Delegated, Escalation, or Reserved from
-`docs/00-ai-context.md`. A gate exists only for an unresolved Escalation or Reserved transition.
+`docs/00-ai-context.md`.
+
+When `docs/plans/.runs/project-driver-mission/active.tsv` reports an active mission, that mandate
+takes precedence over gate-profile pauses. Delegated work cannot be converted into a human approval
+checkpoint by `interactive`, and an Escalation returns to the outer project-driver orchestrator for
+resolution rather than directly to the user. Only a Reserved action with an issued `HUMAN_GATE`
+may become a user-facing question.
 
 | Profile | Behavior |
 | --- | --- |
 | `semi-automatic` *(default)* | Execute Delegated work end-to-end; surface meaningful assumptions in the report; stop only for Escalation/Reserved decisions |
-| `interactive` | Also pause before committing or externally integrating when the extra inspection has been explicitly chosen for this plan |
+| `interactive` | For standalone runs, pause before committing or externally integrating when explicitly chosen. An active project-driver mission suppresses these routine pauses; its reserved-only human-gate policy wins. |
 | `unattended` | Execute every Delegated transition, including commits, temporary worktrees/branches, and internal integration; notify only on completion, failure, or Escalation/Reserved decisions |
 
 Scope decomposition is Delegated when it is derived from already-documented project intent and does
@@ -157,13 +163,14 @@ Check, and if anything is missing: report it and stop.
   setting.
 - This skill exists at `.agents/skills/plan-driven-build/` or `.claude/skills/plan-driven-build/`.
   Install it in both locations when both Codex and Claude Code are used. The copies must be identical.
-- `git status --porcelain` is empty and you are on the right branch. Implementation writes straight
-  into the working tree; if it is dirty you can no longer tell its changes from what was there.
-  Report what is uncommitted and let the user decide — never commit, stash or reset for them. The
-  user may explicitly confirm the dirty paths belong to other in-flight work (for example a
-  concurrent agent on the same tree) and authorize proceeding around them; treat that as a decision
-  you record, not a default you assume, and log the excluded paths and the user's confirmation under
-  the journal's Deviations.
+- Prefer a clean owning branch. For a standalone run, a dirty target tree is still a material
+  repository-safety condition: report it rather than silently mixing work. Under an active
+  project-driver mission, **do not ask the user merely because the current tree is dirty**. Preserve
+  the dirty tree untouched and use an orchestrator-created clean worktree from the documented owning
+  branch when the increment can be isolated safely. If required work depends on uncommitted content
+  that is absent from the documented baseline and cannot be isolated without risking loss, return a
+  repository-safety blocker to project-driver; it is not permission to stash, reset, overwrite, or
+  ask a routine continuation question.
 - `docs/00-ai-context.md` names an aimux profile pool for each level — one profile or several,
   comma-separated, tried in priority order. `aimux profile list` (or `~/.aimux/config.yaml`) shows
   the profiles that exist. **A profile selects its CLI, authentication and paying subscription; its stored model is only a
@@ -529,33 +536,38 @@ a single hunk for a high-risk change or a report that looks wrong — a judgment
 default.
 
 If Implementation stops, classify the cause. For a Delegated implementation or environment failure,
-apply the debugging/retry rules and re-dispatch rather than asking the user what to do. For an
-Escalation or Reserved decision, report that decision and stop. The orchestrator still does not take
-over production coding itself.
+apply the debugging/retry rules and re-dispatch rather than asking the user what to do. Under an
+active project-driver mission, return Escalations to the outer orchestrator for resolution and return
+Reserved actions as candidate gates; do not address either question directly to the user. In a
+standalone run, report the smallest material decision. The orchestrator still does not take over
+production coding itself.
 
 ## Step 6 — Commit and integrate internally
 
-Never leave the build as an ambiguous dirty tree. Commit verified Delegated work automatically
-unless `interactive` explicitly selected a commit pause. If the work ran in an orchestrator-created
-temporary branch or `.worktree`, integrate it back into the task's owning branch, verify the
-resulting commit contains the work, and remove the temporary worktree/branch when safe. This is
-internal execution plumbing, not a human decision.
+Never leave the build as an ambiguous dirty tree. Commit verified Delegated work automatically.
+A standalone `interactive` run may still request its explicitly selected commit pause, but an active
+project-driver mission suppresses that pause. If the work ran in an orchestrator-created temporary
+branch or `.worktree`, integrate it back into the task's owning branch, verify the resulting commit
+contains the work, and remove the temporary worktree/branch when safe. This is internal execution
+plumbing, not a human decision.
 
 Do not merge unrelated concurrent work or overwrite a dirty target branch. That is a repository
 safety failure, not permission to guess.
 
-## Step 7 — Impact gate
+## Step 7 — Impact handoff
 
 Determine the next transition from the project's authority contract.
 
-- If it is Delegated (for example local integration, an allowed push to the task branch, or continued
-  work on the next increment), perform it and continue.
-- If it is Escalation or Reserved (for example a material scope/architecture change, production
-  publication, destructive migration, or a project-reserved shared-branch push), present only that
-  decision and stop.
+- If it is Delegated, perform it and continue.
+- Under an active project-driver mission, return an Escalation to project-driver as orchestrator work.
+  Return a Reserved action as a candidate human gate. **Do not ask the user from this inner
+  workflow.** Project-driver's `mission-control.sh authorize` is the only component allowed to issue
+  a `HUMAN_GATE` token.
+- In a standalone run with no active mission, present the smallest unresolved material decision when
+  the workflow cannot safely resolve it.
 - If no further transition is needed, continue directly to closeout.
 
-There is no universal merge gate.
+There is no universal merge gate and no inner-workflow "should I continue?" gate.
 
 If an external code review is requested, use `requesting-code-review` to prepare the review package.
 When findings return, use `receiving-code-review` to disposition each finding before entering a fix
