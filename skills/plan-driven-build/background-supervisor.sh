@@ -48,24 +48,28 @@ write_health() {
 
 terminate_tree() {
   pid=$1
+  children=''
   if command -v pgrep >/dev/null 2>&1; then
     children=$(pgrep -P "$pid" 2>/dev/null || true)
-    for child in $children; do
-      terminate_tree "$child"
-    done
   fi
+  # Stop the parent first so a shell loop cannot spawn replacement children while teardown walks
+  # the tree. Then terminate the child snapshot captured immediately before the parent stop.
   kill -TERM "$pid" 2>/dev/null || true
+  for child in $children; do
+    terminate_tree "$child"
+  done
 }
 
 force_kill_tree() {
   pid=$1
+  children=''
   if command -v pgrep >/dev/null 2>&1; then
     children=$(pgrep -P "$pid" 2>/dev/null || true)
-    for child in $children; do
-      force_kill_tree "$child"
-    done
   fi
   kill -KILL "$pid" 2>/dev/null || true
+  for child in $children; do
+    force_kill_tree "$child"
+  done
 }
 
 printf '%s\n' 'DISPATCH supervisor started'
