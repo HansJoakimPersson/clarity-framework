@@ -126,7 +126,7 @@ redefining the workflow.
 
 | Level | Agent / profile pool | Model | Rollout budget | Sandbox + approval | Responsibility |
 | --- | --- | --- | --- | --- | --- |
-| Orchestrator | [e.g. Claude Code or Codex] | — | — | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, exercises Delegated authority, presents material impact gates, and maintains the run journal. Does not read the codebase or diff itself. |
+| Orchestrator | [e.g. Claude Code or Codex] | — | — | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, exercises Delegated authority, resolves Escalations internally, and presents only Reserved human gates. An active project-driver mission persists continuation across increments and resumed sessions. Does not read the codebase or diff itself. |
 | Reasoning | [e.g. pool `codework1,codework2` — aimux profile names] | [optional; empty uses profile default] | [optional] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different profile pool from the Orchestrator. |
 | Review *(optional)* | [e.g. reuse Reasoning's pool, or its own] | [optional; empty uses profile default] | [optional] | `read-only` + approval `never` | Reviews the plan cold against the code, from a different prompt file than Reasoning's. Does not need a different profile — the prompt is what separates it. |
 | Implementation | [e.g. pool `codework3,codework4` — aimux profile names] | [required exact model, e.g. `gpt-5.6-luna`] | [required positive token ceiling, e.g. `120000`] | `workspace-write` + approval `never` | Builds the approved plan. Model and budget remain fixed when another profile pays. May resolve local reversible implementation gaps but must escalate boundary changes. |
@@ -178,8 +178,9 @@ context and is never packed automatically.]
 write surfaces may share a wave. Prefer sequential execution when synchronization or shared-contract
 work would erase the latency benefit.]
 
-**Default gate profile:** [semi-automatic (default) / interactive / unattended — supervision level
-for `plan-driven-build`. Authority below still controls which decisions can stop the run.]
+**Default gate profile:** [semi-automatic (default) / interactive / unattended — supervision/reporting
+level for standalone `plan-driven-build`. During an active project-driver mission, the mission mandate
+takes precedence: Delegated work continues and only Reserved actions may create a human gate.]
 
 **Delegated authority:** [e.g. decompose approved requirements, local architecture-consistent design,
 tests, dependency-neutral refactors, commits, temporary branches/worktrees, merge worktrees back to
@@ -193,9 +194,24 @@ reasonable alternatives]
 or permission changes, deletion of production data, push/merge to protected main if the project
 chooses to reserve it]
 
+The block below is the machine-readable approval policy consumed by
+`project-driver/scripts/authority.sh`. Keep one action per line. Project-specific entries override
+the framework defaults. `Escalation` routes to the orchestrator, not directly to the human.
+
+<!-- clarity-authority:start -->
+mode=autonomous
+human_gate=reserved-only
+unknown_reversible=delegated
+unknown_external=escalation
+# delegate=project-specific.action
+# escalate=project-specific.material-choice
+# reserve=project-specific.irreversible-action
+<!-- clarity-authority:end -->
+
 > Uncertainty alone is not a reason to ask. Use repository evidence, project intent, conventions, and
 > the least-consequential reversible option for Delegated decisions; record the assumption and
-> continue.
+> continue. A user-facing approval question during an active mission requires an issued
+> `HUMAN_GATE` token; worker Escalations are resolved by the orchestrator first.
 
 ---
 
