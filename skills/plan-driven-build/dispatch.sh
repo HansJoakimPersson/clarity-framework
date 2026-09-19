@@ -109,6 +109,8 @@
 
 set -eu
 
+SKILLDIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+
 die() { printf '%s\n' "$1" >&2; exit 2; }
 
 TMP_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/clarity-dispatch.XXXXXX")
@@ -560,10 +562,12 @@ elif [ -n "$missing_log" ]; then
 fi
 
 if [ "$BACKGROUND" -eq 1 ]; then
-  # No retry here even on a pool: a killed or failed build cannot be safely re-launched on another
-  # profile without knowing what it already wrote. The pool only decides the starting profile.
+  # No blind retry here even on a pool: a failed workspace-write may have changed the tree.
+  # background-supervisor.sh guarantees that a live-but-stalled worker eventually terminates and
+  # writes a classified sentinel instead of blocking the orchestrator indefinitely.
   exit_file="$(printf '%s' "$LOG" | sed 's/\.log$//').exit"
-  rm -f "$exit_file"
+  health_file="$(printf '%s' "$LOG" | sed 's/\.log$//').health"
+  rm -f "$exit_file" "$health_file"
   CFD_PROFILE=$RESOLVED_PROFILE
   CFD_CLI=$RESOLVED_CLI
   CFD_MODE=$MODE
@@ -579,121 +583,24 @@ if [ "$BACKGROUND" -eq 1 ]; then
   CFD_NETWORK=$NETWORK
   CFD_PROMPT=$PROMPT
   CFD_EXIT_FILE=$exit_file
+  CFD_HEALTH_FILE=$health_file
   CFD_LEDGER=$LEDGER
   CFD_PHASE=$PHASE
   CFD_JOB_ID=$JOB_ID
-  export CFD_PROFILE CFD_CLI CFD_MODE CFD_MODEL CFD_REASONING_EFFORT CFD_MAX_ROLLOUT_TOKENS CFD_MODEL_EVIDENCE CFD_LOG CFD_EVENTS CFD_EFFECTIVE_MODEL CFD_NETWORK CFD_PROMPT CFD_EXIT_FILE CFD_LEDGER CFD_JOB_ID CFD_PHASE
-  # The child rebuilds the argv rather than inheriting a command string: a background dispatch
-  # survives this process, so the adapter has to run where the command actually runs.
-  nohup sh -c '
-    printf "%s\n" "DISPATCH child started"
-    status=0
-    case "$CFD_CLI" in
-      codex)
-        if [ -n "$CFD_PROFILE" ]; then
-          set -- aimux run "$CFD_PROFILE"
-          [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
-          set -- "$@" -- codex -a never
-          [ -z "$CFD_REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$CFD_REASONING_EFFORT"
-          [ -z "$CFD_MAX_ROLLOUT_TOKENS" ] || set -- "$@" -c "features.rollout_budget={enabled=true,limit_tokens=$CFD_MAX_ROLLOUT_TOKENS,reminder_at_remaining_tokens=[],sampling_token_weight=1.0,prefill_token_weight=1.0}"
-          [ "$CFD_NETWORK" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
-          set -- "$@" exec --json -s "$CFD_MODE"
-          [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
-          set -- "$@" "$CFD_PROMPT"
-        else
-          set -- codex -a never
-          [ -z "$CFD_REASONING_EFFORT" ] || set -- "$@" -c "model_reasoning_effort=$CFD_REASONING_EFFORT"
-          [ -z "$CFD_MAX_ROLLOUT_TOKENS" ] || set -- "$@" -c "features.rollout_budget={enabled=true,limit_tokens=$CFD_MAX_ROLLOUT_TOKENS,reminder_at_remaining_tokens=[],sampling_token_weight=1.0,prefill_token_weight=1.0}"
-          [ "$CFD_NETWORK" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
-          set -- "$@" exec --json -s "$CFD_MODE"
-          [ -z "$CFD_MODEL" ] || set -- "$@" -m "$CFD_MODEL"
-          set -- "$@" "$CFD_PROMPT"
-        fi
-        rm -f "$CFD_EVENTS"
-        "$@" >"$CFD_EVENTS" 2>>"$CFD_LOG" || status=$?
-        ;;
-      *) printf "%s\n" "dispatch child: cli $CFD_CLI has no adapter" >&2; status=2 ;;
-    esac
-    failure_class=none
-    retryable=0
-    model_policy=profile-default
-    [ -n "$CFD_MODEL" ] && model_policy=pinned
-    if [ "$status" -ne 0 ]; then
-      if grep -Eiq "shared rollout token budget exhausted|rollout.?budget.*exhaust" "$CFD_LOG" "$CFD_EVENTS" 2>/dev/null; then
-        failure_class=budget
-      elif grep -Eiq "rate.?limit|too many requests|quota exceeded|temporarily unavailable|server overloaded|try again later" "$CFD_LOG" "$CFD_EVENTS" 2>/dev/null; then
-        failure_class=environment.rate_limit
-      elif grep -Eiq "timeout|timed out|deadline exceeded" "$CFD_LOG" "$CFD_EVENTS" 2>/dev/null; then
-        failure_class=timeout
-      elif grep -Eiq "unknown model|model.*not found|invalid.*model" "$CFD_LOG" "$CFD_EVENTS" 2>/dev/null; then
-        failure_class=model-routing
-      else
-        failure_class=unknown
-      fi
-    fi
-    if [ "$status" -eq 0 ] && [ -n "$CFD_MODEL_EVIDENCE" ]; then
-      if [ ! -r "$CFD_MODEL_EVIDENCE" ]; then
-        printf "%s\n" "dispatch child: model evidence file not readable: $CFD_MODEL_EVIDENCE" >&2
-        status=78; failure_class=model-routing; model_policy=failed
-      else
-        observed_models=$(sed "/^[[:space:]]*$/d" "$CFD_MODEL_EVIDENCE" | tr "\\n" "," | sed "s/,$//")
-        if [ -z "$observed_models" ] || sed "/^[[:space:]]*$/d" "$CFD_MODEL_EVIDENCE" | grep -Fvx "$CFD_EFFECTIVE_MODEL" >/dev/null; then
-          status=78; failure_class=model-routing; model_policy=failed
-        else
-          model_policy=passed
-        fi
-      fi
-    fi
-    input_tokens=${CF_INPUT_TOKENS:-unavailable}
-    cached_input_tokens=${CF_CACHED_INPUT_TOKENS:-unavailable}
-    cache_write_input_tokens=${CF_CACHE_WRITE_INPUT_TOKENS:-unavailable}
-    output_tokens=${CF_OUTPUT_TOKENS:-unavailable}
-    reasoning_output_tokens=${CF_REASONING_OUTPUT_TOKENS:-unavailable}
-    total_tokens=${CF_TOTAL_TOKENS:-unavailable}
-    if [ -r "$CFD_EVENTS" ]; then
-      u_input=0; u_cached=0; u_cache_write=0; u_output=0; u_reasoning=0; u_found=0
-      while IFS= read -r line; do
-        case "$line" in
-          *"\"type\":\"turn.completed\""*|*"\"type\": \"turn.completed\""*)
-            n=$(printf "%s\n" "$line" | sed -n "s/.*\"input_tokens\":[[:space:]]*\([0-9][0-9]*\).*/\\1/p")
-            [ -n "$n" ] || continue
-            c=$(printf "%s\n" "$line" | sed -n "s/.*\"cached_input_tokens\":[[:space:]]*\([0-9][0-9]*\).*/\\1/p")
-            w=$(printf "%s\n" "$line" | sed -n "s/.*\"cache_write_input_tokens\":[[:space:]]*\([0-9][0-9]*\).*/\\1/p")
-            o=$(printf "%s\n" "$line" | sed -n "s/.*\"output_tokens\":[[:space:]]*\([0-9][0-9]*\).*/\\1/p")
-            q=$(printf "%s\n" "$line" | sed -n "s/.*\"reasoning_output_tokens\":[[:space:]]*\([0-9][0-9]*\).*/\\1/p")
-            u_found=1
-            u_input=$((u_input + n))
-            u_cached=$((u_cached + ${c:-0}))
-            u_cache_write=$((u_cache_write + ${w:-0}))
-            u_output=$((u_output + ${o:-0}))
-            u_reasoning=$((u_reasoning + ${q:-0}))
-            ;;
-        esac
-      done < "$CFD_EVENTS"
-      if [ "$u_found" -eq 1 ]; then
-        input_tokens=$u_input
-        cached_input_tokens=$u_cached
-        cache_write_input_tokens=$u_cache_write
-        output_tokens=$u_output
-        reasoning_output_tokens=$u_reasoning
-        total_tokens=$((u_input + u_output))
-      fi
-    fi
-    printf "%s\n" "$status" > "$CFD_EXIT_FILE"
-    if [ -n "$CFD_LEDGER" ]; then
-      printf "job_id\\tstatus\\tphase\\tprofile\\tcli\\trequested_model\\teffective_model\\treasoning_effort\\trollout_budget_tokens\\tattempts\\tretryable\\tfailure_class\\tmodel_policy\\tinput_tokens\\tcached_input_tokens\\tcache_write_input_tokens\\toutput_tokens\\treasoning_output_tokens\\ttotal_tokens\\texit_status\\n" > "$CFD_LEDGER"
-      printf "%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t1\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n" \
-        "$CFD_JOB_ID" "$([ "$status" -eq 0 ] && printf passed || printf failed)" "$CFD_PHASE" \
-        "${CFD_PROFILE:-cli:$CFD_CLI}" "$CFD_CLI" "${CFD_MODEL:-profile-default}" \
-        "$CFD_EFFECTIVE_MODEL" "${CFD_REASONING_EFFORT:-profile-default}" \
-        "${CFD_MAX_ROLLOUT_TOKENS:-unbounded}" "$retryable" "$failure_class" "$model_policy" \
-        "$input_tokens" "$cached_input_tokens" "$cache_write_input_tokens" "$output_tokens" \
-        "$reasoning_output_tokens" "$total_tokens" "$status" >> "$CFD_LEDGER"
-    fi
-    exit "$status"
-  ' dispatch-bg > "$LOG" 2>&1 < /dev/null &
-  printf 'DISPATCH started  profile=%s  cli=%s  model=%s  reasoning_effort=%s  rollout_budget=%s  mode=%s  pid=%s  log=%s  sentinel=%s\n' \
-    "$LAST_LABEL" "$RESOLVED_CLI" "$CFD_EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" "${MAX_ROLLOUT_TOKENS:-unbounded}" "$MODE" "$!" "$LOG" "$exit_file"
+  CFD_STALL_TIMEOUT_SECONDS=$STALL_TIMEOUT_SECONDS
+  CFD_WALL_TIMEOUT_SECONDS=$WALL_TIMEOUT_SECONDS
+  CFD_HEARTBEAT_SECONDS=$HEARTBEAT_SECONDS
+  export CFD_PROFILE CFD_CLI CFD_MODE CFD_MODEL CFD_REASONING_EFFORT CFD_MAX_ROLLOUT_TOKENS
+  export CFD_MODEL_EVIDENCE CFD_LOG CFD_EVENTS CFD_EFFECTIVE_MODEL CFD_NETWORK CFD_PROMPT
+  export CFD_EXIT_FILE CFD_HEALTH_FILE CFD_LEDGER CFD_JOB_ID CFD_PHASE
+  export CFD_STALL_TIMEOUT_SECONDS CFD_WALL_TIMEOUT_SECONDS CFD_HEARTBEAT_SECONDS
+
+  nohup sh "$SKILLDIR/background-supervisor.sh" > "$LOG" 2>&1 < /dev/null &
+  supervisor_pid=$!
+  printf 'DISPATCH started  profile=%s  cli=%s  model=%s  reasoning_effort=%s  rollout_budget=%s  mode=%s  supervisor_pid=%s  log=%s  sentinel=%s  health=%s  stall_timeout=%ss  wall_timeout=%ss  heartbeat=%ss\n' \
+    "$LAST_LABEL" "$RESOLVED_CLI" "$CFD_EFFECTIVE_MODEL" "${REASONING_EFFORT:-profile-default}" \
+    "${MAX_ROLLOUT_TOKENS:-unbounded}" "$MODE" "$supervisor_pid" "$LOG" "$exit_file" "$health_file" \
+    "$STALL_TIMEOUT_SECONDS" "$WALL_TIMEOUT_SECONDS" "$HEARTBEAT_SECONDS"
   [ -z "$note" ] || printf '%s\n' "$note"
   exit 0
 fi
