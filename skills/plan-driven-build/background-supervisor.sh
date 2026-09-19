@@ -127,8 +127,10 @@ while kill -0 "$worker_pid" 2>/dev/null; do
     write_health terminating "$timeout_class" "$now" "$bytes"
     printf 'DISPATCH watchdog terminating worker pid=%s reason=%s\n' "$worker_pid" "$timeout_class" >> "$CFD_LOG"
     terminate_tree "$worker_pid"
-    sleep 2
-    if kill -0 "$worker_pid" 2>/dev/null; then force_kill_tree "$worker_pid"; fi
+    sleep 1
+    # Do not wait for kill -0 to become false: an exited-but-unreaped child may still satisfy it.
+    # Bound teardown mechanically and then reap the direct worker.
+    force_kill_tree "$worker_pid"
     wait "$worker_pid" 2>/dev/null || true
     status=124
     break
