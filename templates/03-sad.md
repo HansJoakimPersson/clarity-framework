@@ -230,4 +230,4 @@ sequenceDiagram
 
 *Next step: Specify the Data Model & API Contract based on the component and data-flow views in this document.*
 
-*Clarity Framework v4.3.0 – System Architecture Document*
+*Clarity Framework v4.3.1 – System Architecture Document*
