@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-set -eux
+set -eu
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 TEST_ROOT=$(mktemp -d)
