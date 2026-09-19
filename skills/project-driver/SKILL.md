@@ -39,7 +39,7 @@ new source of product truth.
 Start an explicit mission once:
 
 ```bash
-"$MISSION" start --goal "<user outcome>" --mode until-complete
+bash "$MISSION" start --goal "<user outcome>" --mode until-complete
 ```
 
 Use `until-complete-or-deadline --deadline-epoch <unix-seconds>` when the user supplied a real
@@ -73,7 +73,7 @@ Before asking the user any decision question during an active mission, authorize
 
 ```bash
 set +e
-AUTH=$("$MISSION" authorize \
+AUTH=$(bash "$MISSION" authorize \
   --action "<taxonomy.action>" \
   --impact "<reversible-local|external-reversible|architecture|security|cost|behavior|production|irreversible|credential|permission|economic>" \
   --reason "<material consequence>")
@@ -96,7 +96,7 @@ which applies the firewall above.
 After the user answers a valid human gate, record it:
 
 ```bash
-"$MISSION" resolve-gate --gate "<HG-id>" --resolution approved
+bash "$MISSION" resolve-gate --gate "<HG-id>" --resolution approved
 # or: --resolution declined
 ```
 
@@ -192,7 +192,7 @@ mission continues.
 Typical successful checkpoint:
 
 ```bash
-"$MISSION" checkpoint \
+bash "$MISSION" checkpoint \
   --project-complete no \
   --ready-work yes \
   --recoverable no
@@ -214,7 +214,7 @@ execution budget. Use `--recoverable yes` while a Delegated recovery path exists
 Mark completion only when the requested mission outcome is actually complete:
 
 ```bash
-"$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no
+bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no
 ```
 
 There is deliberately **no** state transition named `ASK_TO_CONTINUE`.
