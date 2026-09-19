@@ -20,17 +20,17 @@ unknown_external=escalation
 <!-- clarity-authority:end -->
 EOF
 
-out=$("$MISSION" start --goal 'Build the whole app' --mode until-complete)
+out=$(bash "$MISSION" start --goal 'Build the whole app' --mode until-complete)
 printf '%s\n' "$out" | grep -F 'decision=STARTED' >/dev/null
 
-out=$("$MISSION" start --goal 'Build the whole app' --mode until-complete)
+out=$(bash "$MISSION" start --goal 'Build the whole app' --mode until-complete)
 printf '%s\n' "$out" | grep -F 'decision=RESUME' >/dev/null
 
-out=$("$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no)
+out=$(bash "$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no)
 printf '%s\n' "$out" | grep -F 'decision=CONTINUE' >/dev/null
 
 set +e
-out=$("$MISSION" authorize --action architecture.material-change --impact architecture --reason 'Choose a boundary' --policy "$POLICY")
+out=$(bash "$MISSION" authorize --action architecture.material-change --impact architecture --reason 'Choose a boundary' --policy "$POLICY")
 rc=$?
 set -e
 [ "$rc" -eq 10 ]
@@ -41,7 +41,7 @@ if find "$CLARITY_MISSION_DIR/gates" -name '*.tsv' -print -quit | grep -q .; the
 fi
 
 set +e
-out=$("$MISSION" authorize --action production.deploy --impact production --reason 'Deploy to production' --policy "$POLICY")
+out=$(bash "$MISSION" authorize --action production.deploy --impact production --reason 'Deploy to production' --policy "$POLICY")
 rc=$?
 set -e
 [ "$rc" -eq 20 ]
@@ -51,25 +51,25 @@ gate=$(printf '%s\n' "$out" | sed -n 's/.*gate_id=\([^[:space:]]*\).*/\1/p' | ta
 [ -r "$CLARITY_MISSION_DIR/gates/$gate.tsv" ]
 
 set +e
-out=$("$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no --gate "$gate")
+out=$(bash "$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no --gate "$gate")
 rc=$?
 set -e
 [ "$rc" -eq 20 ]
 printf '%s\n' "$out" | grep -F 'decision=HUMAN_GATE' >/dev/null
 
-out=$("$MISSION" resolve-gate --gate "$gate" --resolution approved)
+out=$(bash "$MISSION" resolve-gate --gate "$gate" --resolution approved)
 printf '%s\n' "$out" | grep -F 'decision=GATE_RESOLVED' >/dev/null
 
-out=$("$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no)
+out=$(bash "$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no)
 printf '%s\n' "$out" | grep -F 'decision=CONTINUE' >/dev/null
 
-out=$("$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
+out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETE' >/dev/null
 
-out=$("$MISSION" start --replace --goal 'Work until deadline' --mode until-complete-or-deadline --deadline-epoch 1)
+out=$(bash "$MISSION" start --replace --goal 'Work until deadline' --mode until-complete-or-deadline --deadline-epoch 1)
 printf '%s\n' "$out" | grep -F 'decision=STARTED' >/dev/null
 set +e
-out=$("$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no)
+out=$(bash "$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no)
 rc=$?
 set -e
 [ "$rc" -eq 30 ]
