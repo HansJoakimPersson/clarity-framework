@@ -109,7 +109,7 @@ case "$command" in
     [ -n "$action" ] || die 'mission-control.sh authorize: --action is required'
 
     set +e
-    auth=$("$AUTHORITY" --action "$action" --impact "$impact" --policy "$policy")
+    auth=$(bash "$AUTHORITY" --action "$action" --impact "$impact" --policy "$policy")
     rc=$?
     set -e
 
