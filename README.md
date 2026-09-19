@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 4.3.1 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 4.3.2 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -64,7 +64,9 @@ clarity-framework/
 │   └── plan-driven-build/           # Governed planning, review, build, verification, and impact gates
 │       ├── SKILL.md                 # Orchestrator procedure
 │       ├── prompts/                 # Instructions for dispatched agents
-│       ├── dispatch.sh              # Bounded dispatch with sandbox, pinned models, rollout budgets, usage telemetry, and profile selection
+│       ├── dispatch.sh              # Bounded supervised dispatch with pinned execution policy
+│       ├── background-supervisor.sh # Heartbeat, stall/wall watchdog, process-tree teardown, and completion sentinel
+│       ├── dispatch-health.sh        # Mechanical finished/healthy/stale/lost liveness probe
 │       ├── context-pack.sh           # Builds the frozen bounded project-document context for a run
 │       ├── tests/                   # Dispatch and context-pack regression tests
 │       ├── plan-template.md         # Copy of templates/plan.md
@@ -192,9 +194,12 @@ increment therefore transitions directly to the next ready increment; there is n
 "should I continue?" transition. Mission state is local under `docs/plans/.runs/`, so it survives
 long multi-increment runs without becoming project documentation.
 
+Every non-trivial writing increment is isolated in an orchestrator-owned worktree, including
+sequential work. That isolation is also the self-healing boundary: a timed-out worker can be
+discarded and restarted once from the same recorded baseline without contaminating integrated work.
 Independent increments may run as a two-workflow wave when their dependency/write surfaces are
-disjoint. Workers use separate worktrees and do not synchronize live; integration is serialized and
-the orchestrator is the single writer for shared coordination documents.
+disjoint. Workers do not synchronize live; integration is serialized and the orchestrator is the
+single writer for shared coordination documents.
 
 ### Plan-driven work
 
@@ -202,7 +207,9 @@ For a non-trivial increment, install `skills/plan-driven-build/` in both runtime
 four-level runtime contract, separate aimux profiles where available, bounded reports, a committed run
 journal, and impact gates only for Escalation/Reserved decisions. Planning compiles exact document
 references into one frozen context pack (64 KiB default) reused by review/build/verification, while
-Codex dispatch ledgers capture native token usage. Routine commits, temporary branches/worktrees, and
+Codex dispatch ledgers capture native token usage. Background implementations are supervised with a
+health heartbeat, a no-progress stall ceiling, and a hard wall-clock ceiling; timeout recovery uses
+at most one clean-worktree restart by default. Routine commits, temporary branches/worktrees, and
 internal integration are Delegated by default.
 
 It requires a second AI CLI, because the orchestrator dispatches the work instead of doing it.
@@ -240,4 +247,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v4.3.1*
+*Clarity Framework v4.3.2*

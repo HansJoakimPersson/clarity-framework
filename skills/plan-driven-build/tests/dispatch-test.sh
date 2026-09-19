@@ -91,6 +91,21 @@ if [ "${CF_TEST_RATE_LIMIT:-0}" -eq 1 ] && [ "${AIMUX_FAKE_PROFILE:-}" = "${CF_F
   exit 17
 fi
 
+if [ "${CF_TEST_HANG:-0}" -eq 1 ]; then
+  sleep 30
+  exit 0
+fi
+
+if [ "${CF_TEST_PROGRESS:-0}" -eq 1 ]; then
+  i=0
+  while [ "$i" -lt 30 ]; do
+    i=$((i + 1))
+    printf '{"type":"progress","step":%s}\n' "$i"
+    sleep 1
+  done
+  exit 0
+fi
+
 # CF_PROMPT_OUT, when set, captures the exact prompt text codex received — used to verify
 # --var substitution reached the CLI, not just that dispatch exited 0.
 [ -z "${CF_PROMPT_OUT:-}" ] || printf '%s' "$prompt" > "$CF_PROMPT_OUT"
@@ -130,6 +145,7 @@ export PATH
 export HOME="$TEST_ROOT/home"
 
 D="$SCRIPT_DIR/dispatch.sh"
+H="$SCRIPT_DIR/dispatch-health.sh"
 
 # 1. read-only dispatch writes the report
 "$D" --profile reg --mode read-only --prompt test --out "$TEST_ROOT/out/report.md" >/dev/null
@@ -147,12 +163,12 @@ export CF_TEST_FAIL
 "$D" --profile reg --mode workspace-write --prompt test \
   --log "$TEST_ROOT/out/build.log" --background >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/build.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/build.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/build.exit"
 test "$(cat "$TEST_ROOT/out/build.exit")" = '17'
-grep -F 'DISPATCH child started' "$TEST_ROOT/out/build.log" >/dev/null
+grep -F 'DISPATCH supervisor started' "$TEST_ROOT/out/build.log" >/dev/null
 unset CF_TEST_FAIL
 
 # 4. read-only pool retry: first profile's CLI fails, second succeeds, summary names the second
@@ -172,7 +188,7 @@ export CF_FAIL_PROFILE
 "$D" --profile pool-bad,pool-good --mode workspace-write --prompt test \
   --log "$TEST_ROOT/out/pool-build.log" --background >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/pool-build.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/pool-build.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/pool-build.exit"
@@ -300,7 +316,7 @@ test ! -f "$TEST_ROOT/out/missing-var.md"
 "$D" --profile reg --mode workspace-write --network --prompt test \
   --log "$TEST_ROOT/out/net-bg.log" --background >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/net-bg.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/net-bg.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/net-bg.exit"
@@ -361,7 +377,7 @@ summary=$("$D" --profile pool-bad,pool-good --phase implementation --mode worksp
 printf '%s\n' "$summary" | grep -F 'model=test-model-x' >/dev/null
 printf '%s\n' "$summary" | grep -F 'rollout_budget=12345' >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/impl-ok.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/impl-ok.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/impl-ok.exit"
@@ -385,7 +401,7 @@ printf '%s\n' 'test-model-x' 'gpt-6-astra' > "$TEST_ROOT/models-bg-bad.txt"
   --model test-model-x --max-rollout-tokens 12345 --model-evidence "$TEST_ROOT/models-bg-bad.txt" \
   --ledger "$TEST_ROOT/out/impl-model-bad.ledger" --log "$TEST_ROOT/out/impl-model-bad.log" >/dev/null
 attempt=0
-while [ ! -f "$TEST_ROOT/out/impl-model-bad.exit" ] && [ "$attempt" -lt 50 ]; do
+while [ ! -f "$TEST_ROOT/out/impl-model-bad.exit" ] && [ "$attempt" -lt 150 ]; do
   attempt=$((attempt + 1)); sleep 0.02
 done
 test -f "$TEST_ROOT/out/impl-model-bad.exit"
@@ -426,4 +442,50 @@ grep -F "$(printf '100\t40\t10\t25\t5\t125')" "$TEST_ROOT/out/native-usage.ledge
 grep -F 'cached_input_tokens' "$TEST_ROOT/out/native-usage.ledger" >/dev/null
 grep -F '"type":"turn.completed"' "$TEST_ROOT/out/native-usage.md.attempt-1.jsonl" >/dev/null
 
-printf 'dispatch-test: ok\n'
+# 34. a silent hung background worker is terminated by the supervisor and classified as stalled
+CF_TEST_HANG=1
+export CF_TEST_HANG
+summary=$("$D" --profile reg --phase implementation --mode workspace-write --background   --prompt test --model test-model-x --max-rollout-tokens 12345   --heartbeat-seconds 1 --stall-timeout-seconds 2 --wall-timeout-seconds 10   --ledger "$TEST_ROOT/out/stall.ledger" --log "$TEST_ROOT/out/stall.log")
+printf '%s
+' "$summary" | grep -F 'health=' >/dev/null
+attempt=0
+while [ ! -f "$TEST_ROOT/out/stall.exit" ] && [ "$attempt" -lt 100 ]; do
+  attempt=$((attempt + 1)); sleep 0.05
+done
+unset CF_TEST_HANG
+test -f "$TEST_ROOT/out/stall.exit"
+test "$(cat "$TEST_ROOT/out/stall.exit")" = '124'
+grep -F 'timeout.stalled' "$TEST_ROOT/out/stall.ledger" >/dev/null
+grep -F "$(printf 'retryable	failure_class')" "$TEST_ROOT/out/stall.ledger" >/dev/null
+grep -F "$(printf '	1	timeout.stalled	')" "$TEST_ROOT/out/stall.ledger" >/dev/null
+set +e
+health=$(sh "$H" --log "$TEST_ROOT/out/stall.log")
+health_rc=$?
+set -e
+test "$health_rc" -eq 0
+printf '%s
+' "$health" | grep -F 'state=finished' >/dev/null
+printf '%s
+' "$health" | grep -F 'reason=timeout.stalled' >/dev/null
+
+# 35. observable progress prevents stall detection but the hard wall ceiling still terminates the job
+CF_TEST_PROGRESS=1
+export CF_TEST_PROGRESS
+"$D" --profile reg --phase implementation --mode workspace-write --background   --prompt test --model test-model-x --max-rollout-tokens 12345   --heartbeat-seconds 1 --stall-timeout-seconds 10 --wall-timeout-seconds 2   --ledger "$TEST_ROOT/out/wall.ledger" --log "$TEST_ROOT/out/wall.log" >/dev/null
+attempt=0
+while [ ! -f "$TEST_ROOT/out/wall.exit" ] && [ "$attempt" -lt 100 ]; do
+  attempt=$((attempt + 1)); sleep 0.05
+done
+unset CF_TEST_PROGRESS
+if [ ! -f "$TEST_ROOT/out/wall.exit" ]; then
+  printf '%s\n' 'dispatch-test: wall timeout did not produce a sentinel' >&2
+  cat "$TEST_ROOT/out/wall.health" >&2 2>/dev/null || true
+  cat "$TEST_ROOT/out/wall.log" >&2 2>/dev/null || true
+  tail -20 "$TEST_ROOT/out/wall.log.events.jsonl" >&2 2>/dev/null || true
+  exit 1
+fi
+test "$(cat "$TEST_ROOT/out/wall.exit")" = '124'
+grep -F 'timeout.wall' "$TEST_ROOT/out/wall.ledger" >/dev/null
+
+printf 'dispatch-test: ok
+'

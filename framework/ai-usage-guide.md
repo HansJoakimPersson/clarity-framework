@@ -148,12 +148,26 @@ Workflow state belongs in files, not in the orchestrator's memory. Use
 `docs/plans/YYYY-MM-DD-short-name.run.md`, update it after every step, and commit it with the plan.
 Store raw dispatch output in `docs/plans/.runs/`, which should be gitignored.
 
-Long-running builds use an exit sentinel as their completion source of truth. When the harness
-provides task notifications, the orchestrator records the PID and sentinel, yields control, and
-resumes on the notification. It must not use `ScheduleWakeup`, an arbitrary delay, or a second
-polling loop merely to check a task the harness already tracks. In a plain CLI environment without
-task notifications, a bounded sentinel wait remains the fallback. A notification or sentinel only
-establishes completion; the exit code still determines success or failure.
+Long-running mutating dispatches are supervised rather than merely backgrounded. The worker CLI
+runs as a child of `background-supervisor.sh`, which writes an atomic `.health` heartbeat and a
+terminal `.exit` sentinel. Observable log/event growth is tracked separately from the heartbeat,
+so the heartbeat cannot make a stalled job look productive. By default, 30 minutes without
+observable progress becomes `timeout.stalled`; two hours total becomes `timeout.wall`. Both exit
+with code 124 and a classified ledger record. `dispatch-health.sh` lets the orchestrator distinguish
+finished, healthy, stale-supervisor, and lost-supervisor states without tailing an unbounded log.
+
+When the harness provides task notifications it tracks the supervisor, not the raw worker. A hung
+worker therefore still yields a supervisor completion notification when the watchdog ceiling is
+reached. In a plain CLI environment the orchestrator uses a bounded health loop. Silence is never
+treated as proof that work is progressing.
+
+Project-driven writing increments use an orchestrator-owned worktree even when execution is
+sequential. That worktree is the recovery boundary: a timed-out implementation is tainted, removed,
+and may be restarted once by default from the same pre-dispatch baseline with the same committed
+plan, frozen context pack, pinned model, and rollout budget. The restart count is persisted under the
+run directory so a resumed orchestrator cannot forget that the recovery budget was consumed. A
+second timeout becomes a blocker; the outer mission may continue independent ready work instead of
+silently waiting on the wedged increment.
 
 Human gates belong on **Reserved impact boundaries**, not implementation mechanics. Commits,
 temporary branches/worktrees, merges back from an orchestrator-created worktree, bounded replanning
@@ -271,4 +285,4 @@ project documentation should contain only the resulting stable execution rules.
 
 ---
 
-*Clarity Framework v4.3.1 – AI Usage Guide*
+*Clarity Framework v4.3.2 – AI Usage Guide*

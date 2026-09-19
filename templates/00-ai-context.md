@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v4.3.1 |
+| **Framework version** | Clarity Framework v4.3.2 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -178,6 +178,10 @@ context and is never packed automatically.]
 write surfaces may share a wave. Prefer sequential execution when synchronization or shared-contract
 work would erase the latency benefit.]
 
+**Dispatch watchdog:** [default heartbeat `30s`; stall timeout `1800s`; wall timeout `7200s`;
+maximum clean self-heal restarts `1`. A timed-out project-driver increment is retried only from a
+fresh orchestrator-owned worktree created from the same baseline.]
+
 **Default gate profile:** [semi-automatic (default) / interactive / unattended — supervision/reporting
 level for standalone `plan-driven-build`. During an active project-driver mission, the mission mandate
 takes precedence: Delegated work continues and only Reserved actions may create a human gate.]
@@ -232,4 +236,4 @@ unknown_external=escalation
 
 ---
 
-*Clarity Framework v4.3.1 – AI Context Document*
+*Clarity Framework v4.3.2 – AI Context Document*
