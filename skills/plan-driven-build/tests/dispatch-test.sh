@@ -168,7 +168,7 @@ while [ ! -f "$TEST_ROOT/out/build.exit" ] && [ "$attempt" -lt 150 ]; do
 done
 test -f "$TEST_ROOT/out/build.exit"
 test "$(cat "$TEST_ROOT/out/build.exit")" = '17'
-grep -F 'DISPATCH child started' "$TEST_ROOT/out/build.log" >/dev/null
+grep -F 'DISPATCH supervisor started' "$TEST_ROOT/out/build.log" >/dev/null
 unset CF_TEST_FAIL
 
 # 4. read-only pool retry: first profile's CLI fails, second succeeds, summary names the second
