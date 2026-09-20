@@ -185,9 +185,7 @@ fresh orchestrator-owned worktree created from the same baseline.]
 **Mission Runner:** [mandatory for multi-increment continuation mandates; the interactive
 project-driver invocation must call `--ensure-running` before implementation. Default orchestrator
 profile `cli:codex`; maximum cycles `100`; maximum consecutive no-progress cycles `2`; retryable
-outer cycle restarts `1`. A work-cycle final answer never declares mission completion. A
-`completion-pending` request must be checked by a fresh independent completion-audit cycle before
-persistent state may become `completed`.]
+outer cycle restarts `1`. A work-cycle final answer never declares mission completion. Its completion request is provisional until the work-cycle process exits successfully; Mission Runner then promotes it to `completion-pending`. That state must be checked by a fresh independent completion-audit cycle before persistent state may become `completed`.]
 
 **Default gate profile:** [semi-automatic (default) / interactive / unattended — supervision/reporting
 level for standalone `plan-driven-build`. During an active project-driver mission, the mission mandate
