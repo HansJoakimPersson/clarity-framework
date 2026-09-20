@@ -475,26 +475,9 @@ while :; do
     printf 'MISSION_RUNNER decision=HUMAN_GATE gate_id=%s cycle=%s\n' "$gate" "$cycle_count"
     exit 20
   fi
-  case "$status" in
-    completed)
-      runner_put status completed
-      printf 'MISSION_RUNNER decision=COMPLETE mission_id=%s cycles=%s\n' "$current_id" "$cycle_count"
-      exit 0
-      ;;
-    completion-pending)
-      if [ "$cycle_kind" = completion-audit ]; then
-        runner_put status completion-audit-inconclusive
-        printf 'MISSION_RUNNER decision=STOP_AUDIT_INCONCLUSIVE cycle=%s\n' "$cycle_count"
-        exit 38
-      fi
-      ;;
-    blocked|deadline-reached)
-      runner_put status "$status"
-      printf 'MISSION_RUNNER decision=STOP status=%s cycles=%s\n' "$status" "$cycle_count"
-      exit 30
-      ;;
-  esac
 
+  # A cycle may mutate mission state before its process terminates. Never accept completion or an
+  # audit result from a cycle that did not itself exit successfully.
   if [ "$cycle_exit" -ne 0 ]; then
     retryable=$(ledger_value "$ledger" retryable 2>/dev/null || printf 0)
     failure_class=$(ledger_value "$ledger" failure_class 2>/dev/null || printf unknown)
@@ -515,6 +498,27 @@ while :; do
 
   cycle_restart_count=0
   runner_put cycle_restart_count 0
+
+  status=$(mission_status)
+  case "$status" in
+    completed)
+      runner_put status completed
+      printf 'MISSION_RUNNER decision=COMPLETE mission_id=%s cycles=%s\n' "$current_id" "$cycle_count"
+      exit 0
+      ;;
+    completion-pending)
+      if [ "$cycle_kind" = completion-audit ]; then
+        runner_put status completion-audit-inconclusive
+        printf 'MISSION_RUNNER decision=STOP_AUDIT_INCONCLUSIVE cycle=%s\n' "$cycle_count"
+        exit 38
+      fi
+      ;;
+    blocked|deadline-reached)
+      runner_put status "$status"
+      printf 'MISSION_RUNNER decision=STOP status=%s cycles=%s\n' "$status" "$cycle_count"
+      exit 30
+      ;;
+  esac
 
   after=$(fingerprint)
   if [ "$before" = "$after" ]; then
