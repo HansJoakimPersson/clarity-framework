@@ -77,9 +77,11 @@ tag, so an untagged heading here is a version no project can reach.
   implementation increment**. The interactive project-driver session persists/resumes the mission,
   calls `--ensure-running`, and hands off; it may not silently fall back to executing one increment
   itself. Runner-owned cycles are the only sessions that continue into the delivery loop.
-- Mission completion is now two-phase. A work cycle can only move the mission to
-  `completion-pending`; a separate completion-audit cycle records a provisional result, and Mission
-  Runner applies that result only after the audit process exits successfully.
+- Mission completion is now runner-finalized in both phases. A work cycle can only record a
+  provisional completion request while the mission remains `active`; Mission Runner promotes it to
+  `completion-pending` only after the work process exits successfully. A separate completion-audit
+  cycle then records a provisional result, which Mission Runner applies only after the audit process
+  exits successfully.
 - Runner ownership and human gates are mission-ID scoped. A same-goal mission resumes, a different
   supplied goal returns `GOAL_CONFLICT`, and replacement missions do not inherit old runner/gate
   authority.
@@ -110,6 +112,14 @@ tag, so an untagged heading here is a version no project can reach.
   completed; audit results are applied only after clean cycle exit.
 - Stale runner locks and open human gates from replaced missions can no longer satisfy or stop the
   current mission. Runner readiness is published atomically and bound to the active Mission ID.
+- Runner-owned state mutations are now rejected when `CLARITY_MISSION_ID` does not match the active
+  mission, so an in-flight cycle from a replaced mission cannot mutate its successor.
+- A failed work cycle can no longer leave a completion request that later advances to audit; only a
+  clean work-cycle exit allows Mission Runner to promote the request to `completion-pending`.
+- HUP/INT/TERM now request a graceful Mission Runner stop while ownership remains locked through the
+  current supervised cycle, preventing a second runner from starting while the first is still alive.
+- Managed runtime verification now fails when any target runtime file is ignored by Git, preventing
+  locally present nested scripts/prompts from disappearing on the next checkout.
 
 ## [4.3.0] – 2026-09-18
 
