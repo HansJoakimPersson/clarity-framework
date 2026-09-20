@@ -499,6 +499,19 @@ while :; do
   cycle_restart_count=0
   runner_put cycle_restart_count 0
 
+  if [ "$cycle_kind" = completion-audit ]; then
+    set +e
+    audit_apply=$(bash "$MISSION" finalize-completion-audit --cycle "$cycle_id" 2>&1)
+    audit_rc=$?
+    set -e
+    if [ "$audit_rc" -ne 0 ]; then
+      runner_put status completion-audit-inconclusive
+      printf 'MISSION_RUNNER decision=STOP_AUDIT_INCONCLUSIVE cycle=%s detail=%s\n'         "$cycle_count" "$audit_apply"
+      exit 38
+    fi
+    printf 'MISSION_RUNNER cycle=%s audit=%s\n' "$cycle_count" "$audit_apply"
+  fi
+
   status=$(mission_status)
   case "$status" in
     completed)
