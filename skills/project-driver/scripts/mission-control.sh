@@ -14,6 +14,7 @@ STATE_ROOT=${CLARITY_MISSION_DIR:-docs/plans/.runs/project-driver-mission}
 STATE="$STATE_ROOT/active.tsv"
 GOAL="$STATE_ROOT/goal.txt"
 GATES="$STATE_ROOT/gates"
+LOCK_DIR="$STATE_ROOT/runner.lock"
 
 get_state() {
   local key=$1
@@ -43,6 +44,24 @@ require_cycle_mission() {
   current_mission=$(get_state id)
   [ "$CLARITY_MISSION_ID" = "$current_mission" ] ||
     die "mission-control.sh: cycle belongs to mission $CLARITY_MISSION_ID, active mission is $current_mission"
+}
+
+require_runner_finalize() {
+  local declared_pid lock_pid lock_mission current_mission
+  [ "${CLARITY_MISSION_RUNNER_FINALIZE:-0}" = 1 ] ||
+    die 'mission-control.sh: only Mission Runner may finalize lifecycle state'
+  declared_pid=${CLARITY_MISSION_RUNNER_PID:-}
+  case "$declared_pid" in ''|*[!0-9]*) die 'mission-control.sh: runner finalize is missing a valid runner PID' ;; esac
+  [ -r "$LOCK_DIR/pid" ] || die 'mission-control.sh: runner finalize has no live ownership lock'
+  lock_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || true)
+  lock_mission=$(awk -F '\t' '$1 == "mission_id" { print $2; exit }' "$LOCK_DIR/owner.tsv" 2>/dev/null || true)
+  current_mission=$(get_state id)
+  [ "$declared_pid" = "$lock_pid" ] ||
+    die "mission-control.sh: runner finalize PID $declared_pid does not own the lock ($lock_pid)"
+  [ "$PPID" = "$lock_pid" ] ||
+    die "mission-control.sh: finalize caller PID $PPID is not the runner owner $lock_pid"
+  [ "$lock_mission" = "$current_mission" ] ||
+    die "mission-control.sh: runner lock belongs to mission ${lock_mission:-unknown}, active mission is $current_mission"
 }
 
 running_status() {
@@ -275,8 +294,7 @@ case "$command" in
   finalize-completion-request)
     [ -r "$STATE" ] || die 'mission-control.sh finalize-completion-request: no mission state'
     require_cycle_mission
-    [ "${CLARITY_MISSION_RUNNER_FINALIZE:-0}" = 1 ] ||
-      die 'mission-control.sh finalize-completion-request: only Mission Runner may finalize a completion request'
+    require_runner_finalize
     [ "$(get_state status)" = active ] ||
       die "mission-control.sh finalize-completion-request: mission is not active (status=$(get_state status))"
 
@@ -299,8 +317,7 @@ case "$command" in
   discard-completion-request)
     [ -r "$STATE" ] || die 'mission-control.sh discard-completion-request: no mission state'
     require_cycle_mission
-    [ "${CLARITY_MISSION_RUNNER_FINALIZE:-0}" = 1 ] ||
-      die 'mission-control.sh discard-completion-request: only Mission Runner may discard a completion request'
+    require_runner_finalize
     cycle=''
     while [ "$#" -gt 0 ]; do
       case "$1" in
@@ -350,8 +367,7 @@ case "$command" in
   finalize-completion-audit)
     [ -r "$STATE" ] || die 'mission-control.sh finalize-completion-audit: no mission state'
     require_cycle_mission
-    [ "${CLARITY_MISSION_RUNNER_FINALIZE:-0}" = 1 ] ||
-      die 'mission-control.sh finalize-completion-audit: only Mission Runner may finalize an audit result'
+    require_runner_finalize
     [ "$(get_state status)" = completion-pending ] ||
       die "mission-control.sh finalize-completion-audit: mission is not completion-pending (status=$(get_state status))"
 
