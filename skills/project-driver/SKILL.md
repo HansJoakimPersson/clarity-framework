@@ -322,13 +322,13 @@ When a runner-owned execution cycle believes the requested mission outcome is co
 bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no
 ```
 
-For a runner-owned cycle this produces `COMPLETION_PENDING`, not `completed`. Mission Runner then
+For a runner-owned cycle this produces `COMPLETION_REQUESTED` while the mission remains `active`. Only after the work-cycle process exits successfully does Mission Runner promote the request to `COMPLETION_PENDING`. Mission Runner then
 launches a fresh completion-audit Codex task that reads the original mission goal, requirements,
 backlog/story state, repository, and required verification. That audit must actively search for
 remaining in-scope work. It records a provisional result with
 `confirm-completion --result complete` or `--result continue`; it does **not** change the terminal
 mission status itself. Only after that audit Codex process exits successfully does Mission Runner call
-`finalize-completion-audit` for the same cycle and apply the result. A crashing audit can therefore
+`finalize-completion-audit` with its runner-only finalize capability for the same cycle and apply the result. A crashing audit can therefore
 never leave the mission falsely completed. An execution cycle cannot confirm its own completion claim.
 
 There is deliberately **no** state transition named `ASK_TO_CONTINUE`.

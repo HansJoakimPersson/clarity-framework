@@ -321,13 +321,29 @@ cleanup() {
     rm -rf -- "$LOCK_DIR"
   fi
 }
-trap cleanup EXIT HUP INT TERM
+
+STOP_SIGNAL=''
+STOP_CODE=''
+request_stop() {
+  STOP_SIGNAL=$1
+  STOP_CODE=$2
+}
+trap cleanup EXIT
+trap 'request_stop HUP 129' HUP
+trap 'request_stop INT 130' INT
+trap 'request_stop TERM 143' TERM
 
 cycle_count=$(state_get cycle_count "$RUNNER_STATE" 2>/dev/null || printf 0)
 stagnant_count=$(state_get stagnant_count "$RUNNER_STATE" 2>/dev/null || printf 0)
 cycle_restart_count=$(state_get cycle_restart_count "$RUNNER_STATE" 2>/dev/null || printf 0)
 
 while :; do
+  if [ -n "$STOP_CODE" ]; then
+    runner_put status "signal-$STOP_SIGNAL"
+    printf 'MISSION_RUNNER decision=STOP_SIGNAL signal=%s cycles=%s\n' "$STOP_SIGNAL" "$cycle_count"
+    exit "$STOP_CODE"
+  fi
+
   observed_mission=$(mission_id)
   if [ "$observed_mission" != "$current_id" ]; then
     printf 'MISSION_RUNNER decision=STOP_REPLACED old_mission=%s active_mission=%s\n'       "$current_id" "$observed_mission"
@@ -479,6 +495,20 @@ while :; do
   # A cycle may mutate mission state before its process terminates. Never accept completion or an
   # audit result from a cycle that did not itself exit successfully.
   if [ "$cycle_exit" -ne 0 ]; then
+    if [ "$cycle_kind" = work ]; then
+      requested_cycle=$(state_get completion_requested_by_cycle "$STATE" 2>/dev/null || true)
+      if [ "$requested_cycle" = "$cycle_id" ]; then
+        set +e
+        discard_apply=$(CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1           bash "$MISSION" discard-completion-request --cycle "$cycle_id" 2>&1)
+        discard_rc=$?
+        set -e
+        if [ "$discard_rc" -ne 0 ]; then
+          runner_put status completion-request-discard-failed
+          printf 'MISSION_RUNNER decision=STOP_STATE_ERROR cycle=%s detail=%s\n' "$cycle_count" "$discard_apply"
+          exit 38
+        fi
+      fi
+    fi
     retryable=$(ledger_value "$ledger" retryable 2>/dev/null || printf 0)
     failure_class=$(ledger_value "$ledger" failure_class 2>/dev/null || printf unknown)
     if [ "$retryable" = 1 ] && [ "$cycle_restart_count" -lt "$MAX_CYCLE_RESTARTS" ]; then
@@ -499,9 +529,25 @@ while :; do
   cycle_restart_count=0
   runner_put cycle_restart_count 0
 
+  if [ "$cycle_kind" = work ]; then
+    requested_cycle=$(state_get completion_requested_by_cycle "$STATE" 2>/dev/null || true)
+    if [ "$requested_cycle" = "$cycle_id" ]; then
+      set +e
+      completion_apply=$(CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1         bash "$MISSION" finalize-completion-request --cycle "$cycle_id" 2>&1)
+      completion_rc=$?
+      set -e
+      if [ "$completion_rc" -ne 0 ]; then
+        runner_put status completion-request-finalize-failed
+        printf 'MISSION_RUNNER decision=STOP_STATE_ERROR cycle=%s detail=%s\n' "$cycle_count" "$completion_apply"
+        exit 38
+      fi
+      printf 'MISSION_RUNNER cycle=%s completion=%s\n' "$cycle_count" "$completion_apply"
+    fi
+  fi
+
   if [ "$cycle_kind" = completion-audit ]; then
     set +e
-    audit_apply=$(bash "$MISSION" finalize-completion-audit --cycle "$cycle_id" 2>&1)
+    audit_apply=$(CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1       bash "$MISSION" finalize-completion-audit --cycle "$cycle_id" 2>&1)
     audit_rc=$?
     set -e
     if [ "$audit_rc" -ne 0 ]; then

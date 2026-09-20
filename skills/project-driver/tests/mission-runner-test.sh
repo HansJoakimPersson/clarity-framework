@@ -62,6 +62,10 @@ if [ "${CLARITY_MISSION_COMPLETION_AUDIT:-0}" = 1 ]; then
         bash "${CLARITY_TEST_MISSION_CONTROL:?}" confirm-completion           --result complete --reason 'remaining application work is now complete' >/dev/null
       fi
       ;;
+    completion-crash|signal-stop)
+      printf 'fake-dispatch: completion audit must not run for mode %s\n' "$mode" >&2
+      exit 2
+      ;;
     *)
       printf 'fake-dispatch: unexpected completion audit for mode %s\n' "$mode" >&2
       exit 2
@@ -92,6 +96,13 @@ else
     audit-crash)
       bash "${CLARITY_TEST_MISSION_CONTROL:?}" checkpoint           --project-complete yes --ready-work no --recoverable no >/dev/null
       ;;
+    completion-crash)
+      bash "${CLARITY_TEST_MISSION_CONTROL:?}" checkpoint           --project-complete yes --ready-work no --recoverable no >/dev/null
+      exit_code=7
+      failure_class=unknown
+      ;;
+    signal-stop)
+      ;;
     stagnant)
       ;;
     retry-once)
@@ -116,7 +127,14 @@ fi
 printf 'job_id\tstatus\tphase\tprofile\tcli\trequested_model\teffective_model\treasoning_effort\trollout_budget_tokens\tattempts\tretryable\tfailure_class\tmodel_policy\tinput_tokens\tcached_input_tokens\tcache_write_input_tokens\toutput_tokens\treasoning_output_tokens\ttotal_tokens\texit_status\n' > "$ledger"
 printf 'test\t%s\tfinalization\ttest\tcodex\tprofile-default\tprofile-default\tprofile-default\tunbounded\t1\t%s\t%s\tprofile-default\tunavailable\tunavailable\tunavailable\tunavailable\tunavailable\tunavailable\t%s\n' \
   "$([ "$exit_code" -eq 0 ] && printf passed || printf failed)" "$retryable" "$failure_class" "$exit_code" >> "$ledger"
-printf '%s\n' "$exit_code" > "${log%.log}.exit"
+if [ "$mode" = signal-stop ]; then
+  (
+    sleep 2
+    printf '%s\n' "$exit_code" > "${log%.log}.exit"
+  ) &
+else
+  printf '%s\n' "$exit_code" > "${log%.log}.exit"
+fi
 printf 'DISPATCH started log=%s\n' "$log"
 EOF
 chmod +x "$TEST_ROOT/bin/fake-dispatch.sh"
@@ -352,5 +370,60 @@ if printf '%s\n' "$out" | grep -F 'decision=HUMAN_GATE' >/dev/null; then
   printf '%s\n' 'mission-runner-test: stale gate stopped replacement mission' >&2
   exit 1
 fi
+
+
+# 10. A work cycle that requests completion and then fails cannot advance the mission.
+REPO10="$TEST_ROOT/repo10"
+new_repo "$REPO10"
+export CLARITY_MISSION_DIR="$TEST_ROOT/state10"
+export CLARITY_TEST_CYCLE_COUNT_FILE="$TEST_ROOT/cycles10"
+export CLARITY_TEST_MODE=completion-crash
+set +e
+out=$(
+  cd "$REPO10"
+  bash "$RUNNER" --goal 'Failed work must not request completion' --max-cycles 4 --poll-seconds 1
+)
+rc=$?
+set -e
+test "$rc" -eq 33
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
+if awk -F '\t' '$1=="completion_requested_by_cycle"{found=1} END{exit !found}' "$CLARITY_MISSION_DIR/active.tsv"; then
+  printf '%s\n' 'mission-runner-test: failed work left a completion request behind' >&2
+  exit 1
+fi
+printf '%s\n' "$out" | grep -F 'decision=STOP_CYCLE_FAILURE' >/dev/null
+
+# 11. TERM requests a graceful stop without dropping the ownership lock while a cycle is still alive.
+REPO11="$TEST_ROOT/repo11"
+new_repo "$REPO11"
+export CLARITY_MISSION_DIR="$TEST_ROOT/state11"
+export CLARITY_TEST_CYCLE_COUNT_FILE="$TEST_ROOT/cycles11"
+export CLARITY_TEST_MODE=signal-stop
+signal_out="$TEST_ROOT/signal.out"
+set +e
+(
+  cd "$REPO11"
+  bash "$RUNNER" --goal 'Signal-safe mission ownership' --max-cycles 4 --poll-seconds 1
+) >"$signal_out" 2>&1 &
+signal_launcher=$!
+set -e
+attempt=0
+while [ ! -r "$CLARITY_MISSION_DIR/runner.lock/pid" ] && [ "$attempt" -lt 100 ]; do
+  attempt=$((attempt + 1))
+  sleep 0.05
+done
+test -r "$CLARITY_MISSION_DIR/runner.lock/pid"
+signal_runner=$(cat "$CLARITY_MISSION_DIR/runner.lock/pid")
+kill -TERM "$signal_runner"
+sleep 0.2
+test -d "$CLARITY_MISSION_DIR/runner.lock"
+kill -0 "$signal_runner" 2>/dev/null
+set +e
+wait "$signal_launcher"
+rc=$?
+set -e
+test "$rc" -eq 143
+test ! -d "$CLARITY_MISSION_DIR/runner.lock"
+grep -F 'decision=STOP_SIGNAL signal=TERM' "$signal_out" >/dev/null
 
 printf '%s\n' 'mission-runner-test: ok'

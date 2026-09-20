@@ -195,13 +195,10 @@ runner already owns the mission, the handoff is a no-op; otherwise the runner is
 ownership is proven by its lock before the interactive invocation returns.
 
 The runner repeatedly launches fresh Codex `exec` tasks and ignores their final wording when
-deciding what happens next. Persistent Mission Mandate state is authoritative: `active` launches
-another execution cycle, while `completion-pending` launches a separate fresh
+deciding what happens next. Persistent Mission Mandate state is authoritative: `active` launches another execution cycle. A work cycle's completion request is provisional until that process exits successfully; Mission Runner then promotes it to `completion-pending`, which launches a separate fresh
 `prompts/mission-completion-audit.txt` cycle. The execution cycle that proposes completion cannot
 confirm itself. Only an independent audit may recommend completion after checking the original mission goal,
-remaining in-scope requirements/stories, repository state, and required verification. Its result is
-provisional until the audit process exits cleanly; Mission Runner then applies that recorded result
-for the same cycle. A non-zero audit exit leaves the mission `completion-pending`, never
+remaining in-scope requirements/stories, repository state, and required verification. Its result is provisional until the audit process exits cleanly; Mission Runner then applies that recorded result for the same cycle using a runner-only finalize transition. A non-zero audit exit leaves the mission `completion-pending`, never
 `completed`. Reserved human gates, deadline/blocker state, bounded cycle failure, or bounded
 repeated no-progress may also stop the runner. This deliberately keeps individual Codex tasks small and replaceable while
 the Clarity mission may span many tasks and many hours.

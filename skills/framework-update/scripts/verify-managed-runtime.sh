@@ -22,6 +22,8 @@ done
 
 [ -n "$TARGET_ROOT" ] || die 'verify-managed-runtime.sh: --target-root is required'
 [ -d "$TARGET_ROOT/skills" ] || die "verify-managed-runtime.sh: target skills directory missing: $TARGET_ROOT/skills"
+git rev-parse --show-toplevel >/dev/null 2>&1 ||
+  die 'verify-managed-runtime.sh: run from the project Git repository'
 case "$SMOKE" in yes|no) ;; *) die 'verify-managed-runtime.sh: --smoke must be yes or no' ;; esac
 
 declare -a SKILLS=()
@@ -50,6 +52,14 @@ for skill in "${SKILLS[@]}"; do
       diff -qr "$TARGET_ROOT/skills/$skill" "$installed" >&2 || true
       exit 2
     fi
+
+    while IFS= read -r -d '' target_file; do
+      rel=${target_file#"$TARGET_ROOT/skills/$skill/"}
+      installed_file="$installed/$rel"
+      if git check-ignore -q -- "$installed_file"; then
+        die "RUNTIME-VERIFY: managed runtime file is ignored by Git: $installed_file"
+      fi
+    done < <(find "$TARGET_ROOT/skills/$skill" -type f -print0)
   done
 done
 
