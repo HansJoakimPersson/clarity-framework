@@ -29,12 +29,29 @@ put_state() {
   mv -- "$tmp" "$STATE"
 }
 
+drop_state() {
+  local key=$1 tmp
+  tmp="$STATE.tmp.$"
+  awk -F '\t' -v k="$key" '$1 != k { print }' "$STATE" > "$tmp"
+  mv -- "$tmp" "$STATE"
+}
+
+require_cycle_mission() {
+  local current_mission
+  [ -n "${CLARITY_MISSION_ID:-}" ] || return 0
+  [ -r "$STATE" ] || die 'mission-control.sh: runner-owned cycle has no active mission state'
+  current_mission=$(get_state id)
+  [ "$CLARITY_MISSION_ID" = "$current_mission" ] ||
+    die "mission-control.sh: cycle belongs to mission $CLARITY_MISSION_ID, active mission is $current_mission"
+}
+
 running_status() {
   case "$1" in active|completion-pending) return 0 ;; *) return 1 ;; esac
 }
 
 require_active() {
   [ -r "$STATE" ] || die 'mission-control.sh: no active mission'
+  require_cycle_mission
   status=$(get_state status)
   running_status "$status" || die "mission-control.sh: mission is not active (status=$status)"
 }
@@ -76,6 +93,11 @@ case "$command" in
     done
     [ -n "$goal" ] || die 'mission-control.sh start: --goal is required'
     case "$mode" in until-complete|until-deadline|until-complete-or-deadline) ;; *) die "mission-control.sh start: invalid mode '$mode'" ;; esac
+    if [ -n "${CLARITY_MISSION_ID:-}" ]; then
+      [ -r "$STATE" ] || die 'mission-control.sh start: runner-owned cycle may not create a mission'
+      require_cycle_mission
+      [ "$replace" != yes ] || die 'mission-control.sh start: runner-owned cycle may not replace the active mission'
+    fi
     [ "$gate_policy" = reserved-only ] || die 'mission-control.sh start: only reserved-only human gates are supported'
     if [ "$mode" != until-complete ]; then
       [[ "$deadline" =~ ^[0-9]+$ ]] || die 'mission-control.sh start: deadline mode requires --deadline-epoch'
@@ -207,17 +229,13 @@ case "$command" in
     bool "$recoverable"
 
     if [ "$project_complete" = yes ]; then
-      if [ -n "${CLARITY_MISSION_CYCLE:-}" ]; then
-        [ "${CLARITY_MISSION_COMPLETION_AUDIT:-0}" != 1 ] ||
-          die 'mission-control.sh: completion audit must use confirm-completion, not checkpoint --project-complete yes'
-        put_state status completion-pending
-        put_state completion_requested_by_cycle "$CLARITY_MISSION_CYCLE"
-        put_state completion_requested_epoch "$(date +%s)"
-        printf 'MISSION\tdecision=COMPLETION_PENDING\tid=%s\tcycle=%s\n'           "$(get_state id)" "$CLARITY_MISSION_CYCLE"
-        exit 0
-      fi
-      put_state status completed
-      printf 'MISSION\tdecision=COMPLETE\tid=%s\n' "$(get_state id)"
+      [ -n "${CLARITY_MISSION_CYCLE:-}" ] ||
+        die 'mission-control.sh: mission completion must be requested by a runner-owned work cycle'
+      [ "${CLARITY_MISSION_COMPLETION_AUDIT:-0}" != 1 ] ||
+        die 'mission-control.sh: completion audit must use confirm-completion, not checkpoint --project-complete yes'
+      put_state completion_requested_by_cycle "$CLARITY_MISSION_CYCLE"
+      put_state completion_requested_epoch "$(date +%s)"
+      printf 'MISSION\tdecision=COMPLETION_REQUESTED\tid=%s\tcycle=%s\n'         "$(get_state id)" "$CLARITY_MISSION_CYCLE"
       exit 0
     fi
 
@@ -254,8 +272,55 @@ case "$command" in
     exit 30
     ;;
 
+  finalize-completion-request)
+    [ -r "$STATE" ] || die 'mission-control.sh finalize-completion-request: no mission state'
+    require_cycle_mission
+    [ "${CLARITY_MISSION_RUNNER_FINALIZE:-0}" = 1 ] ||
+      die 'mission-control.sh finalize-completion-request: only Mission Runner may finalize a completion request'
+    [ "$(get_state status)" = active ] ||
+      die "mission-control.sh finalize-completion-request: mission is not active (status=$(get_state status))"
+
+    cycle=''
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --cycle) cycle="${2:-}"; shift 2 ;;
+        *) die "mission-control.sh finalize-completion-request: unknown argument '$1'" ;;
+      esac
+    done
+    [ -n "$cycle" ] || die 'mission-control.sh finalize-completion-request: --cycle is required'
+    requested_cycle=$(get_state completion_requested_by_cycle 2>/dev/null || true)
+    [ "$requested_cycle" = "$cycle" ] ||
+      die "mission-control.sh finalize-completion-request: completion request belongs to cycle ${requested_cycle:-none}, not $cycle"
+    put_state status completion-pending
+    put_state completion_request_finalized_by_cycle "$cycle"
+    printf 'MISSION\tdecision=COMPLETION_PENDING\tid=%s\tcycle=%s\n' "$(get_state id)" "$cycle"
+    ;;
+
+  discard-completion-request)
+    [ -r "$STATE" ] || die 'mission-control.sh discard-completion-request: no mission state'
+    require_cycle_mission
+    [ "${CLARITY_MISSION_RUNNER_FINALIZE:-0}" = 1 ] ||
+      die 'mission-control.sh discard-completion-request: only Mission Runner may discard a completion request'
+    cycle=''
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --cycle) cycle="${2:-}"; shift 2 ;;
+        *) die "mission-control.sh discard-completion-request: unknown argument '$1'" ;;
+      esac
+    done
+    [ -n "$cycle" ] || die 'mission-control.sh discard-completion-request: --cycle is required'
+    requested_cycle=$(get_state completion_requested_by_cycle 2>/dev/null || true)
+    if [ "$requested_cycle" = "$cycle" ]; then
+      drop_state completion_requested_by_cycle
+      drop_state completion_requested_epoch
+      drop_state completion_request_finalized_by_cycle
+    fi
+    printf 'MISSION\tdecision=COMPLETION_REQUEST_DISCARDED\tid=%s\tcycle=%s\n' "$(get_state id)" "$cycle"
+    ;;
+
   confirm-completion)
     [ -r "$STATE" ] || die 'mission-control.sh confirm-completion: no mission state'
+    require_cycle_mission
     [ "$(get_state status)" = completion-pending ] ||
       die "mission-control.sh confirm-completion: mission is not completion-pending (status=$(get_state status))"
     [ "${CLARITY_MISSION_COMPLETION_AUDIT:-0}" = 1 ] ||
@@ -284,6 +349,9 @@ case "$command" in
 
   finalize-completion-audit)
     [ -r "$STATE" ] || die 'mission-control.sh finalize-completion-audit: no mission state'
+    require_cycle_mission
+    [ "${CLARITY_MISSION_RUNNER_FINALIZE:-0}" = 1 ] ||
+      die 'mission-control.sh finalize-completion-audit: only Mission Runner may finalize an audit result'
     [ "$(get_state status)" = completion-pending ] ||
       die "mission-control.sh finalize-completion-audit: mission is not completion-pending (status=$(get_state status))"
 
@@ -307,6 +375,12 @@ case "$command" in
         ;;
       continue)
         put_state status active
+        drop_state completion_requested_by_cycle
+        drop_state completion_requested_epoch
+        drop_state completion_request_finalized_by_cycle
+        drop_state completion_audit_result
+        drop_state completion_audited_epoch
+        drop_state completion_audited_by_cycle
         printf 'MISSION\tdecision=CONTINUE_AFTER_AUDIT\tid=%s\tcycle=%s\n' "$(get_state id)" "$cycle"
         ;;
       *)
