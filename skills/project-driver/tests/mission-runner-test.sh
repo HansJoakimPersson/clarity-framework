@@ -270,10 +270,18 @@ export CLARITY_MISSION_DIR="$TEST_ROOT/state6"
 export CLARITY_TEST_CYCLE_COUNT_FILE="$TEST_ROOT/cycles6"
 export CLARITY_TEST_MODE=stagnant
 export CLARITY_TEST_DELAY=2
+set +e
 out=$(
   cd "$REPO6"
   bash "$RUNNER" --goal 'Build all remaining parts' --ensure-running --max-cycles 1 --poll-seconds 1
 )
+rc=$?
+set -e
+if [ "$rc" -ne 0 ]; then
+  printf 'mission-runner-test: ensure-running failed rc=%s\n' "$rc" >&2
+  cat "$CLARITY_MISSION_DIR/mission-runner.log" >&2 2>/dev/null || true
+  exit "$rc"
+fi
 printf '%s\n' "$out" | grep -F 'decision=RUNNING' >/dev/null
 runner_pid=$(printf '%s\n' "$out" | sed -n 's/.*decision=RUNNING pid=\([0-9][0-9]*\).*/\1/p')
 test -n "$runner_pid"
