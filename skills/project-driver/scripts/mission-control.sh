@@ -23,15 +23,30 @@ get_state() {
 
 put_state() {
   local key=$1 value=$2 tmp
-  tmp="$STATE.tmp.$$"
+  tmp="$STATE.tmp.$"
   awk -F '\t' -v k="$key" '$1 != k { print }' "$STATE" > "$tmp"
   printf '%s\t%s\n' "$key" "$value" >> "$tmp"
   mv -- "$tmp" "$STATE"
 }
 
+running_status() {
+  case "$1" in active|completion-pending) return 0 ;; *) return 1 ;; esac
+}
+
 require_active() {
   [ -r "$STATE" ] || die 'mission-control.sh: no active mission'
-  [ "$(get_state status)" = active ] || die "mission-control.sh: mission is not active (status=$(get_state status))"
+  status=$(get_state status)
+  running_status "$status" || die "mission-control.sh: mission is not active (status=$status)"
+}
+
+require_gate_for_active_mission() {
+  local gate_file=$1 gate_mission current_mission
+  [ -r "$gate_file" ] || die "mission-control.sh: unknown gate '$gate_file'"
+  gate_mission=$(awk -F '\t' '$1 == "mission_id" { print $2; exit }' "$gate_file")
+  current_mission=$(get_state id)
+  [ -n "$gate_mission" ] || die "mission-control.sh: gate has no mission_id: $gate_file"
+  [ "$gate_mission" = "$current_mission" ] ||
+    die "mission-control.sh: gate belongs to mission $gate_mission, active mission is $current_mission"
 }
 
 bool() {
@@ -66,8 +81,13 @@ case "$command" in
       [[ "$deadline" =~ ^[0-9]+$ ]] || die 'mission-control.sh start: deadline mode requires --deadline-epoch'
     fi
 
-    if [ -r "$STATE" ] && [ "$(get_state status || true)" = active ] && [ "$replace" != yes ]; then
-      printf 'MISSION\tdecision=RESUME\tid=%s\tmode=%s\n' "$(get_state id)" "$(get_state mode)"
+    if [ -r "$STATE" ] && running_status "$(get_state status || true)" && [ "$replace" != yes ]; then
+      stored_goal=$(cat "$GOAL" 2>/dev/null || true)
+      if [ -n "$stored_goal" ] && [ "$stored_goal" != "$goal" ]; then
+        printf 'MISSION\tdecision=GOAL_CONFLICT\tid=%s\tstatus=%s\n' "$(get_state id)" "$(get_state status)" >&2
+        exit 40
+      fi
+      printf 'MISSION\tdecision=RESUME\tid=%s\tmode=%s\tstatus=%s\n'         "$(get_state id)" "$(get_state mode)" "$(get_state status)"
       exit 0
     fi
 
@@ -159,7 +179,8 @@ case "$command" in
     case "$resolution" in approved|declined) ;; *) die 'mission-control.sh resolve-gate: --resolution must be approved or declined' ;; esac
     gate_file="$GATES/$gate.tsv"
     [ -r "$gate_file" ] || die "mission-control.sh resolve-gate: unknown gate '$gate'"
-    tmp="$gate_file.tmp.$$"
+    require_gate_for_active_mission "$gate_file"
+    tmp="$gate_file.tmp.$"
     awk -F '\t' '$1 != "status" && $1 != "resolution" { print }' "$gate_file" > "$tmp"
     printf 'status\tclosed\nresolution\t%s\n' "$resolution" >> "$tmp"
     mv -- "$tmp" "$gate_file"
@@ -186,6 +207,15 @@ case "$command" in
     bool "$recoverable"
 
     if [ "$project_complete" = yes ]; then
+      if [ -n "${CLARITY_MISSION_CYCLE:-}" ]; then
+        [ "${CLARITY_MISSION_COMPLETION_AUDIT:-0}" != 1 ] ||
+          die 'mission-control.sh: completion audit must use confirm-completion, not checkpoint --project-complete yes'
+        put_state status completion-pending
+        put_state completion_requested_by_cycle "$CLARITY_MISSION_CYCLE"
+        put_state completion_requested_epoch "$(date +%s)"
+        printf 'MISSION\tdecision=COMPLETION_PENDING\tid=%s\tcycle=%s\n'           "$(get_state id)" "$CLARITY_MISSION_CYCLE"
+        exit 0
+      fi
       put_state status completed
       printf 'MISSION\tdecision=COMPLETE\tid=%s\n' "$(get_state id)"
       exit 0
@@ -202,6 +232,7 @@ case "$command" in
     if [ "$gate" != none ]; then
       gate_file="$GATES/$gate.tsv"
       [ -r "$gate_file" ] || die "mission-control.sh checkpoint: unknown gate '$gate'"
+      require_gate_for_active_mission "$gate_file"
       gate_status=$(awk -F '\t' '$1 == "status" { print $2; exit }' "$gate_file")
       [ "$gate_status" = open ] || die "mission-control.sh checkpoint: gate '$gate' is not open"
       printf 'MISSION\tdecision=HUMAN_GATE\tgate_id=%s\n' "$gate"
@@ -221,6 +252,40 @@ case "$command" in
     put_state status blocked
     printf 'MISSION\tdecision=STOP_BLOCKED\tid=%s\n' "$(get_state id)"
     exit 30
+    ;;
+
+  confirm-completion)
+    [ -r "$STATE" ] || die 'mission-control.sh confirm-completion: no mission state'
+    [ "$(get_state status)" = completion-pending ] ||
+      die "mission-control.sh confirm-completion: mission is not completion-pending (status=$(get_state status))"
+    [ "${CLARITY_MISSION_COMPLETION_AUDIT:-0}" = 1 ] ||
+      die 'mission-control.sh confirm-completion: only a runner-owned completion audit may confirm completion'
+
+    result=''
+    reason=''
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --result) result="${2:-}"; shift 2 ;;
+        --reason) reason="${2:-}"; shift 2 ;;
+        *) die "mission-control.sh confirm-completion: unknown argument '$1'" ;;
+      esac
+    done
+    case "$result" in complete|continue) ;; *)
+      die 'mission-control.sh confirm-completion: --result must be complete or continue' ;;
+    esac
+
+    mkdir -p -- "$STATE_ROOT"
+    printf '%s\n' "$reason" > "$STATE_ROOT/completion-audit-reason.txt"
+    put_state completion_audited_epoch "$(date +%s)"
+    put_state completion_audited_by_cycle "${CLARITY_MISSION_CYCLE:-audit}"
+
+    if [ "$result" = complete ]; then
+      put_state status completed
+      printf 'MISSION\tdecision=COMPLETE_CONFIRMED\tid=%s\n' "$(get_state id)"
+    else
+      put_state status active
+      printf 'MISSION\tdecision=CONTINUE_AFTER_AUDIT\tid=%s\n' "$(get_state id)"
+    fi
     ;;
 
   *)
