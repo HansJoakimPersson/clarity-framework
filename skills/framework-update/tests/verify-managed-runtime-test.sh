@@ -44,6 +44,20 @@ test "$rc" -eq 2
 grep -E 'differs from target release|payload missing' "$TEST_ROOT/missing.out" >/dev/null
 cp "$TARGET/skills/project-driver/prompts/mission-completion-audit.txt"   "$PROJECT/.claude/skills/project-driver/prompts/mission-completion-audit.txt"
 
+
+# An exact runtime copy still fails if any managed nested file is ignored by Git.
+printf '%s\n' '/.claude/skills/project-driver/prompts/mission-completion-audit.txt' > "$PROJECT/.gitignore"
+set +e
+(
+  cd "$PROJECT"
+  bash "$VERIFY"     --target-root "$TARGET"     --managed-skills project-driver,plan-driven-build     --smoke no
+) > "$TEST_ROOT/ignored.out" 2>&1
+rc=$?
+set -e
+test "$rc" -eq 2
+grep -F 'managed runtime file is ignored by Git: .claude/skills/project-driver/prompts/mission-completion-audit.txt' "$TEST_ROOT/ignored.out" >/dev/null
+rm "$PROJECT/.gitignore"
+
 # project-driver may not be declared managed without its plan-driven-build runtime dependency.
 set +e
 (
