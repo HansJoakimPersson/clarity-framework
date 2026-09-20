@@ -95,9 +95,11 @@ out=$(bash "$MISSION" confirm-completion --result continue --reason 'FR-002 is s
 printf '%s\n' "$out" | grep -F 'decision=CONTINUE_AFTER_AUDIT' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
 
+unset CLARITY_MISSION_COMPLETION_AUDIT
 export CLARITY_MISSION_CYCLE=0003
 out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETION_PENDING' >/dev/null
+export CLARITY_MISSION_COMPLETION_AUDIT=1
 export CLARITY_MISSION_CYCLE=0004
 out=$(bash "$MISSION" confirm-completion --result complete --reason 'all mission scope verified')
 printf '%s\n' "$out" | grep -F 'decision=COMPLETE_CONFIRMED' >/dev/null
