@@ -594,9 +594,12 @@ model_args=''
   --out "$RUN/verification.md"
 ```
 
-Report it to the user: what is done, what is not, and what was built outside `Included`. You may spot-check
-a single hunk for a high-risk change or a report that looks wrong — a judgment call, not the
-default.
+In a standalone run, report to the user what is done, what is not, and what was built outside
+`Included`. Under an active project-driver mission, return that same bounded result to the outer
+orchestrator instead. Do **not** phrase increment completion as completion of the user's overall
+mission; `INCREMENT_COMPLETE` is an inner-workflow result, while only Mission Mandate state may
+declare `MISSION_COMPLETE`. You may spot-check a single hunk for a high-risk change or a report
+that looks wrong — a judgment call, not the default.
 
 If Implementation stops, classify the cause. For a Delegated implementation or environment failure,
 apply the debugging/retry rules and re-dispatch rather than asking the user what to do. Under an
@@ -651,8 +654,10 @@ performs Delegated integration/cleanup and returns only any remaining Escalation
 
 Then delete the plan and its journal in their own commit, and remove `$RUN` when that cleanup is
 Delegated by the project. If plan deletion is explicitly Reserved, leave the artifacts and report
-that single pending transition. `plan-template.md` and
-`journal-template.md` stay in the skill directory — they are templates, not artifacts.
+that single pending transition. Under an active project-driver mission, closeout returns control to
+project-driver; it does not end the mission merely because this plan is finished.
+`plan-template.md` and `journal-template.md` stay in the skill directory — they are templates,
+not artifacts.
 
 ## Resuming an interrupted run
 
