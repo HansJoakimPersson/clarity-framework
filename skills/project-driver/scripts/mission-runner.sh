@@ -180,8 +180,11 @@ live_lock_pid_any() {
 }
 
 live_runner_pid() {
-  pid=$(live_lock_pid_any) || return 1
-  lock_mission=$(state_get mission_id "$LOCK_DIR/owner.tsv" 2>/dev/null || true)
+  [ -r "$LOCK_DIR/ready.tsv" ] || return 1
+  pid=$(state_get pid "$LOCK_DIR/ready.tsv" 2>/dev/null || true)
+  lock_mission=$(state_get mission_id "$LOCK_DIR/ready.tsv" 2>/dev/null || true)
+  case "$pid" in ''|*[!0-9]*) return 1 ;; esac
+  kill -0 "$pid" 2>/dev/null || return 1
   current_mission=$(mission_id)
   [ "$current_mission" != none ] || return 1
   [ "$lock_mission" = "$current_mission" ] || return 1
@@ -216,7 +219,7 @@ if [ "$BACKGROUND" -eq 1 ]; then
 
   if [ "$ENSURE_RUNNING" -eq 1 ]; then
     attempt=0
-    while [ "$attempt" -lt 50 ]; do
+    while [ "$attempt" -lt 100 ]; do
       attempt=$((attempt + 1))
       if pid=$(live_runner_pid); then
         printf 'MISSION_RUNNER decision=RUNNING pid=%s launcher_pid=%s log=%s\n' "$pid" "$bg_pid" "$bg_log"
@@ -285,6 +288,13 @@ printf '%s\n' "$" > "$LOCK_DIR/pid"
   printf 'mission_id\t%s\n' "$current_id"
   printf 'started_epoch\t%s\n' "$(date +%s)"
 } > "$LOCK_DIR/owner.tsv"
+ready_tmp="$LOCK_DIR/ready.tsv.tmp.$"
+{
+  printf 'pid\t%s\n' "$"
+  printf 'mission_id\t%s\n' "$current_id"
+  printf 'ready_epoch\t%s\n' "$(date +%s)"
+} > "$ready_tmp"
+mv -- "$ready_tmp" "$LOCK_DIR/ready.tsv"
 
 cleanup() {
   owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || true)
@@ -312,13 +322,6 @@ while :; do
       runner_put status completed
       printf 'MISSION_RUNNER decision=COMPLETE mission_id=%s cycles=%s\n' "$current_id" "$cycle_count"
       exit 0
-      ;;
-    completion-pending)
-      if [ "$cycle_kind" = completion-audit ]; then
-        runner_put status completion-audit-inconclusive
-        printf 'MISSION_RUNNER decision=STOP_AUDIT_INCONCLUSIVE cycle=%s\n' "$cycle_count"
-        exit 38
-      fi
       ;;
     blocked|deadline-reached)
       runner_put status "$status"
@@ -459,6 +462,13 @@ while :; do
       runner_put status completed
       printf 'MISSION_RUNNER decision=COMPLETE mission_id=%s cycles=%s\n' "$current_id" "$cycle_count"
       exit 0
+      ;;
+    completion-pending)
+      if [ "$cycle_kind" = completion-audit ]; then
+        runner_put status completion-audit-inconclusive
+        printf 'MISSION_RUNNER decision=STOP_AUDIT_INCONCLUSIVE cycle=%s\n' "$cycle_count"
+        exit 38
+      fi
       ;;
     blocked|deadline-reached)
       runner_put status "$status"
