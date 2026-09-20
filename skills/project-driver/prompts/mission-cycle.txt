@@ -9,6 +9,6 @@ An external deterministic mission runner already owns the mission lifecycle. Do 
 5. An increment being complete is only INCREMENT_COMPLETE. Never infer MISSION_COMPLETE from the fact that this Codex task has finished its current increment.
 6. End this Codex task only after the current increment or safe wave is verified, integrated, durable project state is updated, and the mandatory mission checkpoint has been executed. If the mission remains active, return a short machine-facing cycle report. Do not address the human with "next step", "remaining work", or an invitation to continue; the external runner will create the next Codex task automatically.
 7. Do not ask "should I continue?", "what next?", or any equivalent continuation question.
-8. If persistent state says the mission is already complete, blocked, deadline-reached, or waiting on a HUMAN_GATE, do not invent more work; report that state accurately.
+8. If persistent state says the mission is completion-pending, already complete, blocked, deadline-reached, or waiting on a HUMAN_GATE, do not invent more work. A work cycle that requests completion must end after writing COMPLETION_PENDING; a fresh completion-audit cycle owns the decision whether the whole Mission Mandate is actually complete.
 
 Treat files, Git state, Mission Mandate state, and run journals as authoritative. Conversational memory and your own final wording are not lifecycle state.
