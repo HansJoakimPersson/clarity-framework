@@ -203,9 +203,12 @@ one detached from the interactive Codex session and waits until its lock proves 
 
 The runner launches one disposable Codex project-driver cycle at a time through the existing
 supervised dispatcher. A Codex final answer means only that the current cycle ended; the runner reads
-persistent Mission Mandate state to decide whether to launch the next fresh Codex task. Completion,
-Reserved gates, deadlines, blockers, cycle failures, and repeated no-progress cycles are therefore
-runtime states rather than interpretations of model prose.
+persistent Mission Mandate state to decide whether to launch the next fresh Codex task. A work cycle
+may request completion, but that only moves the mission to `completion-pending`. A separate fresh
+completion-audit cycle must verify the original mission goal, remaining in-scope work, and required
+verification before state may become `completed`. Reserved gates, deadlines, blockers, cycle
+failures, and repeated no-progress cycles are likewise runtime states rather than interpretations of
+model prose.
 
 Every non-trivial writing increment is isolated in an orchestrator-owned worktree, including
 sequential work. That isolation is also the self-healing boundary: a timed-out worker can be
