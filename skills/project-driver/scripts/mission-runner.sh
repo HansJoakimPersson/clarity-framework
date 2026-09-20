@@ -12,6 +12,7 @@ ORIGINAL_ARGS=("$@")
 SKILLDIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 MISSION="$SKILLDIR/scripts/mission-control.sh"
 PROMPT_FILE="$SKILLDIR/prompts/mission-cycle.txt"
+AUDIT_PROMPT_FILE="$SKILLDIR/prompts/mission-completion-audit.txt"
 STATE_ROOT=${CLARITY_MISSION_DIR:-docs/plans/.runs/project-driver-mission}
 STATE="$STATE_ROOT/active.tsv"
 GOAL_FILE="$STATE_ROOT/goal.txt"
@@ -113,8 +114,12 @@ runner_put() {
 
 open_gate() {
   [ -d "$GATES" ] || return 1
+  current_mission=$(mission_id)
+  [ "$current_mission" != none ] || return 1
   for gate_file in "$GATES"/*.tsv; do
     [ -r "$gate_file" ] || continue
+    gate_mission=$(state_get mission_id "$gate_file" || true)
+    [ "$gate_mission" = "$current_mission" ] || continue
     status=$(state_get status "$gate_file" || true)
     if [ "$status" = open ]; then
       basename "$gate_file" .tsv
@@ -166,7 +171,7 @@ ledger_value() {
   ' "$file"
 }
 
-live_runner_pid() {
+live_lock_pid_any() {
   [ -r "$LOCK_DIR/pid" ] || return 1
   pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || true)
   case "$pid" in ''|*[!0-9]*) return 1 ;; esac
@@ -174,11 +179,25 @@ live_runner_pid() {
   printf '%s\n' "$pid"
 }
 
+live_runner_pid() {
+  pid=$(live_lock_pid_any) || return 1
+  lock_mission=$(state_get mission_id "$LOCK_DIR/owner.tsv" 2>/dev/null || true)
+  current_mission=$(mission_id)
+  [ "$current_mission" != none ] || return 1
+  [ "$lock_mission" = "$current_mission" ] || return 1
+  printf '%s\n' "$pid"
+}
+
 if [ "$ENSURE_RUNNING" -eq 1 ]; then
   mkdir -p -- "$STATE_ROOT"
   if pid=$(live_runner_pid); then
-    printf 'MISSION_RUNNER decision=ALREADY_RUNNING pid=%s log=%s\n' "$pid" "$STATE_ROOT/mission-runner.log"
+    printf 'MISSION_RUNNER decision=ALREADY_RUNNING pid=%s mission_id=%s log=%s\n'       "$pid" "$(mission_id)" "$STATE_ROOT/mission-runner.log"
     exit 0
+  fi
+  if pid=$(live_lock_pid_any); then
+    lock_mission=$(state_get mission_id "$LOCK_DIR/owner.tsv" 2>/dev/null || printf unknown)
+    printf 'MISSION_RUNNER decision=OWNER_MISMATCH pid=%s lock_mission=%s active_mission=%s\n'       "$pid" "$lock_mission" "$(mission_id)" >&2
+    exit 37
   fi
 fi
 
@@ -226,7 +245,7 @@ fi
 
 status=$(mission_status)
 case "$status" in
-  active) ;;
+  active|completion-pending) ;;
   completed)
     printf 'MISSION_RUNNER decision=COMPLETE mission_id=%s\n' "$(mission_id)"
     exit 0
@@ -251,17 +270,29 @@ if [ "$saved_id" != "$current_id" ]; then
 fi
 
 if mkdir "$LOCK_DIR" 2>/dev/null; then
-  printf '%s\n' "$$" > "$LOCK_DIR/pid"
+  :
 else
   lock_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || true)
+  lock_mission=$(state_get mission_id "$LOCK_DIR/owner.tsv" 2>/dev/null || printf unknown)
   if [ -n "$lock_pid" ] && kill -0 "$lock_pid" 2>/dev/null; then
-    die "mission-runner.sh: another runner is active (pid=$lock_pid)"
+    die "mission-runner.sh: another runner is active (pid=$lock_pid mission=$lock_mission)"
   fi
   rm -rf -- "$LOCK_DIR"
   mkdir "$LOCK_DIR"
-  printf '%s\n' "$$" > "$LOCK_DIR/pid"
 fi
-cleanup() { rm -rf -- "$LOCK_DIR"; }
+printf '%s\n' "$" > "$LOCK_DIR/pid"
+{
+  printf 'mission_id\t%s\n' "$current_id"
+  printf 'started_epoch\t%s\n' "$(date +%s)"
+} > "$LOCK_DIR/owner.tsv"
+
+cleanup() {
+  owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || true)
+  owner_mission=$(state_get mission_id "$LOCK_DIR/owner.tsv" 2>/dev/null || true)
+  if [ "$owner_pid" = "$" ] && [ "$owner_mission" = "$current_id" ]; then
+    rm -rf -- "$LOCK_DIR"
+  fi
+}
 trap cleanup EXIT HUP INT TERM
 
 cycle_count=$(state_get cycle_count "$RUNNER_STATE" 2>/dev/null || printf 0)
@@ -269,6 +300,12 @@ stagnant_count=$(state_get stagnant_count "$RUNNER_STATE" 2>/dev/null || printf 
 cycle_restart_count=$(state_get cycle_restart_count "$RUNNER_STATE" 2>/dev/null || printf 0)
 
 while :; do
+  observed_mission=$(mission_id)
+  if [ "$observed_mission" != "$current_id" ]; then
+    printf 'MISSION_RUNNER decision=STOP_REPLACED old_mission=%s active_mission=%s\n'       "$current_id" "$observed_mission"
+    exit 39
+  fi
+
   status=$(mission_status)
   case "$status" in
     completed)
@@ -276,12 +313,19 @@ while :; do
       printf 'MISSION_RUNNER decision=COMPLETE mission_id=%s cycles=%s\n' "$current_id" "$cycle_count"
       exit 0
       ;;
+    completion-pending)
+      if [ "$cycle_kind" = completion-audit ]; then
+        runner_put status completion-audit-inconclusive
+        printf 'MISSION_RUNNER decision=STOP_AUDIT_INCONCLUSIVE cycle=%s\n' "$cycle_count"
+        exit 38
+      fi
+      ;;
     blocked|deadline-reached)
       runner_put status "$status"
       printf 'MISSION_RUNNER decision=STOP status=%s cycles=%s\n' "$status" "$cycle_count"
       exit 30
       ;;
-    active) ;;
+    active|completion-pending) ;;
     *)
       runner_put status invalid-mission-state
       printf 'MISSION_RUNNER decision=STOP_INVALID status=%s\n' "$status"
@@ -313,9 +357,17 @@ while :; do
   fi
 
   before=$(fingerprint)
+  cycle_kind=work
+  cycle_prompt="$PROMPT_FILE"
+  if [ "$status" = completion-pending ]; then
+    cycle_kind=completion-audit
+    cycle_prompt="$AUDIT_PROMPT_FILE"
+  fi
+
   cycle_count=$((cycle_count + 1))
   runner_put cycle_count "$cycle_count"
   runner_put status running
+  runner_put last_cycle_kind "$cycle_kind"
   runner_put last_cycle_started_epoch "$(date +%s)"
 
   cycle_id=$(printf '%04d' "$cycle_count")
@@ -328,10 +380,10 @@ while :; do
     --phase finalization
     --mode workspace-write
     --background
-    --prompt-file "$PROMPT_FILE"
+    --prompt-file "$cycle_prompt"
     --log "$log"
     --ledger "$ledger"
-    --job-id "mission-$current_id-cycle-$cycle_id"
+    --job-id "mission-$current_id-$cycle_kind-$cycle_id"
     --stall-timeout-seconds "$STALL_SECONDS"
     --wall-timeout-seconds "$WALL_SECONDS"
     --heartbeat-seconds "$HEARTBEAT_SECONDS"
@@ -342,9 +394,16 @@ while :; do
 
   export CLARITY_MISSION_CYCLE="$cycle_id"
   export CLARITY_MISSION_ID="$current_id"
+  export CLARITY_MISSION_CYCLE_KIND="$cycle_kind"
+  if [ "$cycle_kind" = completion-audit ]; then
+    export CLARITY_MISSION_COMPLETION_AUDIT=1
+  else
+    unset CLARITY_MISSION_COMPLETION_AUDIT 2>/dev/null || true
+  fi
   summary=$(bash "$DISPATCH" "${args[@]}")
-  unset CLARITY_MISSION_CYCLE CLARITY_MISSION_ID
-  printf 'MISSION_RUNNER cycle=%s dispatch=%s\n' "$cycle_count" "$summary"
+  unset CLARITY_MISSION_CYCLE CLARITY_MISSION_ID CLARITY_MISSION_CYCLE_KIND
+  unset CLARITY_MISSION_COMPLETION_AUDIT 2>/dev/null || true
+  printf 'MISSION_RUNNER cycle=%s kind=%s dispatch=%s\n' "$cycle_count" "$cycle_kind" "$summary"
 
   health_started=$(date +%s)
   while :; do
