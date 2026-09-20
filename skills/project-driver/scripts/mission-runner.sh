@@ -327,7 +327,6 @@ STOP_CODE=''
 request_stop() {
   STOP_SIGNAL=$1
   STOP_CODE=$2
-  runner_put status "signal-$STOP_SIGNAL-requested"
 }
 trap cleanup EXIT
 trap 'request_stop HUP 129' HUP
