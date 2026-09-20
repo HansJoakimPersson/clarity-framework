@@ -150,4 +150,4 @@ blindly.
 
 ---
 
-*Clarity Framework v4.3.3*
+*Clarity Framework v4.3.4*
