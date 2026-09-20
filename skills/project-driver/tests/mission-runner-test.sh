@@ -194,9 +194,13 @@ printf '%s\n' "$out" | grep -F 'decision=HUMAN_GATE gate_id=HG-test' >/dev/null
 # 5. --ensure-running is idempotent when a live runner lock already owns the mission.
 export CLARITY_MISSION_DIR="$TEST_ROOT/state5"
 mkdir -p "$CLARITY_MISSION_DIR/runner.lock"
-printf '%s\n' "$" > "$CLARITY_MISSION_DIR/runner.lock/pid"
+sleep 30 &
+fake_runner_pid=$!
+printf '%s\n' "$fake_runner_pid" > "$CLARITY_MISSION_DIR/runner.lock/pid"
 out=$(bash "$RUNNER" --ensure-running)
 printf '%s\n' "$out" | grep -F 'decision=ALREADY_RUNNING' >/dev/null
+kill "$fake_runner_pid" 2>/dev/null || true
+wait "$fake_runner_pid" 2>/dev/null || true
 rm -rf "$CLARITY_MISSION_DIR"
 
 # 6. --ensure-running starts a detached owner and waits until the runner lock proves it is alive.
