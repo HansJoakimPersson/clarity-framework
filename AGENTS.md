@@ -44,7 +44,7 @@ the version markers were not updated, or a shipped script changed without its re
 run. Every change increments the version in the same commit; `docs` and `chore` changes do not
 increment it.
 
-The repository ships nine executable regression tests. Run all of them when any `*.sh` under
+The repository ships ten executable regression tests. Run all of them when any `*.sh` under
 `skills/` or `framework/scripts/` changes:
 
 ```bash
@@ -52,6 +52,7 @@ sh   skills/plan-driven-build/tests/dispatch-test.sh
 sh   skills/plan-driven-build/tests/context-pack-test.sh
 bash skills/project-driver/tests/authority-test.sh
 bash skills/project-driver/tests/mission-control-test.sh
+bash skills/project-driver/tests/mission-runner-test.sh
 bash skills/framework-update/tests/check-update-scope-test.sh
 bash skills/framework-update/tests/render-update-commit-test.sh
 bash framework/scripts/tests/check-version-consistency-test.sh
