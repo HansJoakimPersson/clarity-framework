@@ -32,7 +32,13 @@ count=$(cat "$count_file" 2>/dev/null || printf 0)
 count=$((count + 1))
 printf '%s\n' "$count" > "$count_file"
 mkdir -p "$(dirname -- "$log")"
-printf 'fake cycle %s complete\n' "$count" > "$log"
+delay=${CLARITY_TEST_DELAY:-0}
+[ "$delay" = 0 ] || sleep "$delay"
+if [ "$count" -eq 1 ]; then
+  printf 'Nu är den här delen klar. Det som återstår är nästa del.\n' > "$log"
+else
+  printf 'fake cycle %s complete\n' "$count" > "$log"
+fi
 
 exit_code=0
 retryable=0
@@ -184,5 +190,34 @@ set -e
 test "$rc" -eq 20
 test ! -e "$TEST_ROOT/cycles4"
 printf '%s\n' "$out" | grep -F 'decision=HUMAN_GATE gate_id=HG-test' >/dev/null
+
+# 5. --ensure-running is idempotent when a live runner lock already owns the mission.
+export CLARITY_MISSION_DIR="$TEST_ROOT/state5"
+mkdir -p "$CLARITY_MISSION_DIR/runner.lock"
+printf '%s\n' "$" > "$CLARITY_MISSION_DIR/runner.lock/pid"
+out=$(bash "$RUNNER" --ensure-running)
+printf '%s\n' "$out" | grep -F 'decision=ALREADY_RUNNING' >/dev/null
+rm -rf "$CLARITY_MISSION_DIR"
+
+# 6. --ensure-running starts a detached owner and waits until the runner lock proves it is alive.
+REPO6="$TEST_ROOT/repo6"
+new_repo "$REPO6"
+export CLARITY_MISSION_DIR="$TEST_ROOT/state6"
+export CLARITY_TEST_CYCLE_COUNT_FILE="$TEST_ROOT/cycles6"
+export CLARITY_TEST_MODE=stagnant
+export CLARITY_TEST_DELAY=2
+out=$(
+  cd "$REPO6"
+  bash "$RUNNER" --goal 'Build all remaining parts' --ensure-running --max-cycles 1 --poll-seconds 1
+)
+printf '%s\n' "$out" | grep -F 'decision=RUNNING' >/dev/null
+runner_pid=$(printf '%s\n' "$out" | sed -n 's/.*decision=RUNNING pid=\([0-9][0-9]*\).*/\1/p')
+test -n "$runner_pid"
+attempt=0
+while kill -0 "$runner_pid" 2>/dev/null && [ "$attempt" -lt 100 ]; do
+  attempt=$((attempt + 1))
+  sleep 0.05
+done
+unset CLARITY_TEST_DELAY
 
 printf '%s\n' 'mission-runner-test: ok'
