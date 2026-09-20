@@ -63,14 +63,33 @@ printf '%s\n' "$out" | grep -F 'decision=GATE_RESOLVED' >/dev/null
 out=$(bash "$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no)
 printf '%s\n' "$out" | grep -F 'decision=CONTINUE' >/dev/null
 
-out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
-printf '%s\n' "$out" | grep -F 'decision=COMPLETE' >/dev/null
+set +e
+out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no 2>&1)
+rc=$?
+set -e
+test "$rc" -eq 2
+printf '%s\n' "$out" | grep -F 'completion must be requested by a runner-owned work cycle' >/dev/null
 
-# A runner-owned execution cycle may only request completion; a separate audit must confirm it.
+# A runner-owned execution cycle may only request completion; Mission Runner must accept the
+# provisional request after a clean process exit, then a separate audit must confirm it.
 out=$(bash "$MISSION" start --replace --goal 'Build all remaining application work' --mode until-complete)
 printf '%s\n' "$out" | grep -F 'decision=STARTED' >/dev/null
 export CLARITY_MISSION_CYCLE=0001
+mission_id=$(awk -F '\t' '$1=="id"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")
+export CLARITY_MISSION_ID="$mission_id"
 out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
+printf '%s\n' "$out" | grep -F 'decision=COMPLETION_REQUESTED' >/dev/null
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
+
+# A work cycle cannot finalize its own completion request.
+set +e
+out=$(bash "$MISSION" finalize-completion-request --cycle 0001 2>&1)
+rc=$?
+set -e
+test "$rc" -eq 2
+printf '%s\n' "$out" | grep -F 'only Mission Runner may finalize' >/dev/null
+
+out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 bash "$MISSION" finalize-completion-request --cycle 0001)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETION_PENDING' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
 
@@ -94,23 +113,49 @@ export CLARITY_MISSION_CYCLE=0002
 out=$(bash "$MISSION" confirm-completion --result continue --reason 'FR-002 is still incomplete')
 printf '%s\n' "$out" | grep -F 'decision=AUDIT_RECORDED' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
-out=$(bash "$MISSION" finalize-completion-audit --cycle 0002)
+# The audit cycle may record a result but cannot apply it itself.
+set +e
+out=$(bash "$MISSION" finalize-completion-audit --cycle 0002 2>&1)
+rc=$?
+set -e
+test "$rc" -eq 2
+printf '%s\n' "$out" | grep -F 'only Mission Runner may finalize' >/dev/null
+
+out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 bash "$MISSION" finalize-completion-audit --cycle 0002)
 printf '%s\n' "$out" | grep -F 'decision=CONTINUE_AFTER_AUDIT' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
 
 unset CLARITY_MISSION_COMPLETION_AUDIT
 export CLARITY_MISSION_CYCLE=0003
 out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
+printf '%s\n' "$out" | grep -F 'decision=COMPLETION_REQUESTED' >/dev/null
+out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 bash "$MISSION" finalize-completion-request --cycle 0003)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETION_PENDING' >/dev/null
 export CLARITY_MISSION_COMPLETION_AUDIT=1
 export CLARITY_MISSION_CYCLE=0004
 out=$(bash "$MISSION" confirm-completion --result complete --reason 'all mission scope verified')
 printf '%s\n' "$out" | grep -F 'decision=AUDIT_RECORDED' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
-out=$(bash "$MISSION" finalize-completion-audit --cycle 0004)
+out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 bash "$MISSION" finalize-completion-audit --cycle 0004)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETE_CONFIRMED' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completed
-unset CLARITY_MISSION_CYCLE CLARITY_MISSION_COMPLETION_AUDIT
+unset CLARITY_MISSION_CYCLE CLARITY_MISSION_COMPLETION_AUDIT CLARITY_MISSION_ID
+
+# A stale runner-owned cycle cannot mutate a replacement mission.
+out=$(bash "$MISSION" start --replace --goal 'Old runner mission' --mode until-complete)
+old_id=$(awk -F '\t' '$1=="id"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")
+out=$(bash "$MISSION" start --replace --goal 'Replacement mission' --mode until-complete)
+replacement_id=$(awk -F '\t' '$1=="id"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")
+export CLARITY_MISSION_ID="$old_id"
+export CLARITY_MISSION_CYCLE=0099
+set +e
+out=$(bash "$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no 2>&1)
+rc=$?
+set -e
+test "$rc" -eq 2
+printf '%s\n' "$out" | grep -F "cycle belongs to mission $old_id, active mission is $replacement_id" >/dev/null
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
+unset CLARITY_MISSION_ID CLARITY_MISSION_CYCLE
 
 out=$(bash "$MISSION" start --replace --goal 'Work until deadline' --mode until-complete-or-deadline --deadline-epoch 1)
 printf '%s\n' "$out" | grep -F 'decision=STARTED' >/dev/null
