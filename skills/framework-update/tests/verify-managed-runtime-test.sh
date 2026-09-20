@@ -11,6 +11,12 @@ trap 'rm -rf -- "$TEST_ROOT"' EXIT HUP INT TERM
 TARGET="$TEST_ROOT/target"
 PROJECT="$TEST_ROOT/project"
 mkdir -p "$TARGET/skills" "$PROJECT/.agents/skills" "$PROJECT/.claude/skills"
+git -C "$PROJECT" init -q
+git -C "$PROJECT" config user.name 'Clarity test'
+git -C "$PROJECT" config user.email 'clarity-test@example.invalid'
+printf '# Runtime verification fixture\n' > "$PROJECT/README.md"
+git -C "$PROJECT" add README.md
+git -C "$PROJECT" commit -qm initial
 
 for skill in project-driver plan-driven-build; do
   cp -R "$REPO_ROOT/skills/$skill" "$TARGET/skills/$skill"
