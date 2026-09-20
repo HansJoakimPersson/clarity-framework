@@ -340,7 +340,10 @@ while :; do
   [ -z "$REASONING_EFFORT" ] || args+=(--reasoning-effort "$REASONING_EFFORT")
   [ "$NETWORK" -eq 0 ] || args+=(--network)
 
+  export CLARITY_MISSION_CYCLE="$cycle_id"
+  export CLARITY_MISSION_ID="$current_id"
   summary=$(bash "$DISPATCH" "${args[@]}")
+  unset CLARITY_MISSION_CYCLE CLARITY_MISSION_ID
   printf 'MISSION_RUNNER cycle=%s dispatch=%s\n' "$cycle_count" "$summary"
 
   health_started=$(date +%s)
