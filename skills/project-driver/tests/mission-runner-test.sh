@@ -233,6 +233,11 @@ sleep 30 &
 fake_runner_pid=$!
 printf '%s\n' "$fake_runner_pid" > "$CLARITY_MISSION_DIR/runner.lock/pid"
 printf 'mission_id\t%s\n' "$mission5" > "$CLARITY_MISSION_DIR/runner.lock/owner.tsv"
+{
+  printf 'pid\t%s\n' "$fake_runner_pid"
+  printf 'mission_id\t%s\n' "$mission5"
+  printf 'ready_epoch\t1\n'
+} > "$CLARITY_MISSION_DIR/runner.lock/ready.tsv"
 out=$(bash "$RUNNER" --ensure-running)
 printf '%s\n' "$out" | grep -F 'decision=ALREADY_RUNNING' >/dev/null
 
