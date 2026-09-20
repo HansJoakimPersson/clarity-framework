@@ -283,14 +283,14 @@ else
   rm -rf -- "$LOCK_DIR"
   mkdir "$LOCK_DIR"
 fi
-printf '%s\n' "$" > "$LOCK_DIR/pid"
+printf '%s\n' "$BASHPID" > "$LOCK_DIR/pid"
 {
   printf 'mission_id\t%s\n' "$current_id"
   printf 'started_epoch\t%s\n' "$(date +%s)"
 } > "$LOCK_DIR/owner.tsv"
-ready_tmp="$LOCK_DIR/ready.tsv.tmp.$"
+ready_tmp="$LOCK_DIR/ready.tsv.tmp.$BASHPID"
 {
-  printf 'pid\t%s\n' "$"
+  printf 'pid\t%s\n' "$BASHPID"
   printf 'mission_id\t%s\n' "$current_id"
   printf 'ready_epoch\t%s\n' "$(date +%s)"
 } > "$ready_tmp"
@@ -299,7 +299,7 @@ mv -- "$ready_tmp" "$LOCK_DIR/ready.tsv"
 cleanup() {
   owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || true)
   owner_mission=$(state_get mission_id "$LOCK_DIR/owner.tsv" 2>/dev/null || true)
-  if [ "$owner_pid" = "$" ] && [ "$owner_mission" = "$current_id" ]; then
+  if [ "$owner_pid" = "$BASHPID" ] && [ "$owner_mission" = "$current_id" ]; then
     rm -rf -- "$LOCK_DIR"
   fi
 }
