@@ -197,10 +197,28 @@ if [ "$ENSURE_RUNNING" -eq 1 ]; then
     printf 'MISSION_RUNNER decision=ALREADY_RUNNING pid=%s mission_id=%s log=%s\n'       "$pid" "$(mission_id)" "$STATE_ROOT/mission-runner.log"
     exit 0
   fi
+
   if pid=$(live_lock_pid_any); then
     lock_mission=$(state_get mission_id "$LOCK_DIR/owner.tsv" 2>/dev/null || printf unknown)
-    printf 'MISSION_RUNNER decision=OWNER_MISMATCH pid=%s lock_mission=%s active_mission=%s\n'       "$pid" "$lock_mission" "$(mission_id)" >&2
-    exit 37
+    active_mission=$(mission_id)
+    if [ "$lock_mission" != "$active_mission" ]; then
+      printf 'MISSION_RUNNER decision=OWNER_MISMATCH pid=%s lock_mission=%s active_mission=%s\n'         "$pid" "$lock_mission" "$active_mission" >&2
+      exit 37
+    fi
+
+    # A same-mission process may have acquired the lock just before atomically publishing ready.tsv.
+    attempt=0
+    while [ "$attempt" -lt 100 ]; do
+      attempt=$((attempt + 1))
+      if ready_pid=$(live_runner_pid); then
+        printf 'MISSION_RUNNER decision=ALREADY_RUNNING pid=%s mission_id=%s log=%s\n'           "$ready_pid" "$active_mission" "$STATE_ROOT/mission-runner.log"
+        exit 0
+      fi
+      kill -0 "$pid" 2>/dev/null || break
+      sleep 0.1
+    done
+    printf 'MISSION_RUNNER decision=OWNER_UNREADY pid=%s mission_id=%s\n'       "$pid" "$active_mission" >&2
+    exit 36
   fi
 fi
 
