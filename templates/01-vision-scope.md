@@ -114,4 +114,4 @@
 
 *Next step: Start requirements documentation based on this approved document.*
 
-*Clarity Framework v4.3.3 – Vision & Scope*
+*Clarity Framework v4.3.4 – Vision & Scope*
