@@ -182,6 +182,11 @@ work would erase the latency benefit.]
 maximum clean self-heal restarts `1`. A timed-out project-driver increment is retried only from a
 fresh orchestrator-owned worktree created from the same baseline.]
 
+**Mission Runner:** [for long unattended project-driver missions, default orchestrator profile
+`cli:codex`; maximum cycles `100`; maximum consecutive no-progress cycles `2`; retryable outer
+cycle restarts `1`. A Codex task final answer never declares mission completion; persistent mission
+state controls the next cycle.]
+
 **Default gate profile:** [semi-automatic (default) / interactive / unattended — supervision/reporting
 level for standalone `plan-driven-build`. During an active project-driver mission, the mission mandate
 takes precedence: Delegated work continues and only Reserved actions may create a human gate.]
