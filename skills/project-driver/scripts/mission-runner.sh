@@ -498,10 +498,13 @@ while :; do
     if [ "$cycle_kind" = work ]; then
       requested_cycle=$(state_get completion_requested_by_cycle "$STATE" 2>/dev/null || true)
       if [ "$requested_cycle" = "$cycle_id" ]; then
+        discard_file="$RUNNER_DIR/cycle-$cycle_id.discard.out"
         set +e
-        discard_apply=$(CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1           bash "$MISSION" discard-completion-request --cycle "$cycle_id" 2>&1)
+        CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1           CLARITY_MISSION_RUNNER_PID="$BASHPID"           bash "$MISSION" discard-completion-request --cycle "$cycle_id" >"$discard_file" 2>&1
         discard_rc=$?
         set -e
+        discard_apply=$(cat "$discard_file" 2>/dev/null || true)
+        rm -f -- "$discard_file"
         if [ "$discard_rc" -ne 0 ]; then
           runner_put status completion-request-discard-failed
           printf 'MISSION_RUNNER decision=STOP_STATE_ERROR cycle=%s detail=%s\n' "$cycle_count" "$discard_apply"
@@ -532,10 +535,13 @@ while :; do
   if [ "$cycle_kind" = work ]; then
     requested_cycle=$(state_get completion_requested_by_cycle "$STATE" 2>/dev/null || true)
     if [ "$requested_cycle" = "$cycle_id" ]; then
+      completion_file="$RUNNER_DIR/cycle-$cycle_id.completion-finalize.out"
       set +e
-      completion_apply=$(CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1         bash "$MISSION" finalize-completion-request --cycle "$cycle_id" 2>&1)
+      CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1         CLARITY_MISSION_RUNNER_PID="$BASHPID"         bash "$MISSION" finalize-completion-request --cycle "$cycle_id" >"$completion_file" 2>&1
       completion_rc=$?
       set -e
+      completion_apply=$(cat "$completion_file" 2>/dev/null || true)
+      rm -f -- "$completion_file"
       if [ "$completion_rc" -ne 0 ]; then
         runner_put status completion-request-finalize-failed
         printf 'MISSION_RUNNER decision=STOP_STATE_ERROR cycle=%s detail=%s\n' "$cycle_count" "$completion_apply"
@@ -546,10 +552,13 @@ while :; do
   fi
 
   if [ "$cycle_kind" = completion-audit ]; then
+    audit_file="$RUNNER_DIR/cycle-$cycle_id.audit-finalize.out"
     set +e
-    audit_apply=$(CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1       bash "$MISSION" finalize-completion-audit --cycle "$cycle_id" 2>&1)
+    CLARITY_MISSION_ID="$current_id" CLARITY_MISSION_RUNNER_FINALIZE=1       CLARITY_MISSION_RUNNER_PID="$BASHPID"       bash "$MISSION" finalize-completion-audit --cycle "$cycle_id" >"$audit_file" 2>&1
     audit_rc=$?
     set -e
+    audit_apply=$(cat "$audit_file" 2>/dev/null || true)
+    rm -f -- "$audit_file"
     if [ "$audit_rc" -ne 0 ]; then
       runner_put status completion-audit-inconclusive
       printf 'MISSION_RUNNER decision=STOP_AUDIT_INCONCLUSIVE cycle=%s detail=%s\n'         "$cycle_count" "$audit_apply"
