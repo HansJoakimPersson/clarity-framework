@@ -66,6 +66,44 @@ printf '%s\n' "$out" | grep -F 'decision=CONTINUE' >/dev/null
 out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETE' >/dev/null
 
+# A runner-owned execution cycle may only request completion; a separate audit must confirm it.
+out=$(bash "$MISSION" start --replace --goal 'Build all remaining application work' --mode until-complete)
+printf '%s\n' "$out" | grep -F 'decision=STARTED' >/dev/null
+export CLARITY_MISSION_CYCLE=0001
+out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
+printf '%s\n' "$out" | grep -F 'decision=COMPLETION_PENDING' >/dev/null
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
+
+# A different goal cannot silently reuse an active/pending mission.
+set +e
+out=$(bash "$MISSION" start --goal 'Build a different product' --mode until-complete 2>&1)
+rc=$?
+set -e
+test "$rc" -eq 40
+printf '%s\n' "$out" | grep -F 'decision=GOAL_CONFLICT' >/dev/null
+
+# Only a completion-audit cycle may resolve completion-pending.
+set +e
+out=$(bash "$MISSION" confirm-completion --result complete --reason 'not an audit' 2>&1)
+rc=$?
+set -e
+test "$rc" -eq 2
+
+export CLARITY_MISSION_COMPLETION_AUDIT=1
+export CLARITY_MISSION_CYCLE=0002
+out=$(bash "$MISSION" confirm-completion --result continue --reason 'FR-002 is still incomplete')
+printf '%s\n' "$out" | grep -F 'decision=CONTINUE_AFTER_AUDIT' >/dev/null
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
+
+export CLARITY_MISSION_CYCLE=0003
+out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
+printf '%s\n' "$out" | grep -F 'decision=COMPLETION_PENDING' >/dev/null
+export CLARITY_MISSION_CYCLE=0004
+out=$(bash "$MISSION" confirm-completion --result complete --reason 'all mission scope verified')
+printf '%s\n' "$out" | grep -F 'decision=COMPLETE_CONFIRMED' >/dev/null
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completed
+unset CLARITY_MISSION_CYCLE CLARITY_MISSION_COMPLETION_AUDIT
+
 out=$(bash "$MISSION" start --replace --goal 'Work until deadline' --mode until-complete-or-deadline --deadline-epoch 1)
 printf '%s\n' "$out" | grep -F 'decision=STARTED' >/dev/null
 set +e
