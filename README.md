@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 4.3.4 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 4.3.5 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -263,4 +263,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v4.3.4*
+*Clarity Framework v4.3.5*
