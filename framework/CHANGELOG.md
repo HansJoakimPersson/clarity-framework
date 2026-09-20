@@ -27,6 +27,13 @@ tag, so an untagged heading here is a version no project can reach.
 - Background implementation dispatch now has an independent supervisor, atomic health heartbeat, a
   mechanical health probe, no-progress stall detection, and a hard wall-clock ceiling. Regression
   coverage includes a worker that never returns and a noisy worker that never finishes.
+- `project-driver` now ships `scripts/mission-runner.sh` and
+  `prompts/mission-cycle.txt`. The runner chains disposable supervised Codex `exec` tasks around
+  one persistent Mission Mandate, so one model task may finish after an increment without ending the
+  user's multi-increment mission.
+- Mission Runner regression coverage verifies multi-cycle continuation after a successful task exit,
+  bounded repeated no-progress, one retryable outer-cycle restart, and an immediate stop before
+  launching work when a Reserved human gate is already open.
 
 ### Changed
 
@@ -47,6 +54,14 @@ tag, so an untagged heading here is a version no project can reach.
 - Dispatch liveness is fail-closed: stale or lost supervisor health is an environment failure rather
   than an indefinitely healthy-running state. One blocked increment no longer prevents
   project-driver from continuing independent ready Delegated work.
+- Long Mission Mandates no longer depend on one Codex session voluntarily staying alive. Persistent
+  runtime state now owns continuation: `active` launches another fresh Codex work cycle,
+  `completed` ends successfully, and Reserved gates, deadlines, blockers, cycle failures, or
+  bounded stagnation are explicit runner stop states.
+- `plan-driven-build` now distinguishes `INCREMENT_COMPLETE` from `MISSION_COMPLETE`. During an
+  active project-driver mission, verification and closeout return a bounded result to the outer
+  orchestrator rather than presenting one finished increment as completion of the user's whole
+  request.
 
 ### Fixed
 
@@ -58,6 +73,9 @@ tag, so an untagged heading here is a version no project can reach.
   for hours simply because no task notification or completion sentinel arrived. The supervisor
   bounds both silence and total runtime, tears down the worker process tree parent-first to prevent
   child-respawn races, and writes exit 124 with `timeout.stalled` or `timeout.wall`.
+- A normal Codex final answer after one mergeable increment no longer terminates a long Mission
+  Mandate. `mission-runner.sh` deliberately ignores model prose for lifecycle control and reads
+  persistent Mission state instead.
 
 ## [4.3.0] – 2026-09-18
 

@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 4.3.2 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 4.3.3 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -55,8 +55,9 @@ clarity-framework/
 │   │   └── SKILL.md
 │   ├── project-driver/               # Outer loop: project intent → successive verified increments
 │   │   ├── SKILL.md                 # Mission Mandate and continuation contract
-│   │   ├── scripts/                 # Authority resolver and persistent mission state machine
-│   │   └── tests/                   # Approval-firewall and continuation regression tests
+│   │   ├── prompts/                 # One-cycle prompt for disposable Codex orchestrator tasks
+│   │   ├── scripts/                 # Authority, persistent mission state, and external Mission Runner
+│   │   └── tests/                   # Approval, continuation, and multi-cycle regression tests
 │   ├── framework-update/            # Upgrade framework-owned files without losing project content
 │   │   ├── SKILL.md
 │   │   ├── scripts/                 # Update-scope and commit-rendering helpers
@@ -194,6 +195,13 @@ increment therefore transitions directly to the next ready increment; there is n
 "should I continue?" transition. Mission state is local under `docs/plans/.runs/`, so it survives
 long multi-increment runs without becoming project documentation.
 
+For genuinely long runs, `project-driver/scripts/mission-runner.sh` moves continuation outside the
+model. It launches one disposable Codex project-driver cycle at a time through the existing
+supervised dispatcher. A Codex final answer means only that the current cycle ended; the runner reads
+persistent Mission Mandate state to decide whether to launch the next fresh Codex task. Completion,
+Reserved gates, deadlines, blockers, cycle failures, and repeated no-progress cycles are therefore
+runtime states rather than interpretations of model prose.
+
 Every non-trivial writing increment is isolated in an orchestrator-owned worktree, including
 sequential work. That isolation is also the self-healing boundary: a timed-out worker can be
 discarded and restarted once from the same recorded baseline without contaminating integrated work.
@@ -247,4 +255,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v4.3.2*
+*Clarity Framework v4.3.3*

@@ -168,4 +168,4 @@ AC-010-1:
 *Next step: Keep the story map, epic overview, and traceability table in `docs/02-requirements.md`
 aligned with this backlog whenever a story is added, split, or dropped.*
 
-*Clarity Framework v4.3.2 – User Stories*
+*Clarity Framework v4.3.3 – User Stories*

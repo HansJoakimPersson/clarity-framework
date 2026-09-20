@@ -125,4 +125,4 @@ scans support but do not replace human inspection.
 
 ---
 
-*Clarity Framework v4.3.2 – Visual Profile & Design Tokens*
+*Clarity Framework v4.3.3 – Visual Profile & Design Tokens*

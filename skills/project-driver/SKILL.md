@@ -55,6 +55,44 @@ The mandate has higher priority than skill-level supervision defaults. While it 
 replanning, documentation updates, and selection of the next increment cannot become approval
 checkpoints merely because another skill or starter contains older "ask first" wording.
 
+### External Mission Runner
+
+A single Codex `exec` task is not the mission lifecycle. Codex may legitimately end one task after
+one increment or wave. For long-running or unattended work, move continuation outside the model:
+
+```bash
+RUNNER="$PROJECT_DRIVER_DIR/scripts/mission-runner.sh"
+
+# Start a long mission in the foreground:
+bash "$RUNNER" --goal "<user outcome>"
+
+# Or detach the runner from the interactive Codex session:
+bash "$RUNNER" --goal "<user outcome>" --background
+```
+
+To resume an already-active mission, omit `--goal`. The runner defaults to the logged-in Codex CLI
+through `--profile cli:codex`; pass an aimux profile or pool with `--profile` when a different
+subscription should own the orchestrator cycles. Optional `--model` and
+`--reasoning-effort` pin those cycle-level choices without changing the inner Implementation
+policy.
+
+`mission-runner.sh` launches **disposable Codex work cycles**. Each cycle invokes project-driver,
+does the next ready increment/wave, persists state, and may then return a normal Codex final answer.
+The runner ignores that answer for lifecycle control. It reads Mission Mandate state instead:
+
+- `active` → launch another fresh Codex cycle;
+- `completed` → stop successfully;
+- open `HUMAN_GATE` → stop for that Reserved decision;
+- `blocked` / deadline reached → stop with the recorded reason.
+
+The runner also bounds failure modes that model instructions cannot: one runner per mission, a
+configurable maximum cycle count, a configurable consecutive no-progress ceiling, supervised
+cycle-level stall/wall timeouts, and a bounded restart for retryable outer-cycle failures. Runner
+state lives beside the Mission Mandate under `docs/plans/.runs/project-driver-mission/`.
+
+**INCREMENT_COMPLETE is not MISSION_COMPLETE.** A Codex task ending is never evidence that the
+mission ended.
+
 ## Authority firewall
 
 Read the human-readable authority contract and the machine-readable

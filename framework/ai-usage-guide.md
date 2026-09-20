@@ -188,6 +188,18 @@ session reaches a checkpoint: `CONTINUE` obligates the orchestrator to select th
 `COMPLETE`, `STOP_DEADLINE`, `STOP_BLOCKED`, or an already-issued `HUMAN_GATE` are the only
 normal terminal decisions. There is no `ASK_TO_CONTINUE` transition.
 
+For long unattended missions, `mission-runner.sh` is the outer executable lifecycle. It repeatedly
+launches a fresh Codex `exec` task with `prompts/mission-cycle.txt`, supervises that cycle through
+the same dispatch watchdog, and then ignores the model's final wording when deciding what happens
+next. Persistent Mission Mandate state is authoritative: an `active` mission launches another
+cycle, while only `completed`, a Reserved human gate, deadline/blocker state, bounded cycle failure,
+or bounded repeated no-progress can stop the runner. This deliberately keeps individual Codex tasks
+small and replaceable while the Clarity mission may span many tasks and many hours.
+
+Runner state also lives under the mission runtime directory. It persists cycle count, consecutive
+no-progress count, retry budget, last exit, and lifecycle status so a restarted runner cannot forget
+its safety limits. Only one runner may own a mission at a time.
+
 `authority.sh` consumes the machine-readable `clarity-authority` block in `00-ai-context.md`.
 Unknown reversible local actions default to Delegated; unknown externally consequential actions
 default to Orchestrator Escalation. Production, irreversible, credential/permission, and economic
@@ -285,4 +297,4 @@ project documentation should contain only the resulting stable execution rules.
 
 ---
 
-*Clarity Framework v4.3.2 – AI Usage Guide*
+*Clarity Framework v4.3.3 – AI Usage Guide*
