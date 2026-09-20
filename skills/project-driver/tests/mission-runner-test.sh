@@ -50,6 +50,11 @@ if [ "${CLARITY_MISSION_COMPLETION_AUDIT:-0}" = 1 ]; then
     complete-on-second|retry-once)
       bash "${CLARITY_TEST_MISSION_CONTROL:?}" confirm-completion         --result complete --reason 'independent audit confirms mission scope' >/dev/null
       ;;
+    audit-crash)
+      bash "${CLARITY_TEST_MISSION_CONTROL:?}" confirm-completion         --result complete --reason 'audit claims complete before crashing' >/dev/null
+      exit_code=7
+      failure_class=unknown
+      ;;
     premature-completion)
       if [ "$count" -eq 2 ]; then
         bash "${CLARITY_TEST_MISSION_CONTROL:?}" confirm-completion           --result continue --reason 'remaining application work exists' >/dev/null
@@ -83,6 +88,9 @@ else
         git -c user.name=test -c user.email=test@example.invalid commit -m remaining-work >/dev/null
         bash "${CLARITY_TEST_MISSION_CONTROL:?}" checkpoint           --project-complete yes --ready-work no --recoverable no >/dev/null
       fi
+      ;;
+    audit-crash)
+      bash "${CLARITY_TEST_MISSION_CONTROL:?}" checkpoint           --project-complete yes --ready-work no --recoverable no >/dev/null
       ;;
     stagnant)
       ;;
@@ -296,5 +304,53 @@ while kill -0 "$runner_pid" 2>/dev/null && [ "$attempt" -lt 100 ]; do
   sleep 0.05
 done
 unset CLARITY_TEST_DELAY
+
+# 8. A completion audit that records "complete" but exits non-zero cannot finalize the mission.
+REPO8="$TEST_ROOT/repo8"
+new_repo "$REPO8"
+export CLARITY_MISSION_DIR="$TEST_ROOT/state8"
+export CLARITY_TEST_CYCLE_COUNT_FILE="$TEST_ROOT/cycles8"
+export CLARITY_TEST_MODE=audit-crash
+set +e
+out=$(
+  cd "$REPO8"
+  bash "$RUNNER" --goal 'Audit must finish cleanly' --max-cycles 4 --poll-seconds 1
+)
+rc=$?
+set -e
+test "$rc" -eq 33
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
+printf '%s\n' "$out" | grep -F 'decision=STOP_CYCLE_FAILURE' >/dev/null
+
+# 9. An open gate from a replaced mission is ignored by the new mission.
+REPO9="$TEST_ROOT/repo9"
+new_repo "$REPO9"
+export CLARITY_MISSION_DIR="$TEST_ROOT/state9"
+export CLARITY_TEST_CYCLE_COUNT_FILE="$TEST_ROOT/cycles9"
+export CLARITY_TEST_MODE=stagnant
+bash "$MISSION" start --goal 'Old mission' --mode until-complete >/dev/null
+old_mission=$(awk -F '\t' '$1=="id"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")
+mkdir -p "$CLARITY_MISSION_DIR/gates"
+cat > "$CLARITY_MISSION_DIR/gates/HG-old.tsv" <<EOF
+id	HG-old
+status	open
+action	production.deploy
+impact	production
+mission_id	$old_mission
+EOF
+bash "$MISSION" start --replace --goal 'New mission' --mode until-complete >/dev/null
+set +e
+out=$(
+  cd "$REPO9"
+  bash "$RUNNER" --max-cycles 1 --poll-seconds 1
+)
+rc=$?
+set -e
+test "$rc" -eq 31
+test "$(cat "$TEST_ROOT/cycles9")" = 1
+if printf '%s\n' "$out" | grep -F 'decision=HUMAN_GATE' >/dev/null; then
+  printf '%s\n' 'mission-runner-test: stale gate stopped replacement mission' >&2
+  exit 1
+fi
 
 printf '%s\n' 'mission-runner-test: ok'
