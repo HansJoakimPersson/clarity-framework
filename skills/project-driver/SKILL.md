@@ -328,7 +328,7 @@ backlog/story state, repository, and required verification. That audit must acti
 remaining in-scope work. It records a provisional result with
 `confirm-completion --result complete` or `--result continue`; it does **not** change the terminal
 mission status itself. Only after that audit Codex process exits successfully does Mission Runner call
-`finalize-completion-audit` with its runner-only finalize capability for the same cycle and apply the result. A crashing audit can therefore
+`finalize-completion-audit` for the same cycle and apply the result. Finalize transitions additionally verify that their direct caller is the process currently recorded in the mission runner lock; a worker cannot self-finalize by copying the runner environment flags. A crashing audit can therefore
 never leave the mission falsely completed. An execution cycle cannot confirm its own completion claim.
 
 There is deliberately **no** state transition named `ASK_TO_CONTINUE`.

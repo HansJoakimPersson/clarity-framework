@@ -109,7 +109,9 @@ tag, so an untagged heading here is a version no project can reach.
 - A work cycle can no longer mark the whole mission complete after one locally successful increment.
   Its completion claim must survive a separate whole-mission audit.
 - A completion audit that records `complete` and then crashes cannot leave persistent state falsely
-  completed; audit results are applied only after clean cycle exit.
+  completed; audit results are applied only after clean cycle exit. Finalize transitions also require
+  the direct caller PID to own the active mission runner lock, so a worker cannot self-finalize by
+  copying runner environment flags.
 - Stale runner locks and open human gates from replaced missions can no longer satisfy or stop the
   current mission. Runner readiness is published atomically and bound to the active Mission ID.
 - Runner-owned state mutations are now rejected when `CLARITY_MISSION_ID` does not match the active
