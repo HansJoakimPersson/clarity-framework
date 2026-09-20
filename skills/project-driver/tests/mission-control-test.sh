@@ -92,6 +92,9 @@ test "$rc" -eq 2
 export CLARITY_MISSION_COMPLETION_AUDIT=1
 export CLARITY_MISSION_CYCLE=0002
 out=$(bash "$MISSION" confirm-completion --result continue --reason 'FR-002 is still incomplete')
+printf '%s\n' "$out" | grep -F 'decision=AUDIT_RECORDED' >/dev/null
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
+out=$(bash "$MISSION" finalize-completion-audit --cycle 0002)
 printf '%s\n' "$out" | grep -F 'decision=CONTINUE_AFTER_AUDIT' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
 
@@ -102,6 +105,9 @@ printf '%s\n' "$out" | grep -F 'decision=COMPLETION_PENDING' >/dev/null
 export CLARITY_MISSION_COMPLETION_AUDIT=1
 export CLARITY_MISSION_CYCLE=0004
 out=$(bash "$MISSION" confirm-completion --result complete --reason 'all mission scope verified')
+printf '%s\n' "$out" | grep -F 'decision=AUDIT_RECORDED' >/dev/null
+test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
+out=$(bash "$MISSION" finalize-completion-audit --cycle 0004)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETE_CONFIRMED' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completed
 unset CLARITY_MISSION_CYCLE CLARITY_MISSION_COMPLETION_AUDIT
