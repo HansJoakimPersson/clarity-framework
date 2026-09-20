@@ -36,6 +36,7 @@ POLL_SECONDS=${CLARITY_MISSION_POLL_SECONDS:-20}
 HEALTH_GRACE_SECONDS=${CLARITY_MISSION_HEALTH_GRACE_SECONDS:-10}
 NETWORK=0
 BACKGROUND=0
+ENSURE_RUNNING=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -54,6 +55,7 @@ while [ "$#" -gt 0 ]; do
     --poll-seconds) POLL_SECONDS="${2:-}"; shift 2 ;;
     --network) NETWORK=1; shift ;;
     --background) BACKGROUND=1; shift ;;
+    --ensure-running) ENSURE_RUNNING=1; BACKGROUND=1; shift ;;
     *) die "mission-runner.sh: unknown argument '$1'" ;;
   esac
 done
@@ -164,17 +166,49 @@ ledger_value() {
   ' "$file"
 }
 
+live_runner_pid() {
+  [ -r "$LOCK_DIR/pid" ] || return 1
+  pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || true)
+  case "$pid" in ''|*[!0-9]*) return 1 ;; esac
+  kill -0 "$pid" 2>/dev/null || return 1
+  printf '%s\n' "$pid"
+}
+
+if [ "$ENSURE_RUNNING" -eq 1 ]; then
+  mkdir -p -- "$STATE_ROOT"
+  if pid=$(live_runner_pid); then
+    printf 'MISSION_RUNNER decision=ALREADY_RUNNING pid=%s log=%s\n' "$pid" "$STATE_ROOT/mission-runner.log"
+    exit 0
+  fi
+fi
+
 if [ "$BACKGROUND" -eq 1 ]; then
   mkdir -p -- "$STATE_ROOT"
   bg_log="$STATE_ROOT/mission-runner.log"
   filtered=()
-  skip=0
   for arg in "${ORIGINAL_ARGS[@]}"; do
-    if [ "$arg" = --background ]; then continue; fi
+    case "$arg" in
+      --background|--ensure-running) continue ;;
+    esac
     filtered+=("$arg")
   done
   nohup bash "$0" "${filtered[@]}" > "$bg_log" 2>&1 < /dev/null &
   bg_pid=$!
+
+  if [ "$ENSURE_RUNNING" -eq 1 ]; then
+    attempt=0
+    while [ "$attempt" -lt 50 ]; do
+      attempt=$((attempt + 1))
+      if pid=$(live_runner_pid); then
+        printf 'MISSION_RUNNER decision=RUNNING pid=%s launcher_pid=%s log=%s\n' "$pid" "$bg_pid" "$bg_log"
+        exit 0
+      fi
+      sleep 0.1
+    done
+    printf 'MISSION_RUNNER decision=START_FAILED launcher_pid=%s log=%s\n' "$bg_pid" "$bg_log" >&2
+    exit 36
+  fi
+
   printf 'MISSION_RUNNER started pid=%s log=%s\n' "$bg_pid" "$bg_log"
   exit 0
 fi
