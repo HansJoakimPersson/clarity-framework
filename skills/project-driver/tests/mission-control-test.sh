@@ -77,6 +77,17 @@ printf '%s\n' "$out" | grep -F 'decision=STARTED' >/dev/null
 export CLARITY_MISSION_CYCLE=0001
 mission_id=$(awk -F '\t' '$1=="id"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")
 export CLARITY_MISSION_ID="$mission_id"
+runner_owner_pid=$BASHPID
+mkdir -p "$CLARITY_MISSION_DIR/runner.lock"
+printf '%s\n' "$runner_owner_pid" > "$CLARITY_MISSION_DIR/runner.lock/pid"
+printf 'mission_id\t%s\n' "$mission_id" > "$CLARITY_MISSION_DIR/runner.lock/owner.tsv"
+
+runner_finalize() {
+  runner_finalize_out="$TEST_ROOT/runner-finalize.out"
+  CLARITY_MISSION_RUNNER_FINALIZE=1 CLARITY_MISSION_RUNNER_PID="$runner_owner_pid"     bash "$MISSION" "$@" >"$runner_finalize_out" 2>&1
+  out=$(cat "$runner_finalize_out")
+}
+
 out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETION_REQUESTED' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
@@ -89,7 +100,16 @@ set -e
 test "$rc" -eq 2
 printf '%s\n' "$out" | grep -F 'only Mission Runner may finalize' >/dev/null
 
-out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 bash "$MISSION" finalize-completion-request --cycle 0001)
+# Even a worker that copies the finalize flag/PID cannot finalize through a child shell: its direct
+# parent is not the runner owner recorded in runner.lock.
+set +e
+out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 CLARITY_MISSION_RUNNER_PID="$runner_owner_pid"   bash "$MISSION" finalize-completion-request --cycle 0001 2>&1)
+rc=$?
+set -e
+test "$rc" -eq 2
+printf '%s\n' "$out" | grep -F 'is not the runner owner' >/dev/null
+
+runner_finalize finalize-completion-request --cycle 0001
 printf '%s\n' "$out" | grep -F 'decision=COMPLETION_PENDING' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
 
@@ -121,7 +141,7 @@ set -e
 test "$rc" -eq 2
 printf '%s\n' "$out" | grep -F 'only Mission Runner may finalize' >/dev/null
 
-out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 bash "$MISSION" finalize-completion-audit --cycle 0002)
+runner_finalize finalize-completion-audit --cycle 0002
 printf '%s\n' "$out" | grep -F 'decision=CONTINUE_AFTER_AUDIT' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = active
 
@@ -129,16 +149,17 @@ unset CLARITY_MISSION_COMPLETION_AUDIT
 export CLARITY_MISSION_CYCLE=0003
 out=$(bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no)
 printf '%s\n' "$out" | grep -F 'decision=COMPLETION_REQUESTED' >/dev/null
-out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 bash "$MISSION" finalize-completion-request --cycle 0003)
+runner_finalize finalize-completion-request --cycle 0003
 printf '%s\n' "$out" | grep -F 'decision=COMPLETION_PENDING' >/dev/null
 export CLARITY_MISSION_COMPLETION_AUDIT=1
 export CLARITY_MISSION_CYCLE=0004
 out=$(bash "$MISSION" confirm-completion --result complete --reason 'all mission scope verified')
 printf '%s\n' "$out" | grep -F 'decision=AUDIT_RECORDED' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completion-pending
-out=$(CLARITY_MISSION_RUNNER_FINALIZE=1 bash "$MISSION" finalize-completion-audit --cycle 0004)
+runner_finalize finalize-completion-audit --cycle 0004
 printf '%s\n' "$out" | grep -F 'decision=COMPLETE_CONFIRMED' >/dev/null
 test "$(awk -F '\t' '$1=="status"{print $2}' "$CLARITY_MISSION_DIR/active.tsv")" = completed
+rm -rf "$CLARITY_MISSION_DIR/runner.lock"
 unset CLARITY_MISSION_CYCLE CLARITY_MISSION_COMPLETION_AUDIT CLARITY_MISSION_ID
 
 # A stale runner-owned cycle cannot mutate a replacement mission.
