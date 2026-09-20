@@ -381,4 +381,4 @@ while the work is still in progress.
 
 *Next step: Start the SAD draft based on these requirements, with particular focus on the NFRs.*
 
-*Clarity Framework v4.3.2 – Requirements Documentation*
+*Clarity Framework v4.3.3 – Requirements Documentation*
