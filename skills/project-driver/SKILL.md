@@ -46,9 +46,13 @@ Use `until-complete-or-deadline --deadline-epoch <unix-seconds>` when the user s
 deadline. A vague "overnight" without a concrete end time means continue toward completion; do not
 invent a clock time just to create a stop.
 
-If an active mission already exists, `start` returns `decision=RESUME`. Resume it rather than
-re-negotiating its mandate. Replace an active mission only when the user clearly gives a new mission,
-using `--replace`.
+If an active or completion-pending mission already exists with the same goal, `start` returns
+`decision=RESUME`. Resume it rather than re-negotiating its mandate. A different supplied goal
+returns `GOAL_CONFLICT` instead of silently reusing the old mission. Replace an active mission only
+when the user clearly gives a new mission, using `--replace`.
+
+Runner ownership, human gates, and completion requests are mission-ID scoped. State from an older
+mission must never satisfy the current mission's runner/gate checks.
 
 The mandate has higher priority than skill-level supervision defaults. While it is active,
 `human_gate_policy=reserved-only`: routine commits, local integration, retries, debugging,
@@ -110,8 +114,12 @@ Implementation policy.
 does the next ready increment/wave, persists state, and may then return a normal Codex final answer.
 The runner ignores that answer for lifecycle control. It reads Mission Mandate state instead:
 
-- `active` → launch another fresh Codex cycle;
-- `completed` → stop successfully;
+- `active` → launch another fresh Codex execution cycle;
+- `completion-pending` → launch a **fresh independent completion-audit cycle** using
+  `prompts/mission-completion-audit.txt`; the execution cycle that requested completion cannot
+  confirm its own conclusion;
+- `completed` → stop successfully only after the completion audit confirmed the whole Mission
+  Mandate;
 - open `HUMAN_GATE` → stop for that Reserved decision;
 - `blocked` / deadline reached → stop with the recorded reason.
 
@@ -296,7 +304,8 @@ Possible decisions:
 | Decision | Required behavior |
 | --- | --- |
 | `CONTINUE` | **Continue immediately.** This is a positive obligation, not permission to ask the user whether to proceed. |
-| `COMPLETE` | Finish the mission and report the outcome. |
+| `COMPLETION_PENDING` | The execution cycle has proposed that the mission is complete. Return control to Mission Runner; a fresh completion-audit cycle must verify the entire mission before `completed` is allowed. |
+| `COMPLETE` / `COMPLETE_CONFIRMED` | Finish the mission only after the state machine/audit has established completion. |
 | `HUMAN_GATE` | Ask only the already-issued Reserved gate question. |
 | `STOP_DEADLINE` | Stop because the explicit deadline was reached; report state, do not ask for routine approval. |
 | `STOP_BLOCKED` | Stop because no ready or recoverable work exists; report the concrete blocker. It is not automatically an approval request. |
@@ -306,11 +315,21 @@ execution budget. A supervised timeout is recoverable only while a clean-worktre
 Use `--recoverable yes` while a Delegated recovery path exists; never use it to justify waiting on
 a stale/lost dispatcher.
 
-Mark completion only when the requested mission outcome is actually complete:
+When a runner-owned execution cycle believes the requested mission outcome is complete, it may only
+**request** completion:
 
 ```bash
 bash "$MISSION" checkpoint --project-complete yes --ready-work no --recoverable no
 ```
+
+For a runner-owned cycle this produces `COMPLETION_PENDING`, not `completed`. Mission Runner then
+launches a fresh completion-audit Codex task that reads the original mission goal, requirements,
+backlog/story state, repository, and required verification. That audit must actively search for
+remaining in-scope work. It records a provisional result with
+`confirm-completion --result complete` or `--result continue`; it does **not** change the terminal
+mission status itself. Only after that audit Codex process exits successfully does Mission Runner call
+`finalize-completion-audit` for the same cycle and apply the result. A crashing audit can therefore
+never leave the mission falsely completed. An execution cycle cannot confirm its own completion claim.
 
 There is deliberately **no** state transition named `ASK_TO_CONTINUE`.
 

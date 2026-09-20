@@ -11,7 +11,7 @@ governed by documented decisions, verification gates, and human accountability.
 
 **Three core principles:** Just enough documentation · Documentation as code · Clarity over completeness
 
-**Current version:** 4.3.4
+**Current version:** 4.3.5
 
 **Repository structure:**
 
@@ -44,7 +44,7 @@ the version markers were not updated, or a shipped script changed without its re
 run. Every change increments the version in the same commit; `docs` and `chore` changes do not
 increment it.
 
-The repository ships ten executable regression tests. Run all of them when any `*.sh` under
+The repository ships eleven executable regression tests. Run all of them when any `*.sh` under
 `skills/` or `framework/scripts/` changes:
 
 ```bash
@@ -54,6 +54,7 @@ bash skills/project-driver/tests/authority-test.sh
 bash skills/project-driver/tests/mission-control-test.sh
 bash skills/project-driver/tests/mission-runner-test.sh
 bash skills/framework-update/tests/check-update-scope-test.sh
+bash skills/framework-update/tests/verify-managed-runtime-test.sh
 bash skills/framework-update/tests/render-update-commit-test.sh
 bash framework/scripts/tests/check-version-consistency-test.sh
 bash framework/scripts/tests/check-context-budgets-test.sh
@@ -136,4 +137,4 @@ The tag is the only source read by `skills/framework-update/`. A project never u
 
 ---
 
-*Clarity Framework v4.3.4*
+*Clarity Framework v4.3.5*

@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v4.3.4 |
+| **Framework version** | Clarity Framework v4.3.5 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -185,8 +185,9 @@ fresh orchestrator-owned worktree created from the same baseline.]
 **Mission Runner:** [mandatory for multi-increment continuation mandates; the interactive
 project-driver invocation must call `--ensure-running` before implementation. Default orchestrator
 profile `cli:codex`; maximum cycles `100`; maximum consecutive no-progress cycles `2`; retryable
-outer cycle restarts `1`. A Codex task final answer never declares mission completion; persistent
-mission state controls the next cycle.]
+outer cycle restarts `1`. A work-cycle final answer never declares mission completion. A
+`completion-pending` request must be checked by a fresh independent completion-audit cycle before
+persistent state may become `completed`.]
 
 **Default gate profile:** [semi-automatic (default) / interactive / unattended — supervision/reporting
 level for standalone `plan-driven-build`. During an active project-driver mission, the mission mandate
@@ -242,4 +243,4 @@ unknown_external=escalation
 
 ---
 
-*Clarity Framework v4.3.4 – AI Context Document*
+*Clarity Framework v4.3.5 – AI Context Document*

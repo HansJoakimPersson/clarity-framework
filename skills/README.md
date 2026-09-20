@@ -85,7 +85,8 @@ framework update.
 | `scripts/mission-control.sh` | Persists mission state, continuation checkpoints, deadlines, and human-gate tokens |
 | `scripts/mission-runner.sh` | External lifecycle loop that chains disposable Codex tasks until persistent mission state reaches a real stop |
 | `scripts/authority.sh` | Resolves actions as Delegated, Orchestrator Escalation, or Reserved HUMAN_GATE |
-| `prompts/mission-cycle.txt` | Bounded instruction for one disposable Codex project-driver cycle; its final answer never controls mission completion |
+| `prompts/mission-cycle.txt` | Bounded instruction for one disposable Codex project-driver work cycle; its final answer never controls mission completion |
+| `prompts/mission-completion-audit.txt` | Fresh independent audit that either confirms the whole Mission Mandate or reopens it for more work |
 | `tests/authority-test.sh` | Regression test for policy/default authority classification |
 | `tests/mission-control-test.sh` | Regression test that successful increments continue and only Reserved actions create human gates |
 | `tests/mission-runner-test.sh` | Regression test for multi-cycle continuation, stagnation bounds, retryable cycle failures, and Reserved gate stops |
@@ -150,4 +151,4 @@ blindly.
 
 ---
 
-*Clarity Framework v4.3.4*
+*Clarity Framework v4.3.5*

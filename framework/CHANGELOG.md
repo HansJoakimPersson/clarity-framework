@@ -40,6 +40,11 @@ tag, so an untagged heading here is a version no project can reach.
 - Runner-owned Codex cycles receive explicit `CLARITY_MISSION_CYCLE` / `CLARITY_MISSION_ID`
   environment markers, and regression coverage now includes the concrete early-stop pattern where a
   cycle says its current part is done and names remaining work while the mission remains active.
+- `project-driver` now ships `prompts/mission-completion-audit.txt`. A fresh independent Codex
+  cycle audits the original Mission Mandate before completion may be finalized.
+- `framework-update` now ships `verify-managed-runtime.sh` and a regression fixture that proves
+  updated projects receive the complete managed runtime payload in both runtime roots and can run
+  the installed project-driver/dispatch regressions after update.
 
 ### Changed
 
@@ -72,6 +77,12 @@ tag, so an untagged heading here is a version no project can reach.
   implementation increment**. The interactive project-driver session persists/resumes the mission,
   calls `--ensure-running`, and hands off; it may not silently fall back to executing one increment
   itself. Runner-owned cycles are the only sessions that continue into the delivery loop.
+- Mission completion is now two-phase. A work cycle can only move the mission to
+  `completion-pending`; a separate completion-audit cycle records a provisional result, and Mission
+  Runner applies that result only after the audit process exits successfully.
+- Runner ownership and human gates are mission-ID scoped. A same-goal mission resumes, a different
+  supplied goal returns `GOAL_CONFLICT`, and replacement missions do not inherit old runner/gate
+  authority.
 
 ### Fixed
 
@@ -93,6 +104,12 @@ tag, so an untagged heading here is a version no project can reach.
 - Runner-owned cycle reports are explicitly machine-facing and may not address the human with
   "next step", "remaining work", or an invitation to continue; those phrases cannot substitute for
   persistent Mission continuation.
+- A work cycle can no longer mark the whole mission complete after one locally successful increment.
+  Its completion claim must survive a separate whole-mission audit.
+- A completion audit that records `complete` and then crashes cannot leave persistent state falsely
+  completed; audit results are applied only after clean cycle exit.
+- Stale runner locks and open human gates from replaced missions can no longer satisfy or stop the
+  current mission. Runner readiness is published atomically and bound to the active Mission ID.
 
 ## [4.3.0] – 2026-09-18
 

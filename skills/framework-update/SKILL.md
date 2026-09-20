@@ -114,6 +114,12 @@ ignored by Git. A matching version marker alone is not proof of a complete updat
 - For each managed skill still shipped by the target release, replace both exact runtime directories
   from `$TMP/cf/skills/<name>/`; remove stale files inside those two directories first.
 - Verify each runtime pair with `diff -qr`.
+- `project-driver` has a hard runtime dependency on `plan-driven-build`. If `project-driver` is
+  managed but `plan-driven-build` is not, stop as an ownership/runtime Escalation rather than
+  installing an undeclared dependency or leaving a runner that cannot dispatch.
+- A managed `project-driver` replacement includes its complete nested runtime payload — scripts,
+  prompts, and tests. Never copy only `SKILL.md`; the Mission Runner, completion-audit prompt,
+  authority resolver, and mission controller are part of the managed skill.
 - Ensure `CLAUDE.md` contains exactly `@AGENTS.md`, migrating existing project rules first.
 - Narrow `.gitignore` only when required to keep managed runtime copies versioned; preserve ignores
   for local settings, caches, credentials, and machine-only state.
@@ -209,6 +215,26 @@ Before committing, verify:
 - all active standard framework markers equal `$NEW_VERSION`;
 - no source/build/test/application path was modified by this run;
 - unrelated pre-existing staged paths remain staged but outside `UPDATE_PATHS`.
+
+Then re-read the final managed-skill list from the updated AI Context and run the target release's
+runtime verifier against the **installed** copies:
+
+```bash
+FINAL_MANAGED_SKILLS=''
+if [ -r docs/00-ai-context.md ]; then
+  FINAL_MANAGED_SKILLS=$(sed -n 's/^skills:[[:space:]]*//p' docs/00-ai-context.md     | head -1 | tr -d '[:space:]')
+fi
+
+bash "$TARGET_UPDATE_SKILLDIR/scripts/verify-managed-runtime.sh"   --target-root "$TMP/cf"   --managed-skills "$FINAL_MANAGED_SKILLS"   --smoke yes
+```
+
+This verification is release-critical, not optional. For a managed `project-driver` it proves that
+both runtime roots contain the target release's exact Mission Runner, mandatory handoff rules,
+completion-audit prompt, mission controller, authority resolver, and the supervised
+`plan-driven-build` dependency. It also runs the installed runtime's regression tests, including
+multi-cycle continuation, rejection of premature mission completion, mission-bound runner/gate
+ownership, and dispatch watchdog recovery. A successful version stamp without this runtime
+verification is an incomplete framework update.
 
 Generate the exact commit script **after stamping** with the target release renderer:
 

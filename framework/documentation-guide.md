@@ -1,6 +1,6 @@
 # The Clarity Framework Documentation Guide
 
-## Clarity Framework v4.3.4
+## Clarity Framework v4.3.5
 
 Documentation should make decisions easier, not create bureaucracy. Use the smallest coherent set of
 documents that lets the people and agents working on the product make safe, consistent decisions.
@@ -297,4 +297,4 @@ review, and branch-closeout rules across workflows.
 
 ---
 
-*Clarity Framework v4.3.4 – Documentation Guide*
+*Clarity Framework v4.3.5 – Documentation Guide*
