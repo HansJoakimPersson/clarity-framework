@@ -58,23 +58,53 @@ checkpoints merely because another skill or starter contains older "ask first" w
 ### External Mission Runner
 
 A single Codex `exec` task is not the mission lifecycle. Codex may legitimately end one task after
-one increment or wave. For long-running or unattended work, move continuation outside the model:
+one increment or wave, so a continuation mandate **must not be owned by the interactive model
+session**.
+
+For every active continuation mandate, run this handoff **before selecting or implementing the first
+increment**:
 
 ```bash
 RUNNER="$PROJECT_DRIVER_DIR/scripts/mission-runner.sh"
 
-# Start a long mission in the foreground:
-bash "$RUNNER" --goal "<user outcome>"
-
-# Or detach the runner from the interactive Codex session:
-bash "$RUNNER" --goal "<user outcome>" --background
+if [ -n "${CLARITY_MISSION_CYCLE:-}" ]; then
+  printf 'MISSION_RUNNER cycle-owned id=%s\n' "$CLARITY_MISSION_CYCLE"
+else
+  bash "$RUNNER" --ensure-running
+fi
 ```
 
-To resume an already-active mission, omit `--goal`. The runner defaults to the logged-in Codex CLI
-through `--profile cli:codex`; pass an aimux profile or pool with `--profile` when a different
-subscription should own the orchestrator cycles. Optional `--model` and
-`--reasoning-effort` pin those cycle-level choices without changing the inner Implementation
-policy.
+Interpret it mechanically:
+
+- If `CLARITY_MISSION_CYCLE` is set, this Codex process is already a disposable runner-owned cycle:
+  continue with Step 0 and execute the next ready increment/wave.
+- Otherwise, `--ensure-running` must return `RUNNING` or `ALREADY_RUNNING`. The interactive
+  invocation then **hands off and does not implement an increment itself**. Its only useful output is
+  that the persisted mission is now owned by the external runner. Do not produce a faux completion
+  summary and do not list "next steps" for the human.
+- A failed `--ensure-running` is an environment blocker. Do not silently fall back to a single
+  interactive Codex task, because that recreates the exact early-stop failure this mechanism exists
+  to prevent.
+
+`--ensure-running` is idempotent. If a runner already owns the mission it returns
+`ALREADY_RUNNING`; otherwise it starts one detached from the interactive Codex session and waits
+until the runner lock proves ownership. This also prevents a runner-owned cycle from recursively
+starting another runner.
+
+For manual administration, the runner may still be started directly:
+
+```bash
+# Foreground:
+bash "$RUNNER"
+
+# Detached:
+bash "$RUNNER" --background
+```
+
+The runner defaults to the logged-in Codex CLI through `--profile cli:codex`; pass an aimux profile
+or pool with `--profile` when a different subscription should own the orchestrator cycles. Optional
+`--model` and `--reasoning-effort` pin those cycle-level choices without changing the inner
+Implementation policy.
 
 `mission-runner.sh` launches **disposable Codex work cycles**. Each cycle invokes project-driver,
 does the next ready increment/wave, persists state, and may then return a normal Codex final answer.

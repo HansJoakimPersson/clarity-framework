@@ -234,4 +234,4 @@ Apply when Java serves or packages a browser frontend.
 
 ---
 
-*Clarity Framework v4.3.3 - Java Application Agent Starter*
+*Clarity Framework v4.3.4 - Java Application Agent Starter*

@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 4.3.3 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 4.3.4 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -195,8 +195,13 @@ increment therefore transitions directly to the next ready increment; there is n
 "should I continue?" transition. Mission state is local under `docs/plans/.runs/`, so it survives
 long multi-increment runs without becoming project documentation.
 
-For genuinely long runs, `project-driver/scripts/mission-runner.sh` moves continuation outside the
-model. It launches one disposable Codex project-driver cycle at a time through the existing
+For a continuation mandate such as "build the whole app", "finish all remaining parts", or
+"continue until complete", `project-driver` now **must** hand lifecycle ownership to
+`scripts/mission-runner.sh` before it implements the first increment. The handoff is idempotent:
+`--ensure-running` returns `ALREADY_RUNNING` when a live runner already owns the mission, or starts
+one detached from the interactive Codex session and waits until its lock proves ownership.
+
+The runner launches one disposable Codex project-driver cycle at a time through the existing
 supervised dispatcher. A Codex final answer means only that the current cycle ended; the runner reads
 persistent Mission Mandate state to decide whether to launch the next fresh Codex task. Completion,
 Reserved gates, deadlines, blockers, cycle failures, and repeated no-progress cycles are therefore
@@ -255,4 +260,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v4.3.3*
+*Clarity Framework v4.3.4*

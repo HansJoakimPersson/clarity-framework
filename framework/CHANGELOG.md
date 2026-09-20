@@ -34,6 +34,12 @@ tag, so an untagged heading here is a version no project can reach.
 - Mission Runner regression coverage verifies multi-cycle continuation after a successful task exit,
   bounded repeated no-progress, one retryable outer-cycle restart, and an immediate stop before
   launching work when a Reserved human gate is already open.
+- `mission-runner.sh --ensure-running` provides an idempotent ownership handoff for continuation
+  mandates. It returns `ALREADY_RUNNING` for an existing live owner or starts a detached runner and
+  waits until the runner lock proves ownership before returning `RUNNING`.
+- Runner-owned Codex cycles receive explicit `CLARITY_MISSION_CYCLE` / `CLARITY_MISSION_ID`
+  environment markers, and regression coverage now includes the concrete early-stop pattern where a
+  cycle says its current part is done and names remaining work while the mission remains active.
 
 ### Changed
 
@@ -62,6 +68,10 @@ tag, so an untagged heading here is a version no project can reach.
   active project-driver mission, verification and closeout return a bounded result to the outer
   orchestrator rather than presenting one finished increment as completion of the user's whole
   request.
+- Multi-increment continuation mandates now require Mission Runner ownership **before the first
+  implementation increment**. The interactive project-driver session persists/resumes the mission,
+  calls `--ensure-running`, and hands off; it may not silently fall back to executing one increment
+  itself. Runner-owned cycles are the only sessions that continue into the delivery loop.
 
 ### Fixed
 
@@ -76,6 +86,13 @@ tag, so an untagged heading here is a version no project can reach.
 - A normal Codex final answer after one mergeable increment no longer terminates a long Mission
   Mandate. `mission-runner.sh` deliberately ignores model prose for lifecycle control and reads
   persistent Mission state instead.
+- The external Mission Runner is no longer merely optional guidance. Previously an interactive
+  project-driver could still implement the first increment itself, emit a polished completion
+  summary plus "remaining/next" work, and end the Codex task before the runner ever owned
+  continuation. Mandatory idempotent handoff closes that path.
+- Runner-owned cycle reports are explicitly machine-facing and may not address the human with
+  "next step", "remaining work", or an invitation to continue; those phrases cannot substitute for
+  persistent Mission continuation.
 
 ## [4.3.0] – 2026-09-18
 
