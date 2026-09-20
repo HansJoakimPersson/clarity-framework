@@ -276,16 +276,43 @@ case "$command" in
 
     mkdir -p -- "$STATE_ROOT"
     printf '%s\n' "$reason" > "$STATE_ROOT/completion-audit-reason.txt"
+    put_state completion_audit_result "$result"
     put_state completion_audited_epoch "$(date +%s)"
     put_state completion_audited_by_cycle "${CLARITY_MISSION_CYCLE:-audit}"
+    printf 'MISSION\tdecision=AUDIT_RECORDED\tid=%s\tresult=%s\tcycle=%s\n'       "$(get_state id)" "$result" "${CLARITY_MISSION_CYCLE:-audit}"
+    ;;
 
-    if [ "$result" = complete ]; then
-      put_state status completed
-      printf 'MISSION\tdecision=COMPLETE_CONFIRMED\tid=%s\n' "$(get_state id)"
-    else
-      put_state status active
-      printf 'MISSION\tdecision=CONTINUE_AFTER_AUDIT\tid=%s\n' "$(get_state id)"
-    fi
+  finalize-completion-audit)
+    [ -r "$STATE" ] || die 'mission-control.sh finalize-completion-audit: no mission state'
+    [ "$(get_state status)" = completion-pending ] ||
+      die "mission-control.sh finalize-completion-audit: mission is not completion-pending (status=$(get_state status))"
+
+    cycle=''
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --cycle) cycle="${2:-}"; shift 2 ;;
+        *) die "mission-control.sh finalize-completion-audit: unknown argument '$1'" ;;
+      esac
+    done
+    [ -n "$cycle" ] || die 'mission-control.sh finalize-completion-audit: --cycle is required'
+
+    audited_cycle=$(get_state completion_audited_by_cycle)
+    [ "$audited_cycle" = "$cycle" ] ||
+      die "mission-control.sh finalize-completion-audit: recorded audit belongs to cycle $audited_cycle, not $cycle"
+    result=$(get_state completion_audit_result)
+    case "$result" in
+      complete)
+        put_state status completed
+        printf 'MISSION\tdecision=COMPLETE_CONFIRMED\tid=%s\tcycle=%s\n' "$(get_state id)" "$cycle"
+        ;;
+      continue)
+        put_state status active
+        printf 'MISSION\tdecision=CONTINUE_AFTER_AUDIT\tid=%s\tcycle=%s\n' "$(get_state id)" "$cycle"
+        ;;
+      *)
+        die "mission-control.sh finalize-completion-audit: invalid recorded result '$result'"
+        ;;
+    esac
     ;;
 
   *)
