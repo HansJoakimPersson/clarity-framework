@@ -11,6 +11,20 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## [4.4.0] – Unreleased
+
+### Changed
+
+- `agents/java-application.md` (starter v1.3) restores concrete defaults that the 4.3.0 size
+  reduction had generalized away, while staying inside the 24 KiB starter budget: conditional
+  reading rules for `docs/02`–`04`, Google Java Style and SLF4J/Logback fallbacks, TDD scope,
+  Javadoc and completion-note expectations, Maven/Gradle command blocks with PMD static-analysis
+  gates, specific Lombok, Picocli CLI, REST status-code/error-format, Flyway/Testcontainers
+  persistence, dependency-risk, packaging, Spring Boot, and MCP transport/security/testing rules.
+- The Java starter's Web Frontend profile now distinguishes embedded from standalone run models,
+  names Playwright as the default browser-test framework, and gains an Accessibility Testing
+  subsection requiring `@axe-core/playwright` checks at WCAG 2.2 Level AA.
+
 ## [4.3.0] – 2026-09-18
 
 ### Added

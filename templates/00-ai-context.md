@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v4.3.0 |
+| **Framework version** | Clarity Framework v4.4.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -216,4 +216,4 @@ chooses to reserve it]
 
 ---
 
-*Clarity Framework v4.3.0 – AI Context Document*
+*Clarity Framework v4.4.0 – AI Context Document*

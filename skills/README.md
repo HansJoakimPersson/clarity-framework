@@ -132,4 +132,4 @@ blindly.
 
 ---
 
-*Clarity Framework v4.3.0*
+*Clarity Framework v4.4.0*
