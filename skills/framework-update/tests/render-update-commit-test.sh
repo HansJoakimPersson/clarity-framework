@@ -57,8 +57,8 @@ mkdir -p "$REPO/.agents/skills/framework-update" "$REPO/.claude/skills/framework
 printf 'new updater\n' > "$REPO/.agents/skills/framework-update/SKILL.md"
 printf 'new updater\n' > "$REPO/.claude/skills/framework-update/SKILL.md"
 printf '# Agent\n\n*Clarity Framework v4.3.0*\n' > "$REPO/AGENTS.md"
-sed -i 's/Clarity Framework v4\.2\.0/Clarity Framework v4.3.0/g' "$REPO/docs/00-ai-context.md"
-sed -i 's/Clarity Framework v4\.2\.0/Clarity Framework v4.3.0/g' "$REPO/docs/01-vision-scope.md"
+printf '# AI Context\n\n| **Framework version** | Clarity Framework v4.3.0 |\n\n*Clarity Framework v4.3.0*\n' > "$REPO/docs/00-ai-context.md"
+printf '# Scope\n\nProject prose.\n\n*Clarity Framework v4.3.0*\n' > "$REPO/docs/01-vision-scope.md"
 
 (
   cd "$REPO"

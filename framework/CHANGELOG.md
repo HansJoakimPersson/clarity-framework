@@ -11,6 +11,13 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## Unreleased
+
+### Fixed
+
+- `render-update-commit-test.sh` no longer uses GNU-only `sed -i` to stamp its fixture documents, so
+  the regression test also runs on macOS/BSD. Test-only change; shipped scripts are unaffected.
+
 ## [4.4.0] – 2026-10-12
 
 ### Added
