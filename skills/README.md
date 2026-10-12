@@ -38,8 +38,11 @@ answers a different question from the other Clarity documents:
 `clarity-bootstrap/`, `project-driver/`, `plan-driven-build/`, and `framework-update/` are
 multi-step workflows dispatched by name. `project-driver/` is the outer project loop: it turns
 documented intent into successive increments and invokes `plan-driven-build/` for each non-trivial
-one. `clarity-bootstrap/` sets up an unmanaged project, while `framework-update/` upgrades a
-managed one. `plan-driven-build/` is the execution engine that requires the second CLI noted above.
+one. `project-driver/` persists a Mission Mandate across increments and resumed sessions; its
+`scripts/mission-control.sh` continuation state machine and `scripts/authority.sh` approval
+firewall make "continue until complete" executable policy rather than conversational memory.
+`clarity-bootstrap/` sets up an unmanaged project, while `framework-update/` upgrades a managed
+one. `plan-driven-build/` is the execution engine that requires the second CLI noted above.
 
 The five discipline skills (`verification-before-completion/` through
 `finishing-a-development-branch/`) are single-file, self-contained, and apply to any task an agent
@@ -74,15 +77,31 @@ Step 2 concerns the machine, not the copied files. Project deviations belong in
 `docs/00-ai-context.md`; leave the copied files unchanged so they can be replaced at the next
 framework update.
 
+### What the files in `project-driver/` do
+
+| File | Role |
+| --- | --- |
+| `SKILL.md` | Outer delivery loop and Mission Mandate contract |
+| `scripts/mission-control.sh` | Persists mission state, continuation checkpoints, deadlines, and human-gate tokens |
+| `scripts/mission-runner.sh` | External lifecycle loop that chains disposable Codex tasks until persistent mission state reaches a real stop |
+| `scripts/authority.sh` | Resolves actions as Delegated, Orchestrator Escalation, or Reserved HUMAN_GATE |
+| `prompts/mission-cycle.txt` | Bounded instruction for one disposable Codex project-driver work cycle; its final answer never controls mission completion |
+| `prompts/mission-completion-audit.txt` | Fresh independent audit that either confirms the whole Mission Mandate or reopens it for more work |
+| `tests/authority-test.sh` | Regression test for policy/default authority classification |
+| `tests/mission-control-test.sh` | Regression test that successful increments continue and only Reserved actions create human gates |
+| `tests/mission-runner-test.sh` | Regression test for multi-cycle continuation, stagnation bounds, retryable cycle failures, and Reserved gate stops |
+
 ### What the files in `plan-driven-build/` do
 
 | File | Role |
 | --- | --- |
 | `SKILL.md` | The procedure; the only file the orchestrator reads when invoked |
 | `prompts/*.txt` | Instructions for dispatched agents, kept outside the orchestrator's context |
-| `dispatch.sh` | The only dispatch entry point; sets sandbox/approval, enforces execution policy, and records native usage |
+| `dispatch.sh` | Dispatch entry point; sets sandbox/approval, pins execution policy, starts supervised background jobs, and records native usage |
+| `background-supervisor.sh` | Owns a background worker, writes health heartbeats, detects no-progress and wall-clock timeouts, terminates the process tree, and always produces a classified completion sentinel |
+| `dispatch-health.sh` | Reads sentinel/health state mechanically as finished, healthy, stale, or lost without tailing the worker log |
 | `context-pack.sh` | Compiles exact plan references into the frozen bounded document context used by review/build/verification |
-| `tests/dispatch-test.sh` | Regression test for profile resolution, CLI flag ordering, telemetry, and failure sentinels |
+| `tests/dispatch-test.sh` | Regression test for profile resolution, CLI flag ordering, telemetry, sentinels, silent hangs, hard wall timeouts, and watchdog recovery |
 | `tests/context-pack-test.sh` | Regression test for heading extraction, byte ceilings, and cold-context rejection |
 | `plan-template.md` | The plan template, identical to `templates/plan.md` |
 | `journal-template.md` | The run journal template and handover state |

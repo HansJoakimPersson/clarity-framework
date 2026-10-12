@@ -13,8 +13,78 @@ tag, so an untagged heading here is a version no project can reach.
 
 ## [4.4.0] – 2026-10-12
 
+### Added
+
+- `project-driver` now ships `scripts/mission-control.sh`, which persists a Mission Mandate across
+  increments and resumed sessions, enforces mandatory continuation checkpoints, supports explicit
+  deadlines, and issues durable human-gate tokens only for Reserved actions.
+- `project-driver` now ships `scripts/authority.sh`, a central consequence-based resolver that
+  classifies actions as Delegated, Orchestrator Escalation, or Reserved `HUMAN_GATE`. Projects can
+  override named actions through the machine-readable `clarity-authority` block in
+  `docs/00-ai-context.md`.
+- Regression tests now cover authority classification, mission resume/continuation, deadline stops,
+  and the invariant that Escalations do not create human gates.
+- Background implementation dispatch now has an independent supervisor, atomic health heartbeat, a
+  mechanical health probe, no-progress stall detection, and a hard wall-clock ceiling. Regression
+  coverage includes a worker that never returns and a noisy worker that never finishes.
+- `project-driver` now ships `scripts/mission-runner.sh` and
+  `prompts/mission-cycle.txt`. The runner chains disposable supervised Codex `exec` tasks around
+  one persistent Mission Mandate, so one model task may finish after an increment without ending the
+  user's multi-increment mission.
+- Mission Runner regression coverage verifies multi-cycle continuation after a successful task exit,
+  bounded repeated no-progress, one retryable outer-cycle restart, and an immediate stop before
+  launching work when a Reserved human gate is already open.
+- `mission-runner.sh --ensure-running` provides an idempotent ownership handoff for continuation
+  mandates. It returns `ALREADY_RUNNING` for an existing live owner or starts a detached runner and
+  waits until the runner lock proves ownership before returning `RUNNING`.
+- Runner-owned Codex cycles receive explicit `CLARITY_MISSION_CYCLE` / `CLARITY_MISSION_ID`
+  environment markers, and regression coverage now includes the concrete early-stop pattern where a
+  cycle says its current part is done and names remaining work while the mission remains active.
+- `project-driver` now ships `prompts/mission-completion-audit.txt`. A fresh independent Codex
+  cycle audits the original Mission Mandate before completion may be finalized.
+- `framework-update` now ships `verify-managed-runtime.sh` and a regression fixture that proves
+  updated projects receive the complete managed runtime payload in both runtime roots and can run
+  the installed project-driver/dispatch regressions after update.
+
 ### Changed
 
+- An active Mission Mandate takes precedence over routine gate-profile pauses. Successful increments,
+  retries, debugging, replanning, commits, local worktree integration, and selection of the next
+  ready increment no longer become "should I continue?" approval checkpoints.
+- Escalation is now explicitly an orchestrator-routing class rather than a synonym for human
+  approval. `plan-driven-build` and `clarity-bootstrap` return Escalations to the outer
+  orchestrator during project-driven work; only Reserved consequences may cross the approval
+  firewall to the human.
+- Dirty working trees encountered during an active mission are isolated with clean worktrees when
+  safe instead of automatically becoming user decisions. Unsafe overlap is reported as a repository
+  blocker rather than a routine approval request.
+- Every non-trivial project-driver writing increment now uses an orchestrator-owned worktree as a
+  recovery boundary, including sequential work. A supervised timeout may receive one clean restart
+  from the same recorded baseline by default; the restart count is persisted in local run state so
+  resumed sessions cannot reset the recovery budget.
+- Dispatch liveness is fail-closed: stale or lost supervisor health is an environment failure rather
+  than an indefinitely healthy-running state. One blocked increment no longer prevents
+  project-driver from continuing independent ready Delegated work.
+- Long Mission Mandates no longer depend on one Codex session voluntarily staying alive. Persistent
+  runtime state now owns continuation: `active` launches another fresh Codex work cycle,
+  `completed` ends successfully, and Reserved gates, deadlines, blockers, cycle failures, or
+  bounded stagnation are explicit runner stop states.
+- `plan-driven-build` now distinguishes `INCREMENT_COMPLETE` from `MISSION_COMPLETE`. During an
+  active project-driver mission, verification and closeout return a bounded result to the outer
+  orchestrator rather than presenting one finished increment as completion of the user's whole
+  request.
+- Multi-increment continuation mandates now require Mission Runner ownership **before the first
+  implementation increment**. The interactive project-driver session persists/resumes the mission,
+  calls `--ensure-running`, and hands off; it may not silently fall back to executing one increment
+  itself. Runner-owned cycles are the only sessions that continue into the delivery loop.
+- Mission completion is now runner-finalized in both phases. A work cycle can only record a
+  provisional completion request while the mission remains `active`; Mission Runner promotes it to
+  `completion-pending` only after the work process exits successfully. A separate completion-audit
+  cycle then records a provisional result, which Mission Runner applies only after the audit process
+  exits successfully.
+- Runner ownership and human gates are mission-ID scoped. A same-goal mission resumes, a different
+  supplied goal returns `GOAL_CONFLICT`, and replacement missions do not inherit old runner/gate
+  authority.
 - `agents/java-application.md` (starter v1.3) restores concrete defaults that the 4.3.0 size
   reduction had generalized away, while staying inside the 24 KiB starter budget: conditional
   reading rules for `docs/02`–`04`, Google Java Style and SLF4J/Logback fallbacks, TDD scope,
@@ -24,6 +94,43 @@ tag, so an untagged heading here is a version no project can reach.
 - The Java starter's Web Frontend profile now distinguishes embedded from standalone run models,
   names Playwright as the default browser-test framework, and gains an Accessibility Testing
   subsection requiring `@axe-core/playwright` checks at WCAG 2.2 Level AA.
+
+### Fixed
+
+- Long project-driving instructions such as "build the whole app", "continue until it is finished",
+  or "keep going overnight" are no longer treated as conversational context that can be forgotten
+  after an increment. They become persisted execution mandates with no normal `ASK_TO_CONTINUE`
+  transition.
+- A background dispatcher can no longer leave the orchestrator believing a hung worker is healthy
+  for hours simply because no task notification or completion sentinel arrived. The supervisor
+  bounds both silence and total runtime, tears down the worker process tree parent-first to prevent
+  child-respawn races, and writes exit 124 with `timeout.stalled` or `timeout.wall`.
+- A normal Codex final answer after one mergeable increment no longer terminates a long Mission
+  Mandate. `mission-runner.sh` deliberately ignores model prose for lifecycle control and reads
+  persistent Mission state instead.
+- The external Mission Runner is no longer merely optional guidance. Previously an interactive
+  project-driver could still implement the first increment itself, emit a polished completion
+  summary plus "remaining/next" work, and end the Codex task before the runner ever owned
+  continuation. Mandatory idempotent handoff closes that path.
+- Runner-owned cycle reports are explicitly machine-facing and may not address the human with
+  "next step", "remaining work", or an invitation to continue; those phrases cannot substitute for
+  persistent Mission continuation.
+- A work cycle can no longer mark the whole mission complete after one locally successful increment.
+  Its completion claim must survive a separate whole-mission audit.
+- A completion audit that records `complete` and then crashes cannot leave persistent state falsely
+  completed; audit results are applied only after clean cycle exit. Finalize transitions also require
+  the direct caller PID to own the active mission runner lock, so a worker cannot self-finalize by
+  copying runner environment flags.
+- Stale runner locks and open human gates from replaced missions can no longer satisfy or stop the
+  current mission. Runner readiness is published atomically and bound to the active Mission ID.
+- Runner-owned state mutations are now rejected when `CLARITY_MISSION_ID` does not match the active
+  mission, so an in-flight cycle from a replaced mission cannot mutate its successor.
+- A failed work cycle can no longer leave a completion request that later advances to audit; only a
+  clean work-cycle exit allows Mission Runner to promote the request to `completion-pending`.
+- HUP/INT/TERM now request a graceful Mission Runner stop while ownership remains locked through the
+  current supervised cycle, preventing a second runner from starting while the first is still alive.
+- Managed runtime verification now fails when any target runtime file is ignored by Git, preventing
+  locally present nested scripts/prompts from disappearing on the next checkout.
 
 ## [4.3.0] – 2026-09-18
 

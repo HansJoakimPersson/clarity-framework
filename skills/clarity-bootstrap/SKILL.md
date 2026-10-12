@@ -47,11 +47,13 @@ Infer product, users, stack, UI/data/API/deployment/operations needs, team shape
 workflow needs from the user's project description, repository, manifests, and existing docs. Do not
 ask for a value merely because the template has a field.
 
-Ask one compact set of questions only for unresolved **Escalation** or **Reserved** decisions: choices
-whose reasonable alternatives materially change scope, externally visible behavior, security/privacy,
-cost, architecture, reversibility, or repository ownership. Ordinary implementation uncertainty is a
-Delegated decision: choose the least-consequential reversible option, record the assumption, and
-continue.
+Classify unresolved choices as Delegated, Escalation, or Reserved. Ordinary implementation
+uncertainty is Delegated: choose the least-consequential reversible option, record the assumption,
+and continue. During an active project-driver mission, Escalation is orchestrator work rather than a
+human approval category: resolve it from documented intent and evidence or return it to
+project-driver. Only a Reserved consequence may become a user-facing gate. In a standalone bootstrap
+with no active mission, ask one compact question only when the unresolved choice is genuinely
+material.
 
 When `GIT_STATE=none`, initialize Git by default because documentation-as-code requires history.
 Ask only when there is evidence that repository initialization itself could conflict with the user's
@@ -119,8 +121,10 @@ Record the inferred setup in the run report: product/stack assumptions, Git stat
 selected documents, starter, skills, merge targets, and any assumptions. Continue directly to apply
 it when every unresolved item is Delegated.
 
-Stop only when an unresolved Escalation or Reserved decision remains. Present that single material
-decision with the consequences of the realistic alternatives; do not turn the rest of the inferred
+Under an active project-driver mission, do not create a human checkpoint for Escalation; return the
+smallest material choice to the outer orchestrator. Stop for the human only when project-driver's
+authority firewall classifies the concrete action as Reserved and issues a human gate. In a
+standalone bootstrap, present at most one unresolved material decision and never turn the inferred
 setup into an approval checklist.
 
 ## Step 5 — Apply without losing existing work

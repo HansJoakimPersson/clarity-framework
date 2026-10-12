@@ -15,10 +15,11 @@
 | **Run journal** | `docs/plans/YYYY-MM-DD-short-name.run.md` (when an automated workflow is used) |
 
 > **Gate profile** controls supervision, not authority. `semi-automatic`, the default, executes
-> Delegated work end-to-end and stops only for Escalation or Reserved decisions. `interactive`
-> may also pause before commit or external integration when deliberate supervision is useful.
-> `unattended` executes every Delegated transition and reports only completion, failure, or a real
-> impact-gate decision. There is no universal merge gate. Check `docs/00-ai-context.md` for the
+> Delegated work end-to-end. `interactive` may add inspection pauses only for standalone runs.
+> During an active project-driver Mission Mandate, the mission's reserved-only human-gate policy
+> takes precedence: Escalations return to the orchestrator and only Reserved actions may stop for a
+> human. `unattended` executes every Delegated transition and reports only completion, failure, or
+> a real Reserved gate. There is no universal merge gate. Check `docs/00-ai-context.md` for the
 > project's authority contract and declared default.
 >
 > **Delivers** names the user stories this plan implements. Cite the IDs; never copy their
@@ -125,8 +126,9 @@
 - [ ] **RESERVED:** [Action the project explicitly keeps for a human]
 - [ ] Assume [X] and continue; record the assumption in the report
 
-> Resolve Delegated questions from project evidence and continue. Only Escalation and Reserved
-> questions stop the workflow.
+> Resolve Delegated questions from project evidence and continue. During an active Mission
+> Mandate, Escalation means "return to the orchestrator for resolution", not "ask the user". Only
+> Reserved items may become human gates, and only after project-driver issues a `HUMAN_GATE` token.
 
 ## Definition of Done
 

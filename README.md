@@ -54,7 +54,10 @@ clarity-framework/
 │   ├── clarity-bootstrap/           # Need-driven setup of a new or unmanaged project
 │   │   └── SKILL.md
 │   ├── project-driver/               # Outer loop: project intent → successive verified increments
-│   │   └── SKILL.md
+│   │   ├── SKILL.md                 # Mission Mandate and continuation contract
+│   │   ├── prompts/                 # One-cycle prompt for disposable Codex orchestrator tasks
+│   │   ├── scripts/                 # Authority, persistent mission state, and external Mission Runner
+│   │   └── tests/                   # Approval, continuation, and multi-cycle regression tests
 │   ├── framework-update/            # Upgrade framework-owned files without losing project content
 │   │   ├── SKILL.md
 │   │   ├── scripts/                 # Update-scope and commit-rendering helpers
@@ -62,7 +65,9 @@ clarity-framework/
 │   └── plan-driven-build/           # Governed planning, review, build, verification, and impact gates
 │       ├── SKILL.md                 # Orchestrator procedure
 │       ├── prompts/                 # Instructions for dispatched agents
-│       ├── dispatch.sh              # Bounded dispatch with sandbox, pinned models, rollout budgets, usage telemetry, and profile selection
+│       ├── dispatch.sh              # Bounded supervised dispatch with pinned execution policy
+│       ├── background-supervisor.sh # Heartbeat, stall/wall watchdog, process-tree teardown, and completion sentinel
+│       ├── dispatch-health.sh        # Mechanical finished/healthy/stale/lost liveness probe
 │       ├── context-pack.sh           # Builds the frozen bounded project-document context for a run
 │       ├── tests/                   # Dispatch and context-pack regression tests
 │       ├── plan-template.md         # Copy of templates/plan.md
@@ -179,14 +184,36 @@ Escalation/Reserved condition.
 ### Project-driven work
 
 When the user wants to describe the product and let the orchestrator drive delivery, install
-`skills/project-driver/` together with `skills/plan-driven-build/`. The project driver derives the
-next ready increment from the documented intent, runs it through the governed build workflow,
-integrates verified internal work, updates project state, and continues until the outcome is complete
-or a material Escalation/Reserved decision is reached.
+`skills/project-driver/` together with `skills/plan-driven-build/`. The project driver persists the
+user's instruction as a **Mission Mandate**, derives the next ready increment, runs it through the
+governed build workflow, integrates verified work, updates project state, and treats continuation as
+mandatory until completion, an explicit deadline, or a real stop condition.
 
+Its approval firewall separates Escalation from human approval: Escalations are resolved by the
+orchestrator first, while only Reserved actions can issue a `HUMAN_GATE` token. A successful
+increment therefore transitions directly to the next ready increment; there is no normal
+"should I continue?" transition. Mission state is local under `docs/plans/.runs/`, so it survives
+long multi-increment runs without becoming project documentation.
+
+For a continuation mandate such as "build the whole app", "finish all remaining parts", or
+"continue until complete", `project-driver` now **must** hand lifecycle ownership to
+`scripts/mission-runner.sh` before it implements the first increment. The handoff is idempotent:
+`--ensure-running` returns `ALREADY_RUNNING` when a live runner already owns the mission, or starts
+one detached from the interactive Codex session and waits until its lock proves ownership.
+
+The runner launches one disposable Codex project-driver cycle at a time through the existing
+supervised dispatcher. A Codex final answer means only that the current cycle ended; the runner reads
+persistent Mission Mandate state to decide whether to launch the next fresh Codex task. A work cycle may record a provisional completion request, but the mission stays `active` until that cycle exits successfully. Mission Runner then moves it to `completion-pending`. A separate fresh completion-audit cycle must verify the original mission goal, remaining in-scope work, and required
+verification before state may become `completed`. Reserved gates, deadlines, blockers, cycle
+failures, and repeated no-progress cycles are likewise runtime states rather than interpretations of
+model prose.
+
+Every non-trivial writing increment is isolated in an orchestrator-owned worktree, including
+sequential work. That isolation is also the self-healing boundary: a timed-out worker can be
+discarded and restarted once from the same recorded baseline without contaminating integrated work.
 Independent increments may run as a two-workflow wave when their dependency/write surfaces are
-disjoint. Workers use separate worktrees and do not synchronize live; integration is serialized and
-the orchestrator is the single writer for shared coordination documents.
+disjoint. Workers do not synchronize live; integration is serialized and the orchestrator is the
+single writer for shared coordination documents.
 
 ### Plan-driven work
 
@@ -194,7 +221,9 @@ For a non-trivial increment, install `skills/plan-driven-build/` in both runtime
 four-level runtime contract, separate aimux profiles where available, bounded reports, a committed run
 journal, and impact gates only for Escalation/Reserved decisions. Planning compiles exact document
 references into one frozen context pack (64 KiB default) reused by review/build/verification, while
-Codex dispatch ledgers capture native token usage. Routine commits, temporary branches/worktrees, and
+Codex dispatch ledgers capture native token usage. Background implementations are supervised with a
+health heartbeat, a no-progress stall ceiling, and a hard wall-clock ceiling; timeout recovery uses
+at most one clean-worktree restart by default. Routine commits, temporary branches/worktrees, and
 internal integration are Delegated by default.
 
 It requires a second AI CLI, because the orchestrator dispatches the work instead of doing it.
