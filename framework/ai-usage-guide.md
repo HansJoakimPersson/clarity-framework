@@ -53,7 +53,9 @@ product behavior remain the source of truth.
 ## 3. AI Context Document
 
 `templates/00-ai-context.md` is a compact project overview intended for the start of a new session.
-Keep it to one page. Update it when Vision & Scope changes, an ADR is approved, an NFR changes, the
+Keep the project overview — everything above its `## AI workflow` section — to one page; the
+workflow section is a runtime contract and is not counted, and the whole file stays under 16 KB.
+`plan-driven-build/project-health.sh` reports when either limit is passed. Update it when Vision & Scope changes, an ADR is approved, an NFR changes, the
 project phase changes, or technical debt is added or removed.
 
 It is also useful as onboarding material for a human team member. It should state the current status,
@@ -108,7 +110,7 @@ The orchestrator's context is the scarce resource. Keep these ceilings per round
 
 | Artifact | Ceiling |
 | --- | --- |
-| `00-ai-context.md` | One page, once |
+| `00-ai-context.md` | Once; one page of overview plus the workflow contract, under 16 KB |
 | Plan | Once, after planning |
 | Review report | 40 lines |
 | Build log | Last 30 lines, only on failure |
@@ -304,4 +306,4 @@ project documentation should contain only the resulting stable execution rules.
 
 ---
 
-*Clarity Framework v4.4.0 – AI Usage Guide*
+*Clarity Framework v4.5.0 – AI Usage Guide*

@@ -47,6 +47,19 @@ if run_checker "$docs_repo" > "$TEST_ROOT/docs.out" 2>&1; then
   exit 1
 fi
 grep -F 'docs/01-vision-scope.md' "$TEST_ROOT/docs.out" >/dev/null
+grep -F 'hint: these paths are ones the update itself writes. Commit them' "$TEST_ROOT/docs.out" >/dev/null
+if grep -F 'conflict copy' "$TEST_ROOT/docs.out" >/dev/null; then
+  printf '%s\n' 'an ordinary dirty document must not be called a conflict copy' >&2
+  exit 1
+fi
+
+copy_repo=$(make_repo conflict-copy)
+printf '%s\n' duplicate > "$copy_repo/.agents/skills/plan-driven-build/SKILL 2.md"
+if run_checker "$copy_repo" > "$TEST_ROOT/copy.out" 2>&1; then
+  printf '%s\n' 'expected a sync-conflict copy inside a managed skill to block' >&2
+  exit 1
+fi
+grep -F 'hint: 1 untracked path(s) end in a space and a number' "$TEST_ROOT/copy.out" >/dev/null
 
 skill_repo=$(make_repo skill-conflict)
 printf '// local skill edit\n' >> "$skill_repo/.agents/skills/plan-driven-build/SKILL.md"

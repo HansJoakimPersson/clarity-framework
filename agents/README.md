@@ -53,9 +53,10 @@ release. Project-specific material belongs in `docs/`, which the framework never
 
 ## Integration with Clarity Framework
 
-All starters refer to Clarity Framework's standard paths, such as `docs/00-ai-context.md` and
-`docs/03-sad.md`. A project that deviates from those paths records the deviation in
-`docs/00-ai-context.md` instead of editing `AGENTS.md`.
+All starters refer to documents by their canonical template names, such as `docs/03-sad.md`. A
+project that names a document differently — in another language, for example — records its own path
+against the canonical name in the "Where is more context?" table of `docs/00-ai-context.md`
+instead of editing `AGENTS.md`. Every starter tells the agent to resolve names through that table.
 
 ```text
 Clarity Framework documents in docs/

@@ -52,6 +52,17 @@ verification validates completion claims, review skills handle review boundaries
 handles closeout. Install whichever ones fit the project; the contracts are optional outside that
 workflow and do not make the skills depend on one another.
 
+`RENAMES` in this directory lists every skill name the framework has replaced, one
+`old-name new-name since-version` line each. `framework-update` reads it so that a project managing
+a skill under its old name is carried to the new one — both runtime directories, the `skills:` line
+in the AI Context, and references in active documents — instead of being left with a retired copy
+beside an uninstalled successor. Rename or retire a skill by adding a line there in the same commit.
+
+Adding a framework skill to a project that is already managed is a documented `framework-update`
+path ("Add a skill to a managed project"): copy the whole directory from the recorded release into
+both runtime roots, list it under `skills:`, collect the values its runtime contract needs in one
+question, and run `verify-managed-runtime.sh`.
+
 Unrelated changes in project code, build files, tests, or application configuration do not need to
 be committed first. `framework-update` protects its own write surface and proposes a separate
 commit using an explicit path list.
@@ -96,13 +107,18 @@ framework update.
 | File | Role |
 | --- | --- |
 | `SKILL.md` | The procedure; the only file the orchestrator reads when invoked |
-| `prompts/*.txt` | Instructions for dispatched agents, kept outside the orchestrator's context |
+| `prompts/*.txt` | Instructions for dispatched agents, kept outside the orchestrator's context: plan, review, revise, build, and verification |
 | `dispatch.sh` | Dispatch entry point; sets sandbox/approval, pins execution policy, starts supervised background jobs, and records native usage |
 | `background-supervisor.sh` | Owns a background worker, writes health heartbeats, detects no-progress and wall-clock timeouts, terminates the process tree, and always produces a classified completion sentinel |
 | `dispatch-health.sh` | Reads sentinel/health state mechanically as finished, healthy, stale, or lost without tailing the worker log |
 | `context-pack.sh` | Compiles exact plan references into the frozen bounded document context used by review/build/verification |
+| `dispatch-tail.sh` | Prints the last events of a dispatch's JSONL stream as one bounded line each, so reading progress does not cost the orchestrator its context |
+| `evidence.sh` | Runs one orchestrator-owned command (a baseline, a browser check, the project gate) and appends a bounded, commit-stamped entry to the evidence file the verifier reads |
+| `project-health.sh` | Reports, without blocking, the rules nothing else enforces: AI Context size, stale plans, old uncommitted work, a cloud-synced or space-containing path, runtime-copy drift, and a run of plans that deliver no requirement |
+| `usage.awk` | Extracts token usage from a Codex event stream, including a run that died on its budget before reporting a completed turn |
 | `tests/dispatch-test.sh` | Regression test for profile resolution, CLI flag ordering, telemetry, sentinels, silent hangs, hard wall timeouts, and watchdog recovery |
 | `tests/context-pack-test.sh` | Regression test for heading extraction, byte ceilings, and cold-context rejection |
+| `tests/tools-test.sh` | Regression test for usage extraction, the event tail, evidence recording and timeouts, and the project-health notes |
 | `plan-template.md` | The plan template, identical to `templates/plan.md` |
 | `journal-template.md` | The run journal template and handover state |
 | `setup.md` | One-time setup for profiles, permissions, and gitignore |
@@ -151,4 +167,4 @@ blindly.
 
 ---
 
-*Clarity Framework v4.4.0*
+*Clarity Framework v4.5.0*

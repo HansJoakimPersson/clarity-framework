@@ -71,6 +71,28 @@ done
 [ -z "$netarg" ] || printf 'CF_NETWORK_ARG=%s\n' "$netarg" >&2
 [ -z "$rollout" ] || printf 'CF_ROLLOUT_ARG=%s\n' "$rollout" >&2
 
+# A CLI started inside another sandbox dies before emitting any event.
+if [ "${CF_TEST_NESTED:-0}" -eq 1 ]; then
+  printf '%s\n' 'Error: Operation not permitted (os error 1)' >&2
+  exit 1
+fi
+
+# Reads stdin to EOF first, as the real CLI does when stdin is not a terminal. With an open pipe
+# for stdin and no explicit close by the dispatcher, this never returns.
+if [ "${CF_TEST_READ_STDIN:-0}" -eq 1 ]; then
+  cat >/dev/null
+fi
+
+# Overwrites a file the worker was told to leave alone.
+[ -z "${CF_TEST_TAMPER:-}" ] || printf '%s\n' 'tampered by worker' > "$CF_TEST_TAMPER"
+
+# Writes the step-complete marker to the report path, which the test passes as the whole prompt.
+if [ "${CF_TEST_REPORT:-0}" -eq 1 ]; then
+  printf '%s\n' 'step 1 done — `true` — exit 0' 'IMPLEMENTATION_STEPS_COMPLETE' > "$prompt"
+fi
+
+[ -z "${CF_TEST_NEW_FILE:-}" ] || : > "$CF_TEST_NEW_FILE"
+
 if [ "${CF_TEST_ROLLOUT_EXHAUST:-0}" -eq 1 ]; then
   printf '%s\n' 'shared rollout token budget exhausted' >&2
   exit 1
@@ -331,6 +353,17 @@ grep -F 'preflight-job' "$TEST_ROOT/out/preflight.ledger" >/dev/null
 grep -F 'planning' "$TEST_ROOT/out/preflight.ledger" >/dev/null
 grep -F 'passed' "$TEST_ROOT/out/preflight.ledger" >/dev/null
 
+# 23b. a failing preflight blocks with exit 78 and a complete summary line, including out=
+printf '%s\n' 'exit 1' > "$TEST_ROOT/preflight-bad.sh"
+set +e
+"$D" --profile reg --mode read-only --phase planning --prompt test --preflight "$TEST_ROOT/preflight-bad.sh" \
+  --out "$TEST_ROOT/out/preflight-bad.md" > "$TEST_ROOT/out/preflight-bad.txt" 2>/dev/null
+rc=$?
+set -e
+[ "$rc" -eq 78 ] || fail "a failing preflight must exit 78 (got $rc)"
+grep -F "failure_class=environment.preflight  out=$TEST_ROOT/out/preflight-bad.md  lines=0" \
+  "$TEST_ROOT/out/preflight-bad.txt" >/dev/null || fail 'the preflight-blocked summary must name its out file'
+
 # 24. a failed preflight blocks before Codex and is not retryable
 printf '%s\n' 'printf preflight-broken >&2; exit 9' > "$TEST_ROOT/preflight-fail.sh"
 if "$D" --profile reg,pool-good --mode read-only --prompt test --preflight "$TEST_ROOT/preflight-fail.sh" \
@@ -419,7 +452,7 @@ fi
 unset CF_TEST_ROLLOUT_EXHAUST
 grep -F 'failure_class=budget' "$TEST_ROOT/out/budget-fail.summary" >/dev/null
 grep -F 'profile=pool-bad' "$TEST_ROOT/out/budget-fail.summary" >/dev/null
-grep -F 'shared rollout token budget exhausted' "$TEST_ROOT/out/budget-fail.md.attempt-1.log" >/dev/null
+grep -F 'shared rollout token budget exhausted' "$TEST_ROOT/out/.runs/budget-fail/budget-fail.md.attempt-1.log" >/dev/null
 
 # 31. rollout budget must be a positive integer
 if "$D" --profile reg --mode read-only --prompt test --max-rollout-tokens 0 \
@@ -440,7 +473,7 @@ grep -F -- '--phase planning requires --mode read-only' "$TEST_ROOT/out/phase-mo
   --ledger "$TEST_ROOT/out/native-usage.ledger" --out "$TEST_ROOT/out/native-usage.md" >/dev/null
 grep -F "$(printf '100\t40\t10\t25\t5\t125')" "$TEST_ROOT/out/native-usage.ledger" >/dev/null
 grep -F 'cached_input_tokens' "$TEST_ROOT/out/native-usage.ledger" >/dev/null
-grep -F '"type":"turn.completed"' "$TEST_ROOT/out/native-usage.md.attempt-1.jsonl" >/dev/null
+grep -F '"type":"turn.completed"' "$TEST_ROOT/out/.runs/native-usage/native-usage.md.attempt-1.jsonl" >/dev/null
 
 # 34. a silent hung background worker is terminated by the supervisor and classified as stalled
 CF_TEST_HANG=1
@@ -486,6 +519,172 @@ if [ ! -f "$TEST_ROOT/out/wall.exit" ]; then
 fi
 test "$(cat "$TEST_ROOT/out/wall.exit")" = '124'
 grep -F 'timeout.wall' "$TEST_ROOT/out/wall.ledger" >/dev/null
+
+# 36. raw attempt files and the default ledger never land beside a tracked --out; inside a
+# `.runs/` directory they stay beside it, and --artifacts-dir overrides both
+mkdir -p "$TEST_ROOT/plans"
+"$D" --profile reg --mode read-only --prompt test --out "$TEST_ROOT/plans/2026-01-01-x.md" >/dev/null
+test "$(ls "$TEST_ROOT/plans" | tr '\n' ' ')" = '2026-01-01-x.md '
+test -f "$TEST_ROOT/plans/.runs/2026-01-01-x/2026-01-01-x.ledger"
+test -f "$TEST_ROOT/plans/.runs/2026-01-01-x/2026-01-01-x.md.attempt-1.jsonl"
+mkdir -p "$TEST_ROOT/plans/.runs/2026-01-01-x"
+"$D" --profile reg --mode read-only --prompt test \
+  --out "$TEST_ROOT/plans/.runs/2026-01-01-x/review.md" >/dev/null
+test -f "$TEST_ROOT/plans/.runs/2026-01-01-x/review.ledger"
+test -f "$TEST_ROOT/plans/.runs/2026-01-01-x/review.md.attempt-1.jsonl"
+test ! -e "$TEST_ROOT/plans/.runs/2026-01-01-x/.runs"
+"$D" --profile reg --mode read-only --prompt test --artifacts-dir "$TEST_ROOT/elsewhere" \
+  --out "$TEST_ROOT/plans/other.md" >/dev/null
+test -f "$TEST_ROOT/elsewhere/other.ledger"
+test ! -e "$TEST_ROOT/plans/.runs/other"
+
+# 37. the foreground worker's stdin is closed, so a caller that keeps a pipe open cannot hang it
+mkfifo "$TEST_ROOT/stdin.fifo"
+exec 9<>"$TEST_ROOT/stdin.fifo"
+CF_TEST_READ_STDIN=1
+export CF_TEST_READ_STDIN
+"$D" --profile reg --mode read-only --prompt test --stall-timeout-seconds 3 \
+  --out "$TEST_ROOT/out/stdin-closed.md" <&9 >/dev/null
+unset CF_TEST_READ_STDIN
+exec 9<&-
+test "$(cat "$TEST_ROOT/out/stdin-closed.md")" = 'ok'
+
+# 38. a silent foreground worker is terminated at the stall ceiling and classified, and for a
+# read-only dispatch the next pool member is tried
+CF_TEST_HANG=1
+export CF_TEST_HANG
+if "$D" --profile reg --phase verification --mode read-only --prompt test \
+  --stall-timeout-seconds 2 --wall-timeout-seconds 20 --heartbeat-seconds 1 \
+  --out "$TEST_ROOT/out/fg-stall.md" >"$TEST_ROOT/out/fg-stall.summary"; then
+  printf 'dispatch-test: hung foreground dispatch should have failed\n' >&2; exit 1
+fi
+unset CF_TEST_HANG
+grep -F 'exit=124' "$TEST_ROOT/out/fg-stall.summary" >/dev/null
+grep -F 'failure_class=timeout.stalled' "$TEST_ROOT/out/fg-stall.summary" >/dev/null
+grep -F "$(printf '\t1\ttimeout.stalled\t')" "$TEST_ROOT/out/.runs/fg-stall/fg-stall.ledger" >/dev/null
+
+# 39. a CLI that dies before its first event with `Operation not permitted` is a nested sandbox,
+# not an unknown failure, and no other profile is tried
+CF_TEST_NESTED=1
+export CF_TEST_NESTED
+if "$D" --profile reg,pool-good --mode read-only --prompt test \
+  --out "$TEST_ROOT/out/nested.md" >"$TEST_ROOT/out/nested.summary"; then
+  printf 'dispatch-test: nested sandbox should have failed\n' >&2; exit 1
+fi
+unset CF_TEST_NESTED
+grep -F 'failure_class=environment.sandbox-nested' "$TEST_ROOT/out/nested.summary" >/dev/null
+grep -F 'profile=reg' "$TEST_ROOT/out/nested.summary" >/dev/null
+grep -F 'HINT:' "$TEST_ROOT/out/nested.summary" >/dev/null
+
+# 40. a pool made only of cli: entries is a configured choice, not a fallback; a missing real
+# profile ahead of it still is one
+out=$("$D" --profile cli:codex --mode read-only --prompt test --out "$TEST_ROOT/out/only-bare.md")
+if printf '%s\n' "$out" | grep -F 'FALLBACK' >/dev/null; then
+  printf 'dispatch-test: a cli:-only pool must not report FALLBACK\n' >&2; exit 1
+fi
+printf '%s\n' "$out" | grep -F 'profile=cli:codex' >/dev/null
+
+# 41. an unresolvable pool names the profiles that do exist
+if "$D" --profile nope1 --mode read-only --prompt test --out "$TEST_ROOT/out/none2.md" \
+  2>"$TEST_ROOT/out/none2.err"; then
+  printf 'dispatch-test: unresolvable pool should have failed\n' >&2; exit 1
+fi
+grep -F 'Profiles that exist: reg, pool-bad, pool-good, claudeonly' "$TEST_ROOT/out/none2.err" >/dev/null
+
+# 42. the rollout budget carries reminder thresholds, so a budget stop is preceded by a warning
+"$D" --profile reg --mode read-only --prompt test --max-rollout-tokens 12345 \
+  --out "$TEST_ROOT/out/reminders.md" >/dev/null
+grep -F 'limit_tokens=12345,reminder_at_remaining_tokens=[3086,1234],' "$TEST_ROOT/out/reminders.md" >/dev/null
+
+wait_for() {
+  attempt=0
+  while [ ! -f "$1" ] && [ "$attempt" -lt 200 ]; do
+    attempt=$((attempt + 1)); sleep 0.05
+  done
+  test -f "$1"
+}
+
+# 43. background: the report path is offered as {{BUILD_REPORT}}, a budget stop after the report
+# marks every step complete says so, the log ends in a readable summary, and new untracked files
+# are separated from ones that predate the build
+printf '{{BUILD_REPORT}}' > "$TEST_ROOT/prompt-report.txt"
+CF_TEST_REPORT=1
+CF_TEST_ROLLOUT_EXHAUST=1
+CF_TEST_NEW_FILE="$SCRIPT_DIR/tests/.dispatch-test-new-file"
+export CF_TEST_REPORT CF_TEST_ROLLOUT_EXHAUST CF_TEST_NEW_FILE
+rm -f "$CF_TEST_NEW_FILE"
+"$D" --profile reg --phase implementation --mode workspace-write --background \
+  --prompt-file "$TEST_ROOT/prompt-report.txt" --model test-model-x --max-rollout-tokens 12345 \
+  --log "$TEST_ROOT/out/budget-done.log" >"$TEST_ROOT/out/budget-done.summary"
+wait_for "$TEST_ROOT/out/budget-done.exit"
+rm -f "$CF_TEST_NEW_FILE"
+unset CF_TEST_REPORT CF_TEST_ROLLOUT_EXHAUST CF_TEST_NEW_FILE
+grep -F "report=$TEST_ROOT/out/budget-done.report.md" "$TEST_ROOT/out/budget-done.summary" >/dev/null
+grep -Fx 'IMPLEMENTATION_STEPS_COMPLETE' "$TEST_ROOT/out/budget-done.report.md" >/dev/null
+grep -F 'failure_class=budget  steps_complete=yes' "$TEST_ROOT/out/budget-done.log" >/dev/null
+grep -F 'budget stop after the report marked every plan step complete' "$TEST_ROOT/out/budget-done.log" >/dev/null
+grep -F 'tests/.dispatch-test-new-file' "$TEST_ROOT/out/budget-done.log" >/dev/null
+health=$(sh "$H" --log "$TEST_ROOT/out/budget-done.log")
+printf '%s\n' "$health" | grep -F 'reason=budget' >/dev/null
+printf '%s\n' "$health" | grep -F 'steps_complete=yes' >/dev/null
+
+# 44. a second background dispatch on the same log archives the first attempt instead of
+# overwriting it, and the worker's final message is captured
+"$D" --profile reg --phase implementation --mode workspace-write --background \
+  --prompt test --model test-model-x --max-rollout-tokens 12345 \
+  --log "$TEST_ROOT/out/budget-done.log" >"$TEST_ROOT/out/budget-done-2.summary"
+wait_for "$TEST_ROOT/out/budget-done.exit"
+grep -F 'DISPATCH archived previous attempt' "$TEST_ROOT/out/budget-done-2.summary" >/dev/null
+test "$(cat "$TEST_ROOT/out/budget-done.exit")" = '0'
+test "$(cat "$TEST_ROOT/out/attempts/budget-done-1/budget-done.exit")" = '1'
+grep -F 'failure_class=budget' "$TEST_ROOT/out/attempts/budget-done-1/budget-done.log" >/dev/null
+test -f "$TEST_ROOT/out/attempts/budget-done-1/budget-done.report.md"
+test -f "$TEST_ROOT/out/attempts/budget-done-1/budget-done.ledger"
+grep -F 'steps_complete=unknown' "$TEST_ROOT/out/budget-done.log" >/dev/null
+grep -F 'ok:model=test-model-x' "$TEST_ROOT/out/budget-done.final.md" >/dev/null
+grep -F -- '--- final message' "$TEST_ROOT/out/budget-done.log" >/dev/null
+
+# 45. a protected file the worker changes is restored and the violation is reported
+printf '%s\n' 'journal as the orchestrator wrote it' > "$TEST_ROOT/out/journal.run.md"
+CF_TEST_TAMPER="$TEST_ROOT/out/journal.run.md"
+export CF_TEST_TAMPER
+"$D" --profile reg --phase implementation --mode workspace-write --background \
+  --prompt test --model test-model-x --max-rollout-tokens 12345 \
+  --protect "$TEST_ROOT/out/journal.run.md" --log "$TEST_ROOT/out/protect.log" >/dev/null
+wait_for "$TEST_ROOT/out/protect.exit"
+unset CF_TEST_TAMPER
+test "$(cat "$TEST_ROOT/out/journal.run.md")" = 'journal as the orchestrator wrote it'
+grep -F 'protected file(s) changed by the worker and restored' "$TEST_ROOT/out/protect.log" >/dev/null
+
+# 46. --protect is refused outside background mode, and a missing protected file stops the launch
+if "$D" --profile reg --mode read-only --prompt test --protect "$TEST_ROOT/out/journal.run.md" \
+  --out "$TEST_ROOT/out/protect-fg.md" 2>"$TEST_ROOT/out/protect-fg.err"; then
+  printf 'dispatch-test: --protect in the foreground should have failed\n' >&2; exit 1
+fi
+grep -F -- '--protect applies to --background dispatches only' "$TEST_ROOT/out/protect-fg.err" >/dev/null
+if "$D" --profile reg --mode workspace-write --background --prompt test \
+  --protect "$TEST_ROOT/out/no-such-file" --log "$TEST_ROOT/out/protect-missing.log" \
+  2>"$TEST_ROOT/out/protect-missing.err"; then
+  printf 'dispatch-test: a missing protected file should have failed\n' >&2; exit 1
+fi
+grep -F -- '--protect file not found' "$TEST_ROOT/out/protect-missing.err" >/dev/null
+test ! -e "$TEST_ROOT/out/protect-missing.exit"
+
+# 47. a launch is refused while a supervisor for the same log is still alive
+CF_TEST_HANG=1
+export CF_TEST_HANG
+"$D" --profile reg --mode workspace-write --background --prompt test \
+  --heartbeat-seconds 1 --stall-timeout-seconds 3 --wall-timeout-seconds 20 \
+  --log "$TEST_ROOT/out/live.log" >/dev/null
+wait_for "$TEST_ROOT/out/live.health"
+if "$D" --profile reg --mode workspace-write --background --prompt test \
+  --log "$TEST_ROOT/out/live.log" 2>"$TEST_ROOT/out/live.err"; then
+  printf 'dispatch-test: a second writer on a live log should have failed\n' >&2; exit 1
+fi
+unset CF_TEST_HANG
+grep -F 'is still running' "$TEST_ROOT/out/live.err" >/dev/null
+wait_for "$TEST_ROOT/out/live.exit"
+test "$(cat "$TEST_ROOT/out/live.exit")" = '124'
 
 printf 'dispatch-test: ok
 '

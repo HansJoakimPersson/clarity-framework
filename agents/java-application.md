@@ -1,17 +1,17 @@
-# AGENTS.md - Java Application v1.3
+# AGENTS.md - Java Application v1.4
 
 Guidance for Java applications, including Spring Boot, CLI tools, REST services, persistence,
-browser frontends, packaging, and MCP servers. Project-specific rules belong in `docs/`; keep this
-framework-owned file unchanged.
+browser frontends, packaging, and MCP servers.
 
 ## How To Use
 
 - Apply **Core Rules** to every Java task.
 - Apply only the profiles that match the repository: Maven, Gradle, Lombok, CLI, REST, Persistence,
   Dependency Policy, Web Frontend, Packaging, Spring Boot, MCP Server.
-- Project documents in `docs/` override this starter when they disagree.
-- In Clarity projects, `docs/00-ai-context.md` routes you to the exact current context. Never scan
-  `docs/archive/` unless the task explicitly requires historical evidence.
+- This file is framework-owned and replaced on update; project rules go in `docs/`, which wins
+  when they disagree.
+- `docs/00-ai-context.md` routes you to current context and maps the canonical document names used
+  here to the project's own. Never scan `docs/archive/` unless the task needs history.
 
 ## Core Rules
 
@@ -45,8 +45,9 @@ framework-owned file unchanged.
 4. Identify the affected boundary: domain, persistence, API, UI, integration, packaging, operations.
 5. For non-trivial logic, write or update a failing test first when the repository supports it.
 6. Implement the smallest coherent change and run targeted checks before broader checks.
-7. Update authoritative Clarity documents only when requirements, architecture, contracts,
-   deployment, testing, operations, or durable decisions actually changed.
+7. Update Clarity documents only when requirements, architecture, contracts, deployment, testing,
+   operations, or durable decisions changed — in the owning section, never as an appended dated
+   note; a new ADR takes the highest number plus one.
 8. Report completion, verification, material assumptions, and unresolved Escalation/Reserved items.
 
 ### When dispatched by an orchestrator
@@ -393,4 +394,4 @@ of it.
 
 ---
 
-*Clarity Framework v4.4.0 - Java Application Agent Starter*
+*Clarity Framework v4.5.0 - Java Application Agent Starter*

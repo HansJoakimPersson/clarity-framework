@@ -1,15 +1,17 @@
-Project/runtime instructions are already loaded. Read {{CONTEXT_PACK}}, {{PLAN}}, {{BUILD_LOG}}, and the diff between the current working tree and commit {{SHA}}. The context pack is the frozen project-document baseline for the run; do not scan docs/ or docs/archive/ for additional context.
+Project/runtime instructions are already loaded. Read {{CONTEXT_PACK}}, {{PLAN}}, {{BUILD_LOG}}, {{EVIDENCE}}, and the diff between the current working tree and commit {{SHA}}. The context pack is the frozen project-document baseline for the run; do not scan docs/ or docs/archive/ for additional context.
 
-This is a read-only verification pass. Use command results already recorded in the build log as evidence. You may run genuinely read-only checks, but do not rerun builds or tests that write caches or artifacts. If a condition has no reliable evidence in the diff or build log, mark it uncertain rather than guessing.
+This is a read-only verification pass. You cannot build or run the project's gate, so command results come from two records. {{EVIDENCE}} is written by the orchestrator, which ran the commands outside the build sandbox: each entry gives a command, its exit code, the commit it ran on, and the last lines of output, and a `baseline` entry is the same command measured before the change. {{BUILD_LOG}} ends with the build agent's own report and final message. Treat an evidence entry as proof of the command result it records. Treat the build agent's claims about its own work as a pointer to check against the diff, not as proof. If either file does not exist, it holds no evidence. You may run genuinely read-only checks, but do not rerun builds or tests that write caches or artifacts.
 
 For each condition under Definition of Done, output exactly one line:
 
-  <condition, shortened> — done | not done | uncertain — <one line of evidence pointing at the actual change>
+  <condition, shortened> — done | not done | not in evidence | uncertain — <one line of evidence pointing at the actual change>
+
+Use `not in evidence` when the condition needs a command result that neither record contains: nobody has shown it ran. Use `uncertain` only when evidence exists but conflicts or is ambiguous. Never use either as a soft `done`. Judge a condition phrased relative to a baseline against the `baseline` entry: a failure that the baseline already has is not a regression, and a failure that it lacks is one. A condition about real input is `done` only when a record shows the result on that real input.
 
 Evidence means a file path, a symbol name or a command result. "Looks implemented" is not evidence.
 
 Then, under a heading 'Outside Included', list anything in the diff that falls outside the plan's
-'Included'. Maximum 10 lines. Write "nothing" if there is nothing.
+'Included'. Maximum 10 lines. Write "nothing" if there is nothing. Count an untracked file only when the build log lists it as new since launch; other untracked files predate this build and are not its work. Report here as well, when present: a change to the plan or a run journal, a file whose name ends in a space and a number before its extension (a sync conflict copy such as `SKILL 2.md`), a dated section or new top-level section appended to a project document, a duplicated ADR or story number, and, for a plan whose 'Track' is `research`, anything written outside the directory the plan names.
 
 Do not grade code quality, style or architecture. Do not suggest improvements. Check only the stated conditions — that is the whole task, and a broader report costs the reader the context this workflow exists to save.
 

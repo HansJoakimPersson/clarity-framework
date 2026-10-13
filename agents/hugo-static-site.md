@@ -1,6 +1,15 @@
-# AGENTS.md - Hugo Static Site v1.0
+# AGENTS.md - Hugo Static Site v1.1
 
 Guidance for agents working in static websites built with Hugo.
+
+## Clarity Documents
+
+- This file is framework-owned and replaced on every framework update. Project rules belong in
+  `docs/`, which the framework never overwrites.
+- Documents are named here by canonical template name. When the project names one differently, the
+  "Where is more context?" table in `docs/00-ai-context.md` gives its path.
+- Change a document in the section that owns the fact. Do not append dated notes or progress logs,
+  and give a new ADR the highest existing number plus one.
 
 ## Core Rules
 

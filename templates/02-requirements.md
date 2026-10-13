@@ -122,13 +122,23 @@ stateDiagram-v2
     Draft --> Ready: Meets Definition of Ready
     Ready --> InProgress: Pulled into an approved plan
     InProgress --> InReview: Implementation complete
-    InReview --> Done: Acceptance criteria verified
+    InReview --> Built: Verified against the plan, gate green
     InReview --> InProgress: Verification failed
+    Built --> Done: Acceptance criteria observed on real input
+    Built --> InProgress: Real input exposed a defect
     Draft --> Dropped: Descoped by the priority owner
     Ready --> Dropped: Descoped by the priority owner
     Done --> [*]
     Dropped --> [*]
 ```
+
+**Built is not Done.** `Built` says the code exists, the diff was verified against its plan, and
+the automated gate passes. `Done` says someone or something ran the story on real input — real
+data, a real browser, the real integration — and observed each acceptance criterion, and that the
+observation is recorded (a test case in §5, or the plan's evidence file). A story whose criteria can
+only be shown by automated tests goes straight to `Done` when those tests run on realistic input;
+a story that was only ever exercised against fixtures written by its own implementer stays `Built`.
+Report the two separately: "12 Built, 7 Done" is a status, "19 complete" is not.
 
 A **Dropped** story is not deleted. Set its status, record the reason, and leave the ID retired so
 that historical plans, commits, and test cases keep resolving.
@@ -214,7 +224,7 @@ journey. A column crowded with Must-have stories usually hides a step that shoul
 | **Epic** | [Epic name] |
 | **Role** | R1 – [Role name] |
 | **Priority** | M / S / C / W |
-| **Status** | Draft / Ready / In progress / In review / Done / Dropped |
+| **Status** | Draft / Ready / In progress / In review / Built / Done / Dropped |
 | **Size** | XS / S / M / L *(L must be split before it is Ready)* |
 | **Related NFR** | NFR-[ID] *(if applicable)* |
 | **Depends on** | FR-[ID] *(if applicable)* |
@@ -253,7 +263,7 @@ AC-001-2:
 | **Epic** | [Epic name] |
 | **Role** | R1 – [Role name] |
 | **Priority** | M / S / C / W |
-| **Status** | Draft / Ready / In progress / In review / Done / Dropped |
+| **Status** | Draft / Ready / In progress / In review / Built / Done / Dropped |
 | **Size** | XS / S / M / L |
 
 **Story:**
@@ -283,7 +293,7 @@ AC-002-1:
 | **Epic** | [Next epic name] |
 | **Role** | R2 – [Role name] |
 | **Priority** | M / S / C / W |
-| **Status** | Draft / Ready / In progress / In review / Done / Dropped |
+| **Status** | Draft / Ready / In progress / In review / Built / Done / Dropped |
 | **Size** | XS / S / M / L |
 
 **Story:**
@@ -381,4 +391,4 @@ while the work is still in progress.
 
 *Next step: Start the SAD draft based on these requirements, with particular focus on the NFRs.*
 
-*Clarity Framework v4.4.0 – Requirements Documentation*
+*Clarity Framework v4.5.0 – Requirements Documentation*

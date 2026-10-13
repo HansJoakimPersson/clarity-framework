@@ -4,11 +4,14 @@ Answer these, in order:
 - Do the file paths in the plan exist as written?
 - Do the functions, modules and commands the plan assumes exist actually exist?
 - Are the verification commands present in the project and syntactically plausible as written? Do not run commands that write caches, build output or other files in this read-only pass; flag those for Implementation to execute.
-- Are the steps sufficient to build from without guessing?
+- Are the steps sufficient to build from without guessing? Name every choice the plan leaves open that the build agent would have to invent: files to create, data shapes, formats, boundaries, the behavior at an edge.
 - Is anything listed under 'Included' already implemented?
 - Is anything under 'Excluded' unavoidably touched by the steps as written?
+- Does the plan add or change behavior a user can observe that no requirement in 'Delivers' covers? 'None – maintenance' is valid only for work with no observable behavior change. Does each ID in 'Delivers' match what 'Included' actually delivers?
+- Is every command that needs a browser, a GUI process, many file watchers, or anything outside the workspace owned by `Orchestrator` in the 'Verification' table rather than written as a step's Verification line? Does any Definition of Done condition assume an existing suite is green without a measured baseline?
+- If the change processes input from outside the project, does the plan name real input to check against, or does it rest on synthetic fixtures alone?
 
-Answer with numbered, concrete objections and proposed plan changes — not a verdict, and not a summary of what the plan says. The reader has already read the plan.
+Answer with numbered, concrete objections and proposed plan changes — not a verdict, and not a summary of what the plan says. The reader has already read the plan. Mark an objection **SPEC** when resolving it requires knowledge of the code — a design choice, a data contract, a list of files — rather than a wording fix: those go back to the planner, because the reader of this review does not read code.
 
 Maximum 40 lines. No code quotation longer than 5 lines. If you have more than 40 lines of objections, report the most severe ones and say how many you dropped.
 

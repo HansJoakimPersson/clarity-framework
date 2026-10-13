@@ -69,4 +69,52 @@ set -e
 test "$rc" -eq 2
 grep -F 'project-driver requires managed plan-driven-build' "$TEST_ROOT/dependency.out" >/dev/null
 
+verify_plan_only() {
+  (
+    cd "$PROJECT"
+    bash "$VERIFY" --target-root "$TARGET" --managed-skills plan-driven-build --smoke no
+  )
+}
+
+# plan-driven-build is verified on its own, not only as a project-driver dependency.
+verify_plan_only > "$TEST_ROOT/plan-only.out"
+grep -F 'RUNTIME-VERIFY: ok managed_skills=plan-driven-build smoke=no' "$TEST_ROOT/plan-only.out" >/dev/null
+
+# Finder metadata is not a difference.
+: > "$PROJECT/.agents/skills/plan-driven-build/.DS_Store"
+verify_plan_only > /dev/null
+rm "$PROJECT/.agents/skills/plan-driven-build/.DS_Store"
+
+# A sync-conflict copy is a difference, and the message says what it is.
+cp "$PROJECT/.agents/skills/plan-driven-build/SKILL.md" "$PROJECT/.agents/skills/plan-driven-build/SKILL 2.md"
+if verify_plan_only > "$TEST_ROOT/copy.out" 2>&1; then
+  printf '%s\n' 'expected a sync-conflict copy to fail verification' >&2
+  exit 1
+fi
+grep -F 'sync-conflict copy' "$TEST_ROOT/copy.out" >/dev/null
+rm "$PROJECT/.agents/skills/plan-driven-build/SKILL 2.md"
+
+# A release whose payload lacks a required file fails even when both copies match it exactly.
+for root in "$TARGET/skills" "$PROJECT/.agents/skills" "$PROJECT/.claude/skills"; do
+  rm "$root/plan-driven-build/evidence.sh"
+done
+if verify_plan_only > "$TEST_ROOT/payload.out" 2>&1; then
+  printf '%s\n' 'expected a missing plan-driven-build payload file to fail' >&2
+  exit 1
+fi
+grep -F 'plan-driven-build payload missing: .agents/skills/plan-driven-build/evidence.sh' "$TEST_ROOT/payload.out" >/dev/null
+for root in "$TARGET/skills" "$PROJECT/.agents/skills" "$PROJECT/.claude/skills"; do
+  cp "$REPO_ROOT/skills/plan-driven-build/evidence.sh" "$root/plan-driven-build/evidence.sh"
+done
+
+# dispatch.sh is run by path: a copy that lost its mode is caught here, not at the first dispatch.
+for root in "$TARGET/skills" "$PROJECT/.agents/skills" "$PROJECT/.claude/skills"; do
+  chmod -x "$root/plan-driven-build/dispatch.sh"
+done
+if verify_plan_only > "$TEST_ROOT/mode.out" 2>&1; then
+  printf '%s\n' 'expected a non-executable dispatch.sh to fail' >&2
+  exit 1
+fi
+grep -F 'not executable: .agents/skills/plan-driven-build/dispatch.sh' "$TEST_ROOT/mode.out" >/dev/null
+
 printf '%s\n' 'verify-managed-runtime-test: ok'

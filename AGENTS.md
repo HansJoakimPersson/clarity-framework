@@ -11,7 +11,7 @@ governed by documented decisions, verification gates, and human accountability.
 
 **Three core principles:** Just enough documentation · Documentation as code · Clarity over completeness
 
-**Current version:** 4.4.0
+**Current version:** 4.5.0
 
 **Repository structure:**
 
@@ -44,23 +44,31 @@ the version markers were not updated, or a shipped script changed without its re
 run. Every change increments the version in the same commit; `docs` and `chore` changes do not
 increment it.
 
-The repository ships twelve executable regression tests. Run all of them when any `*.sh` under
-`skills/` or `framework/scripts/` changes:
+The repository ships fifteen executable regression tests. Run all of them when any `*.sh` or
+`*.awk` under `skills/` or `framework/scripts/` changes:
 
 ```bash
 sh   skills/plan-driven-build/tests/dispatch-test.sh
 sh   skills/plan-driven-build/tests/context-pack-test.sh
+sh   skills/plan-driven-build/tests/tools-test.sh
 bash skills/project-driver/tests/authority-test.sh
 bash skills/project-driver/tests/mission-control-test.sh
 bash skills/project-driver/tests/mission-runner-test.sh
 bash skills/framework-update/tests/check-update-scope-test.sh
+bash skills/framework-update/tests/inspect-project-test.sh
 bash skills/framework-update/tests/verify-managed-runtime-test.sh
 bash skills/framework-update/tests/runtime-replacement-test.sh
 bash skills/framework-update/tests/render-update-commit-test.sh
 bash framework/scripts/tests/check-version-consistency-test.sh
 bash framework/scripts/tests/check-context-budgets-test.sh
+bash framework/scripts/tests/check-skill-snippets-test.sh
 bash framework/scripts/tests/lint-shell-test.sh
 ```
+
+Also run `bash framework/scripts/check-skill-snippets.sh` when a shell snippet in any Markdown file
+changes. Orchestrators paste those snippets into zsh as readily as bash, and the check rejects the
+constructs the two shells read differently (`"$VAR:text"`, an unquoted `$x_args` list, a word that
+starts with `=`).
 
 Also run `bash framework/scripts/check-context-budgets.sh` for any agent-starter or
 `templates/00-ai-context.md` change. It enforces the hot-instruction budgets used by CI.
@@ -87,6 +95,10 @@ git grep -lE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+|Current version:|\*\*Ver
 | Story block in `templates/02-requirements.md` §2.6 | The same block in `templates/02-user-stories.md`. Splitting the backlog moves stories between them, so a field added to one and not the other silently disappears on the move |
 | Dispatch prompt change | The matching prompt and `SKILL.md` when placeholders change |
 | Shipped script change | The script and its test in the same directory's `tests/` (a skill's or `framework/scripts/`) |
+| New file in a managed skill | The required-payload list in `skills/framework-update/scripts/verify-managed-runtime.sh` and the file table in `skills/README.md` |
+| Skill rename or removal | A line in `skills/RENAMES`; `framework-update` reads it to carry a project from the old name to the new one |
+| Story status vocabulary | `templates/02-requirements.md` §2.3 and both story blocks, `templates/02-user-stories.md`, and the closeout section of `templates/plan.md` |
+| Agent starter rule change | The starter's own `vN.M` in its first heading; `framework-update` compares it to detect a project that is ahead of a release |
 | Agent starter or AI-context size change | `framework/scripts/check-context-budgets.sh` and its regression test when the policy changes |
 | New template | New file, README, and CHANGELOG entry |
 | Framework guideline change | Guide and affected templates |
@@ -138,4 +150,4 @@ The tag is the only source read by `skills/framework-update/`. A project never u
 
 ---
 
-*Clarity Framework v4.4.0*
+*Clarity Framework v4.5.0*

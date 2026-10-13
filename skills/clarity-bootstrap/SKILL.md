@@ -75,11 +75,13 @@ CLARITY_TAG=$(git -C "$BOOTSTRAP_TMP/cf" tag -l --sort=-v:refname 'v*' \
 [ -n "$CLARITY_TAG" ] || { printf '%s\n' 'No stable Clarity release found' >&2; exit 2; }
 CLARITY_VERSION=${CLARITY_TAG#v}
 git -C "$BOOTSTRAP_TMP/cf" cat-file -e \
-  "$CLARITY_TAG:skills/clarity-bootstrap/SKILL.md" || {
+  "${CLARITY_TAG}:skills/clarity-bootstrap/SKILL.md" || {
   printf '%s\n' "Latest stable release $CLARITY_TAG does not contain Clarity Bootstrap" >&2
   exit 2
 }
 ```
+
+`${CLARITY_TAG}` is braced because zsh reads `$CLARITY_TAG:skills` as a modifier on the variable.
 
 Read the release's `README.md` ownership and scaling sections before selecting files. Remove the
 temporary clone when the run completes or aborts. The self-check deliberately stops an unreleased
@@ -155,6 +157,16 @@ When the resolved setup has no outstanding Escalation/Reserved decision:
    Narrow broad runtime-directory ignores while preserving ignores for local settings and caches.
 9. Add `docs/plans/.runs/`, `.agents/build-env.local.sh`, and `.m2/` to `.gitignore` when
    `plan-driven-build` is selected. Preserve all existing ignore rules.
+10. When `plan-driven-build` is selected and the stack has a build tool, write `.agents/preflight.sh`
+    from the example in the skill's `setup.md` ("Implementation and the build environment"), with
+    the one command that proves the tool runs (`mvn -q -version`, `npm --version`, `go version`).
+    Write `.agents/build-env.sh` only when the tool needs an environment an interactive shell
+    provides and a dispatch does not. A preflight that runs the tool turns a broken environment
+    into a one-second failure instead of a build that spends its budget discovering it.
+11. When documents are written in another language and named accordingly, keep the names the
+    project chose and record each one against its canonical template name in the AI Context table
+    "Where is more context?". Agent starters and skills refer to documents by canonical name and
+    resolve them through that table.
 
 Do not edit the copied `AGENTS.md` or skill files, and never add rules to `CLAUDE.md`.
 Project-specific deviations belong in `docs/`, in the document that governs them.
@@ -182,14 +194,20 @@ the version footers in the other documents.
 Verify:
 
 - `CLAUDE.md` contains `@AGENTS.md` and nothing else;
-- every selected document exists exactly once at its standard `docs/NN-*.md` path;
+- every selected document exists exactly once at its standard `docs/NN-*.md` path, or at the
+  project's own name with the canonical name recorded in the AI Context table;
+- `.agents/preflight.sh`, when written, exits 0 on this machine;
 - both runtime copies of each managed skill are identical;
 - `git check-ignore` confirms that neither managed skill copy is excluded;
 - existing Framework version markers match the fetched tag;
 - no source file or documentation outside the resolved setup changed.
 
 Report remaining placeholders and material decisions first, then created/merged artifacts and
-verification results. A bootstrap commit is Delegated unless the project explicitly reserves commits
+verification results. When `plan-driven-build` was selected, also name the values its runtime
+contract still needs (model pools, gate command, rollout budget) in one list, and point at the
+client permission rules in the skill's `settings.example.json`: they are a convenience the user adds
+to the client's own settings, separate from the `clarity-authority` block, and bootstrap does not
+write them. A bootstrap commit is Delegated unless the project explicitly reserves commits
 or the commit would include unrelated pre-existing work; create it and report the SHA.
 
 The Git-dependent checks and the commit proposal are unconditional, because step 5 has already

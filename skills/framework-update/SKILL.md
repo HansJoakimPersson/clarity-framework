@@ -25,10 +25,17 @@ Read the target release's `README.md` **Ownership** section first; it is normati
 
 Never delete project-owned content, never touch source code, and never wildcard across all skills.
 
+The project's documents may not carry the template names: a project that writes in another language
+often names `03-architecture.md` something else. The AI Context "Where is more context?" table maps
+each canonical template name to the project's file. Use that mapping for every `docs/NN-*.md` step
+below; when a document has no canonical name recorded and the match is not obvious from its
+content, that mapping is one Escalation decision, and the answer is recorded in the table.
+
 Routine upgrades are **Delegated** when every write is deterministic, reversible, and
 content-preserving. Stop only for an **Escalation** or **Reserved** condition such as ambiguous skill
 ownership, ambiguous document mapping, project-authored content inside a retired managed-skill
-directory, or a project rule that reserves framework commits.
+directory, a project that is ahead of the target release, a locally edited framework-owned file, or
+a project rule that reserves framework commits.
 
 `CLAUDE.md` must end as exactly `@AGENTS.md`. If it currently contains project-specific rules,
 move each rule first to its unambiguous home under `docs/`. If destination or meaning is ambiguous,
@@ -48,6 +55,14 @@ record the resolved list before replacing any skill.
   as managed by the project.
 - An untracked `framework-update` directory copied only to bootstrap this run is allowed.
 
+When the scope check blocks, it has changed nothing and its hint says what clears it: an ordinary
+commit of the listed paths, made by whoever owns that work. Do not stash, reset, or commit them as
+part of the update. A blocked path whose name ends in a space and a number (`SKILL 2.md`) is a
+sync-client conflict copy, not project content; see "Conflict copies" below.
+
+The shell snippets below are written for `bash` and `zsh` alike. Keep `${NAME}` braced where a
+colon follows it: zsh reads `$NEW:skills` as a modifier on `$NEW`, not as `$NEW` followed by text.
+
 ## Step 1 — Resolve and pin the target release
 
 ```bash
@@ -65,7 +80,7 @@ TARGET_UPDATE_SKILLDIR="$TMP/cf/skills/framework-update"
   exit 2
 }
 
-FRAMEWORK_SKILLS=$(git -C "$TMP/cf" ls-tree -d --name-only "$NEW:skills" | tr '\n' ',' | sed 's/,$//')
+FRAMEWORK_SKILLS=$(git -C "$TMP/cf" ls-tree -d --name-only "${NEW}:skills" | tr '\n' ',' | sed 's/,$//')
 PROJECT_MANAGED_SKILLS=''
 if [ -r docs/00-ai-context.md ]; then
   PROJECT_MANAGED_SKILLS=$(sed -n 's/^skills:[[:space:]]*//p' docs/00-ai-context.md \
@@ -106,6 +121,37 @@ If the project already reports `$NEW_VERSION`, still verify that the selected st
 managed skill exist, match the target release, exist identically in both runtime roots, and are not
 ignored by Git. A matching version marker alone is not proof of a complete update.
 
+Then let the target release inspect the project. The script writes nothing:
+
+```bash
+bash "$TARGET_UPDATE_SKILLDIR/scripts/inspect-project.sh" \
+  --target-root "$TMP/cf" --target-version "$NEW_VERSION" > "$TMP/inspect.out" || true
+cat "$TMP/inspect.out"
+```
+
+It reads the starter, the managed skill list, and the current version from the AI Context; pass
+`--starter`, `--managed-skills`, `--current-version`, or `--docs` when the project records them
+elsewhere. Every line it prints is an instruction for the steps below:
+
+| Line | Meaning | Action |
+| --- | --- | --- |
+| `DECISION ahead` | The project records a newer version than the newest stable tag | **Stop.** Replacing would downgrade the project. Report both versions and ask whether the project tracks an unreleased framework; never "update" backwards |
+| `DECISION starter-ahead` | `AGENTS.md` carries a newer starter version than the target ships | Stop as above for `AGENTS.md` only; the rest of the update may continue when the user says so |
+| `DECISION starter-missing` | The recorded starter is not in the target release | Escalation: ask which starter replaces it |
+| `DECISION local-edit <file>` | A framework-owned file differs from the release the project records, so someone edited it | Show the diff. Move each project rule to its home under `docs/` when unambiguous, then replace; otherwise Escalation. Never replace it silently and never keep it silently |
+| `RENAMED old -> new` | A managed skill was renamed (`skills/RENAMES` in the target) | Step 3, "Renamed managed skills" |
+| `RETIRED name` | A managed skill is gone and has no successor | Step 3, "Retired managed skills" |
+| `NOTE unknown-base` | The recorded version has no release tag to compare against | Local edits cannot be detected: read the framework-owned files before replacing them |
+| `NOTE pair-drift` / `differs` / `missing` | A runtime copy is absent, or differs from its twin or from the target | Expected before an update; replaced in step 5 |
+| `NOTE conflict-copy` | Sync-client duplicates sit in the update surface | "Conflict copies" below |
+| `NOTE template-copy` | The project keeps its own copy of the templates | Report in step 7; see "New optional artifacts and orphans" |
+| `NOTE doc-name` | An active document has no canonical template name | Resolve through the AI Context table as described under Ownership |
+| `NOTE pool-syntax` | The AI Context uses a model-pool syntax the target release no longer reads | "Model pool syntax" below |
+| `NOTE new-skill` | The target ships a skill the project does not manage | Report in step 7; "Add a skill to a managed project" below when the user wants it |
+
+The final `INSPECT managed=… decisions=N notes=N` line is the summary. `decisions=0` means nothing
+in the inspection needs a human.
+
 ## Step 3 — Build the update set
 
 ### Framework-owned
@@ -125,7 +171,49 @@ ignored by Git. A matching version marker alone is not proof of a complete updat
   for local settings, caches, credentials, and machine-only state.
 
 A framework-owned difference from the target release is expected. Do not merge or preserve edits
-inside framework-owned copies.
+inside framework-owned copies — with the one exception the inspection names: a `DECISION local-edit`
+is a difference from the release the project *records*, which means a person wrote it. That content
+is moved or escalated before the file is replaced.
+
+### Renamed managed skills
+
+The target release's `skills/RENAMES` lists every skill name the framework has replaced, as
+`old-name new-name since-version`. For each `RENAMED old -> new` line:
+
+1. Install the new name from `$TMP/cf/skills/<new>/` into both runtime roots.
+2. Remove the two exact directories of the old name — Delegated when both hold only framework-owned
+   files, exactly as for a retired skill; otherwise Escalation.
+3. Rewrite the `skills:` line in the AI Context setup block to the new name.
+4. Search the project's documents for the old name and the old path
+   (`grep -rn '<old>' docs/ --include='*.md'`). Update references in active documents; leave
+   `docs/archive/` alone. Report the count.
+
+A renamed skill is an update of the same skill, not an optional new one: do not report it as
+"available" and do not leave the old directory beside the new one.
+
+### Conflict copies
+
+A file or directory whose name ends in a space and a number — `SKILL 2.md`, `dispatch 2.sh`,
+`prompts 2/` — inside `.agents/skills/`, `.claude/skills/`, or `docs/` is a duplicate written by a
+sync client (iCloud, Dropbox, OneDrive) when two machines changed the same path. It is not project
+content and not framework content. Untracked copies inside a managed skill directory disappear when
+step 5 replaces that directory. For the others: confirm with `git status --short` that each is
+untracked and that its numberless twin exists, list them, and delete them as part of the update
+only when the user has delegated deletion of untracked files; otherwise hand the list back.
+A *tracked* conflict copy is a decision for the user. Recommend moving the build to a Git worktree
+outside the synced directory (`setup.md` of `plan-driven-build`, "Where the repository lives").
+
+### Model pool syntax
+
+`NOTE pool-syntax` means the AI Context still carries a form the target `plan-driven-build` does
+not parse. Rewrite it in place, changing no model choice:
+
+- `--local-fallback NAME` in a documented dispatch command becomes a pool entry `cli:NAME` at the
+  end of that level's pool.
+- A bare provider name in a pool line becomes `cli:NAME`; an aimux profile stays a bare name.
+
+Read the target `skills/plan-driven-build/setup.md`, "Which CLI runs a dispatch", for the current
+grammar, and add the AI Context to `UPDATE_PATHS`.
 
 ### Retired managed skills
 
@@ -140,7 +228,11 @@ For each existing `docs/NN-*.md` with a corresponding target template:
 
 1. Use the target template as the structural destination.
 2. Move filled-in project passages to the matching section **unchanged**.
-3. Keep new template sections with their placeholder text when the project has no content yet.
+3. Keep new template sections with their placeholder text when the project has no content yet —
+   unless the section cannot apply to this project (a deployment section in a library, a UI section
+   in a CLI). Write `Not applicable – <reason in one line>` there instead of leaving placeholders
+   that the next reader has to decide about again. When it is unclear whether a section applies,
+   keep the placeholder and list it in step 7.
 4. Re-attempt placement of any existing
    `## Parked content (no matching section in current template)` entries.
 5. Put content that still has no matching home under that exact parked-content heading.
@@ -159,13 +251,56 @@ unless the user separately requested that cleanup.
 ### New optional artifacts and orphans
 
 - New framework skills not already managed: report them as available with a one-line use/trigger
-  description. Do not install them automatically.
+  description. Do not install them automatically. A skill listed in `skills/RENAMES` as the
+  successor of a managed one is not new; see "Renamed managed skills".
+- A project copy of the templates (`docs/templates/`, `templates/`, or wherever `NOTE template-copy`
+  points): the framework does not own it and the update does not touch it. Report it with its
+  version and say that it is now stale; the project either deletes it (templates are read from the
+  release when needed) or asks for it to be refreshed, which is a separate, explicit request.
 - New templates not already used: report them as available. Add one autonomously only when existing
   documented project intent makes it clearly required without inventing product content.
 - Files no longer shipped by the framework but not covered by retired managed-skill handling:
   report them with a recommendation. Check target/history before calling a rename an orphan.
 
 These are non-blocking unless ownership is ambiguous.
+
+### Add a skill to a managed project
+
+Use this when the user asks for a framework skill the project does not manage yet. It is the same
+operation whether it happens during an update or on its own; on its own, resolve and pin the
+release the project already records (step 1 with `NEW` set to that tag) instead of the newest.
+
+1. Copy the complete directory from the pinned checkout into both runtime roots — never `SKILL.md`
+   alone, and never from `main`:
+
+   ```bash
+   SKILL_NAME=plan-driven-build
+   for root in .agents/skills .claude/skills; do
+     mkdir -p "$root"
+     rm -rf "${root:?}/${SKILL_NAME}"
+     cp -R "$TMP/cf/skills/${SKILL_NAME}" "$root/${SKILL_NAME}"
+   done
+   diff -qr ".agents/skills/${SKILL_NAME}" ".claude/skills/${SKILL_NAME}"
+   ```
+
+2. Install its dependencies the same way: `project-driver` requires `plan-driven-build`.
+3. Make sure neither copy is ignored (`git check-ignore -v .claude/skills/${SKILL_NAME}/SKILL.md`
+   must print nothing); narrow `.gitignore` if it is.
+4. Add the name to the `skills:` line of the AI Context setup block.
+5. Read the skill's `setup.md` when it has one and collect **every** value its runtime contract
+   needs — model pools, build environment file, preflight, gate command, rollout budget — then ask
+   for the ones the project does not already document in a single question. A value asked for
+   three steps into the first run costs a run.
+6. Suggest the client permission rules the skill ships (`settings.example.json` beside its
+   `SKILL.md`). They are a convenience in the client's own settings, separate from the
+   `clarity-authority` block, and the user adds them; the update does not write client settings.
+7. Run the verifier with the new list, then commit the two directories, the AI Context, and any
+   `.gitignore` change together:
+
+   ```bash
+   bash "$TARGET_UPDATE_SKILLDIR/scripts/verify-managed-runtime.sh" \
+     --target-root "$TMP/cf" --managed-skills "$FINAL_MANAGED_SKILLS" --smoke yes
+   ```
 
 ## Step 4 — Classify and continue
 
@@ -222,13 +357,18 @@ runtime verifier against the **installed** copies:
 ```bash
 FINAL_MANAGED_SKILLS=''
 if [ -r docs/00-ai-context.md ]; then
-  FINAL_MANAGED_SKILLS=$(sed -n 's/^skills:[[:space:]]*//p' docs/00-ai-context.md     | head -1 | tr -d '[:space:]')
+  FINAL_MANAGED_SKILLS=$(sed -n 's/^skills:[[:space:]]*//p' docs/00-ai-context.md \
+    | head -1 | tr -d '[:space:]')
 fi
 
-bash "$TARGET_UPDATE_SKILLDIR/scripts/verify-managed-runtime.sh"   --target-root "$TMP/cf"   --managed-skills "$FINAL_MANAGED_SKILLS"   --smoke yes
+bash "$TARGET_UPDATE_SKILLDIR/scripts/verify-managed-runtime.sh" \
+  --target-root "$TMP/cf" --managed-skills "$FINAL_MANAGED_SKILLS" --smoke yes
 ```
 
-This verification is release-critical, not optional. For a managed `project-driver` it proves that
+This verification is release-critical, not optional. For a managed `plan-driven-build` it proves
+that both runtime roots hold the complete payload — dispatcher, supervisor, health and evidence
+tools, every prompt — that `dispatch.sh` is executable, and that the installed copy passes its own
+regression tests on this machine. For a managed `project-driver` it proves that
 both runtime roots contain the target release's exact Mission Runner, mandatory handoff rules,
 completion-audit prompt, mission controller, authority resolver, and the supervised
 `plan-driven-build` dependency. It also runs the installed runtime's regression tests, including
@@ -245,8 +385,12 @@ bash "$TARGET_UPDATE_SKILLDIR/scripts/render-update-commit.sh" --version "$NEW_V
 bash -n "$TMP/commit-update.sh"
 ```
 
-The renderer also auto-includes tracked active `docs/NN-*.md` carrying a Clarity marker. That is a
-backward-compatibility safeguard for older updater procedures that rendered before stamping.
+Always commit through the renderer; do not write the `git add`/`git commit` by hand. It commits
+exactly the listed paths, leaves staged work that is not part of the update staged and uncommitted,
+and produces the same message for every project. The renderer also auto-includes tracked active
+`docs/NN-*.md` carrying a Clarity marker. That is a backward-compatibility safeguard for older
+updater procedures that rendered before stamping. A project commit hook that rejects the message
+format is a project rule: adapt the message in the generated script, not the path list.
 
 Inspect the generated `UPDATE_PATHS`. If commits are Delegated, execute:
 
@@ -264,9 +408,10 @@ paths remain staged and uncommitted.
 Report, in this order:
 
 1. Anything that still needs human action: Escalation/Reserved items, new empty sections, parked
-   content, and optional new skills/templates worth considering.
-2. Framework-owned replacements/removals and confirmation that both runtime copies match and are not
-   ignored.
+   content, conflict copies left in place, a stale project copy of the templates, client permission
+   rules worth adding, and optional new skills/templates worth considering.
+2. Framework-owned replacements/removals/renames and confirmation that both runtime copies match
+   and are not ignored.
 3. Active project documents structurally merged/stamped, plus orphans/recommendations.
 4. The update commit SHA when Delegated; otherwise the renderer's exact commit block.
 
@@ -280,3 +425,8 @@ Do not ask for routine confirmation after a successful Delegated update.
   unambiguous, otherwise escalate.
 - A new optional skill is not a migration requirement merely because the target release ships it.
 - The target tag, not the installed updater version and not repository `main`, defines the run.
+- An update never moves a project backwards. A project that records a version newer than the newest
+  stable tag is tracking unreleased work; the answer is to wait for the release or to say so
+  explicitly, not to replace newer files with older ones.
+- Between updates, `verify-managed-runtime.sh --smoke no` against a checkout of the recorded
+  release is a cheap project-gate check that the managed skills are still the released ones.

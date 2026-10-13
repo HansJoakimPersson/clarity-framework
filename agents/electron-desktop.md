@@ -1,4 +1,4 @@
-# AGENTS.md - Electron Desktop v1.0
+# AGENTS.md - Electron Desktop v1.1
 
 Guidance for agents working in Electron desktop applications that should feel native on macOS, Windows, and Linux.
 Apply the Core Rules to every Electron project, then apply only the optional profiles that match the project in
@@ -7,6 +7,15 @@ front of you.
 Electron gives you a browser engine, not a desktop application. Everything that makes an app feel native — window
 behaviour, menus, shortcuts, dialogs, theming, and startup timing — has to be built deliberately. Treat "it looks
 like a website in a window" as a defect, not a starting point.
+
+## Clarity Documents
+
+- This file is framework-owned and replaced on every framework update. Project rules belong in
+  `docs/`, which the framework never overwrites.
+- Documents are named here by canonical template name. When the project names one differently, the
+  "Where is more context?" table in `docs/00-ai-context.md` gives its path.
+- Change a document in the section that owns the fact. Do not append dated notes or progress logs,
+  and give a new ADR the highest existing number plus one.
 
 ## How To Use This Guide
 

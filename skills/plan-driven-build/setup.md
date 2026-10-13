@@ -68,8 +68,8 @@ Reasoning effort is independent from model selection. Use `dispatch.sh --reasoni
 summary reports both `model=` and `reasoning_effort=` so a run can be audited without guessing
 whether `medium` was a model name or a reasoning setting.
 
-For new workflows, also use `--phase`, `--job-id`, and the automatic ledger beside `--out` or
-`--log`. Add `--preflight FILE` for project-owned read-only runtime and service checks. The
+For new workflows, also use `--phase`, `--job-id`, and the automatic ledger (in the run directory
+of a foreground dispatch, beside `--log` for a background one). Add `--preflight FILE` for project-owned read-only runtime and service checks. The
 `implementation` phase fails closed unless it runs in the background under a writable mode with
 both `--model` and `--max-rollout-tokens`; planning, review, and verification fail closed unless
 they remain read-only. When child
@@ -108,7 +108,13 @@ underneath.
 A pool entry written `cli:NAME` (for example `--profile codework1,cli:codex`) is an explicit
 escape hatch: it runs `NAME` directly, with no `aimux run` wrapper and no subscription separation,
 and only after every real profile ahead of it fails to resolve. `dispatch.sh` prints a `FALLBACK:`
-line whenever it is used.
+line when it stands in for a profile that did not resolve. A pool that consists only of `cli:`
+entries is a deliberate single-subscription setup, not a fallback, and prints no such line.
+
+**Pool syntax.** Every entry is either an aimux profile name or `cli:NAME`. A bare CLI name
+(`codex`) is read as a profile called `codex`; when no entry resolves, the error lists the profiles
+that exist. Projects whose runtime contract was written before the `cli:` form existed should
+rewrite a bare CLI name to `cli:NAME` in `docs/00-ai-context.md`.
 
 That boundary matters for ownership. A project changes tools with `aimux profile update`, never by
 editing this skill: the copied skill is framework-owned and is replaced wholesale at the next
@@ -161,6 +167,30 @@ subscription pays. `dispatch.sh --profile` refers to the aimux one.
 `danger-full-access` solves the same problem more bluntly by removing the sandbox entirely. Do not
 use it as the default; unattended implementation should still run inside a sandbox.
 
+### An orchestrator that is itself sandboxed
+
+A sandboxed process cannot start another sandbox. When the orchestrator's own shell runs inside
+one — Claude Code with its Bash sandbox enabled, or Codex without the profile above — the
+dispatched CLI fails before its first event with `operation not permitted`, and `dispatch.sh`
+reports `failure_class=environment.sandbox-nested`. Changing profile or model does not help. Run
+the dispatch commands outside the orchestrator's sandbox: in Claude Code, allow
+`dispatch.sh` to run unsandboxed (the excluded-commands setting, or approve the unsandboxed
+retry); in Codex, use the `orchestrator` profile. The dispatched agent still runs in its own
+sandbox, so nothing is lost.
+
+### What the build sandbox cannot do
+
+The Implementation sandbox confines more than writes. Inside it, a browser, Electron, or any GUI
+process cannot start (on macOS the launch is refused or aborts), suites that open many file
+watchers or sockets fail with `EMFILE` or `EPERM`, and services outside the workspace are
+unreachable. These are properties of the sandbox, not defects in the code, and a build agent that
+meets one will spend its remaining budget "fixing" it.
+
+So the plan assigns such commands to the **Orchestrator** in its Verification table, the build
+prompt tells the agent to report them as `SANDBOX-BLOCKED` and move on, and step 4b of `SKILL.md`
+runs them from the orchestrator's shell with `evidence.sh`. Do not solve this by giving the build
+`danger-full-access`.
+
 ### Implementation and the build environment
 
 Codex uses local binaries, but a sandboxed non-interactive dispatch may not see the same login-shell
@@ -186,9 +216,30 @@ if command -v /usr/libexec/java_home >/dev/null 2>&1; then
 fi
 
 # Keep Maven artifact writes inside the workspace sandbox instead of ~/.m2.
-MAVEN_OPTS="${MAVEN_OPTS:-} -Dmaven.repo.local=$PWD/.m2/repository"
+# A relative path on purpose: MAVEN_OPTS is split on whitespace, so "$PWD" breaks every
+# Maven command as soon as the project path contains a space ("My Projects/app").
+MAVEN_OPTS="${MAVEN_OPTS:-} -Dmaven.repo.local=.m2/repository"
 export MAVEN_OPTS
 ```
+
+The same trap exists in every variable a tool splits on whitespace (`MAVEN_OPTS`, `JAVA_OPTS`,
+`NODE_OPTIONS`, `GOFLAGS`): use a path relative to the directory the build runs from, or a tool
+setting that takes the path as one value (`.mvn/maven.config`, `.npmrc`). `dispatch.sh` prints a
+`WARNING` line when the repository path contains a space.
+
+Pair the env file with a preflight that actually runs the tool, so a broken environment fails in a
+second instead of inside a build:
+
+```sh
+#!/usr/bin/env sh
+# .agents/preflight.sh — read-only; must not repair anything.
+set -eu
+[ ! -f .agents/build-env.sh ] || . .agents/build-env.sh
+mvn -q -version >/dev/null    # or: npm --version, go version, dotnet --version
+```
+
+Step 4 passes it with `--preflight` when the file exists. `test -d .m2` is not a preflight: it
+passed on a project whose every Maven command was failing.
 
 Step 4 passes the selected file with `dispatch.sh --env-file FILE`. The file is sourced before
 `codex exec`, so Codex and every build command it starts inherit the same environment. Use the
@@ -244,6 +295,43 @@ verification.
 `danger-full-access` is still the wrong tool here. It removes the sandbox altogether, which is a
 much larger grant than the one thing a build actually needs.
 
+### Where the repository lives
+
+Keep the repository out of cloud-synced folders (iCloud Drive, Dropbox, OneDrive, Google Drive).
+A sync client that sees an agent rewrite a file creates conflict copies — `SKILL 2.md`,
+`dispatch 2.sh` — that then get committed, shipped, or picked up as a second skill. When the
+repository must stay there, build in a git worktree outside the synced root:
+
+```bash
+git worktree add ~/worktrees/<project>-<short-name> -b <branch>
+```
+
+`dispatch.sh` and `project-health.sh` warn when they detect a synced path.
+
+### Reading a dispatch's output
+
+A dispatch's stdout is a JSONL event stream. It is stored as `<name>.events.jsonl`; the readable
+view is:
+
+```bash
+sh "$SKILLDIR/dispatch-tail.sh" --events "$RUN/build.events.jsonl" --lines 15
+```
+
+One bounded line per event: type, command, exit code, message. A finished background build also
+appends a plain-text summary to its `--log`, so `tail -45 "$RUN/build.log"` is normally enough.
+
+### Sizing the rollout budget
+
+`--max-rollout-tokens` caps one Implementation dispatch. The number in the runtime contract should
+come from measurement: every finished dispatch records `total_tokens` in its ledger and health
+file, including one that stopped on its budget. As a starting point before any data exists, take
+about 200 000 tokens for an increment of up to 5 files and roughly 100 000 more for each further 3
+files, and split a plan that would need more than about 600 000. Then replace the guess with the
+largest figure the project's own completed builds actually used, plus a third. Input tokens are
+counted on every turn, so a long build re-reads its context many times; the figure is far larger
+than the size of the diff. A budget stop with every step reported complete is a verification
+problem, not a reason to raise the ceiling — see `SKILL.md` step 4.
+
 Codex reads the shared skill from `.agents/skills/plan-driven-build/SKILL.md`. Start the orchestrator
 profile and select `$plan-driven-build`; no separate prompt installation is needed.
 
@@ -262,8 +350,17 @@ convenience — it removes permission prompts for the commands this workflow run
 project that prefers to approve them interactively can drop it entirely without weakening anything.
 Treat `allow` as a starting point to adjust per project; treat `deny` as the part to keep.
 
-The `allow` list covers dispatch, the Git commands the workflow actually runs, and reading the plan
-directory. Routing every dispatch through `dispatch.sh` makes it matchable: a background command
+The `allow` list covers dispatch and its read-only helper scripts (`dispatch-health.sh`,
+`dispatch-tail.sh`, `context-pack.sh`, `project-health.sh`), the Git commands the workflow actually
+runs, and reading the plan directory. `evidence.sh` is deliberately absent: it runs whatever
+verification command the plan names, so allowing it allows any command. Add
+`Bash(sh "$SKILLDIR/evidence.sh":*)` yourself in a project where that is acceptable.
+
+These rules belong to the client, not to the framework's authority contract. The
+`clarity-authority` block in `docs/00-ai-context.md` says what an agent *may* decide; it does not
+stop Claude Code or Codex from asking before a command. A project that declares `local-commit` as
+Delegated but has no matching `allow` rule will still be prompted at every commit — add the rule
+here, in the project's client settings. Routing every dispatch through `dispatch.sh` makes it matchable: a background command
 with environment prefixes is difficult to describe reliably, while a stable script path is not.
 
 Its patterns match the literal command text, before the shell expands anything. `SKILL.md` step 0

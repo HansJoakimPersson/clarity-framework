@@ -101,29 +101,52 @@ while IFS= read -r ref; do
     [ "$file_bytes" -le "$MAX_FILE_BYTES" ] || die "context-pack.sh: whole-file reference exceeds $MAX_FILE_BYTES bytes; add a #heading selector: $path ($file_bytes bytes)"
     cat "$path" > "$SECTION"
   else
-    if ! awk -v selector="$selector" '
+    # Resolve the selector to one heading line. A planner writes what it sees: the exact heading
+    # text, a GitHub-style slug of it, or the heading without the backticks a reference cannot
+    # carry. All three must find the same section, and an exact match must beat a looser one.
+    # Case folding covers ASCII only; non-ASCII letters must match as written.
+    target=$(awk -v selector="$selector" '
+      function plain(t) {
+        gsub(/`/, "", t)
+        gsub(/[[:space:]]+/, " ", t)
+        sub(/^ /, "", t); sub(/ $/, "", t)
+        return tolower(t)
+      }
+      function slug(t) {
+        t = plain(t)
+        gsub(/[][!"#$%&\047()*+,.\/:;<=>?@\\^{|}~]/, "", t)
+        gsub(/ /, "-", t)
+        return t
+      }
+      BEGIN { want_plain = plain(selector); want_slug = slug(selector); best = 9 }
+      /^```/ { fenced = !fenced; next }
+      fenced { next }
+      /^#+[[:space:]]/ {
+        title = $0
+        sub(/^#+[[:space:]]+/, "", title)
+        sub(/[[:space:]]+#*[[:space:]]*$/, "", title)
+        rank = 9
+        if (title == selector) rank = 1
+        else if (plain(title) == want_plain) rank = 2
+        else if (slug(title) == want_slug) rank = 3
+        else if (index(title, selector) > 0) rank = 4
+        else if (index(plain(title), want_plain) > 0) rank = 5
+        if (rank < best) { best = rank; line = NR }
+      }
+      END { if (best < 9) print line }
+    ' "$path")
+    [ -n "$target" ] || die "context-pack.sh: heading selector not found: $ref (cite the heading text as written, without backticks, or its slug)"
+    awk -v target="$target" '
       function heading_level(line, x) {
         x=line
         sub(/[^#].*$/, "", x)
         return length(x)
       }
-      /^#+[[:space:]]/ {
-        level=heading_level($0)
-        title=$0
-        sub(/^#+[[:space:]]+/, "", title)
-        if (!found && index(title, selector) > 0) {
-          found=1
-          selected_level=level
-          print
-          next
-        }
-        if (found && level <= selected_level) exit
-      }
+      /^```/ { fenced = !fenced }
+      NR == target { found=1; selected_level=heading_level($0); print; next }
+      found && !fenced && /^#+[[:space:]]/ && heading_level($0) <= selected_level { exit }
       found { print }
-      END { if (!found) exit 42 }
-    ' "$path" > "$SECTION"; then
-      die "context-pack.sh: heading selector not found: $ref"
-    fi
+    ' "$path" > "$SECTION"
   fi
 
   {

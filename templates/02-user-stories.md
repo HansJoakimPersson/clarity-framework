@@ -45,7 +45,9 @@ This file is active working memory, not the permanent story archive. After relea
 full detail for Done/Dropped stories to `docs/archive/stories/YYYY.md` (or an epic-specific archive)
 and keep only ID/title/terminal status/release/archive pointer in the active index/traceability.
 
-**Status values:** Draft · Ready · In progress · In review · Done · Dropped.
+**Status values:** Draft · Ready · In progress · In review · Built · Done · Dropped.
+`Built` means verified against the plan with a green gate; `Done` means each acceptance criterion
+was observed on real input and the observation is recorded (§2.3 of the Requirements Documentation).
 A Dropped story keeps its ID and reason in the archive/index; IDs are never reused.
 
 ---
@@ -64,7 +66,7 @@ A Dropped story keeps its ID and reason in the archive/index; IDs are never reus
 | **Epic** | [Epic name] |
 | **Role** | R1 – [Role name] |
 | **Priority** | M / S / C / W |
-| **Status** | Draft / Ready / In progress / In review / Done / Dropped |
+| **Status** | Draft / Ready / In progress / In review / Built / Done / Dropped |
 | **Size** | XS / S / M / L *(L must be split before it is Ready)* |
 | **Related NFR** | NFR-[ID] *(if applicable)* |
 | **Depends on** | FR-[ID] *(if applicable)* |
@@ -103,7 +105,7 @@ AC-001-2:
 | **Epic** | [Epic name] |
 | **Role** | R1 – [Role name] |
 | **Priority** | M / S / C / W |
-| **Status** | Draft / Ready / In progress / In review / Done / Dropped |
+| **Status** | Draft / Ready / In progress / In review / Built / Done / Dropped |
 | **Size** | XS / S / M / L |
 
 **Story:**
@@ -136,7 +138,7 @@ AC-002-1:
 | **Epic** | [Next epic name] |
 | **Role** | R2 – [Role name] |
 | **Priority** | M / S / C / W |
-| **Status** | Draft / Ready / In progress / In review / Done / Dropped |
+| **Status** | Draft / Ready / In progress / In review / Built / Done / Dropped |
 | **Size** | XS / S / M / L |
 
 **Story:**
@@ -168,4 +170,4 @@ AC-010-1:
 *Next step: Keep the story map, epic overview, and traceability table in `docs/02-requirements.md`
 aligned with this backlog whenever a story is added, split, or dropped.*
 
-*Clarity Framework v4.4.0 – User Stories*
+*Clarity Framework v4.5.0 – User Stories*

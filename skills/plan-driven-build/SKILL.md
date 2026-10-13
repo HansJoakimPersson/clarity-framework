@@ -11,9 +11,9 @@ full diff — you read bounded distillates produced by agents that did that read
 
 | Level | Does | Must not |
 | --- | --- | --- |
-| **Orchestrator** (you) | Sequences, holds gates, writes the run journal | Read code or diffs, write production code |
-| **Reasoning** | Drafts the plan (step 1), verifies the diff against it (step 5) | Change documented project intent or cross an authority boundary |
-| **Implementation** | Builds an approved plan (step 4) | Change Goal/Included/Excluded, requirements, or architectural boundaries; may resolve local reversible plan gaps |
+| **Orchestrator** (you) | Sequences, holds gates, writes the run journal, runs the verification commands and the product itself and records the result as evidence | Read code or diffs, write production code |
+| **Reasoning** | Drafts and revises the plan (steps 1 and 3), verifies the diff against it (step 5) | Change documented project intent or cross an authority boundary |
+| **Implementation** | Builds an approved plan (step 4) | Change Goal/Included/Excluded, requirements, or architectural boundaries; write the plan, the journal, or run state; may resolve local reversible plan gaps |
 
 Reasoning and Implementation must run under **a different aimux profile than you**. That is the
 point of the workflow: not context isolation, but moving token spend off the metered interactive
@@ -35,7 +35,9 @@ Everything below exists to keep **your** context small. Per round you may read:
 | Context pack | Generated mechanically; do not read unless diagnosing a pack failure |
 | The plan | Once, after step 1 |
 | Critique report | 40 lines |
-| Build log | `tail -30`, only on failure |
+| Build log | `tail -45`: the summary the supervisor appends when the build ends |
+| Event stream | `dispatch-tail.sh --events FILE --lines 15`, only on failure |
+| Evidence file | The `EVIDENCE` summary lines; one entry's tail when a command failed |
 | Verification report | One line per Definition of Done condition + 10 lines of deviations |
 | Run journal | ~30 lines, on resume |
 
@@ -52,6 +54,32 @@ You may **not** read: `git diff`, source files, the full build log, the prompt f
 that exceeds its budget — truncate it and say you did. If you find yourself reading the codebase
 "to be sure", the workflow has already failed; say so rather than continue.
 
+**Running is not reading.** The ban covers source and diffs. It does not cover executing the
+project: you run the plan's Orchestrator-owned verification commands, and the product itself on
+real input, and you look at what comes out. That is the one thing no read-only agent can do for
+you, and three projects reached "Done" on fixtures while the real input still failed. Keep the
+output out of your context with `evidence.sh` (step 4b); read its summary line, not the log.
+
+A dispatch's stdout is a JSONL event stream, not prose. Never `tail` or `grep` a `*.events.jsonl`
+or `*.raw.log` file; `dispatch-tail.sh` prints the same information as one bounded line per event.
+
+## Shell rules for the commands below
+
+The snippets run unchanged in `sh`, `bash`, and `zsh`. When you adapt one, keep three habits —
+each has cost a real run a failed command:
+
+- **Optional arguments go through `set --` and `"$@"`**, never through an unquoted string
+  variable. zsh does not split `$model_args` into words, so the whole string arrives as one
+  argument.
+- **Write `${VAR}` when a colon follows**: `"${TAG}:path"`. In zsh `"$TAG:path"` applies `:p` as
+  a modifier and silently produces a different string.
+- **Dates come from `$(date +%F)`**, never from memory. A journal has been written with a date
+  two years off, which then made every age check wrong.
+
+Each snippet assumes the variables from step 0 are set in the same shell. If your harness starts
+a fresh shell per command, keep the assignments in `$RUN/vars.sh` and begin each command with
+`. "$RUN/vars.sh"`.
+
 ## Execution safety contract
 
 Every dispatch has a bounded execution contract. The lifecycle is:
@@ -61,8 +89,10 @@ preflight -> planning -> implementation -> verification -> review -> finalizatio
 ```
 
 Use the phase that matches the dispatch and record its status in the journal. The shared failure
-classes are `environment`, `environment.rate_limit`, `environment.preflight`, `configuration`,
-`model-routing`, `timeout`, `budget`, `verification`, `implementation`, `plan`, and `unknown`; a failure is retryable only when the dispatch evidence says it is. Rate limits,
+classes are `environment`, `environment.rate_limit`, `environment.preflight`,
+`environment.sandbox-nested`, `configuration`, `model-routing`, `timeout`, `timeout.stalled`,
+`timeout.wall`, `budget`, `verification`, `implementation`, `plan`, and `unknown`; a failure is
+retryable only when the dispatch evidence says it is. Rate limits,
 temporary service unavailability, and timeouts may be retryable. Runtime, repository, model-routing,
 verification, and plan failures are not automatically retryable.
 
@@ -71,14 +101,28 @@ read-only check when a runtime or service is required:
 
 ```bash
 "$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" --mode read-only \
-  --preflight .agents/preflight.sh --job-id "$ID-plan" \
+  --preflight .agents/preflight.sh --job-id "${ID}-plan" \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<outcome>" --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
-  --var DATE="$(date +%F)" --out "$PLAN" --max-lines 200
+  --var PLAN="$PLAN" --var BRANCH="$BRANCH" \
+  --var DATE="$(date +%F)" --out "$PLAN" --max-lines 220
 ```
 
 A failed preflight stops before the agent runs and is never sent through the read-only retry pool.
-The preflight script must not repair the environment or modify application files.
+The preflight script must not repair the environment or modify application files. A preflight that
+only checks that a directory exists proves nothing: have it run the build tool once
+(`mvn -q -version`, `npm --version`, `go version`) under the same env file the build will get, so a
+broken toolchain path fails here in a second instead of inside a build that spends its budget on it.
+
+Every dispatch runs with **stdin closed** and under a watchdog. A foreground dispatch that produces
+no output for 15 minutes, or runs longer than an hour, is terminated with exit `124` and
+`failure_class=timeout.stalled` or `timeout.wall` and, for a read-only level, retried on the next
+profile in the pool; change the ceilings with `--stall-timeout-seconds` and
+`--wall-timeout-seconds`. You never need to wrap a dispatch in your own timeout or redirect.
+
+`environment.sandbox-nested` means the dispatched CLI could not start its own sandbox because the
+orchestrator's shell is itself sandboxed (`operation not permitted` before the first event). No
+profile change fixes that: run the dispatch from an unsandboxed shell, as `setup.md` describes.
 
 When a dispatch creates or may create child agents, pass the requested model to both aimux and the
 underlying CLI (the dispatcher does this for Codex), and supply model evidence after the run. The
@@ -92,15 +136,29 @@ file contains one observed parent or child model per non-empty line:
 
 Any observed model different from the effective model fails closed with `failure_class=model-routing`.
 An explicit model handoff must be documented in the journal before it is accepted. A compact ledger
-is written automatically beside `--out` or `--log` unless `--ledger` overrides that path. It records
-the job, phase, profile, requested and effective model, reasoning effort, rollout-budget ceiling,
-attempt count, retryability, failure class, model policy, and token usage. Codex dispatches collect
-native JSONL `turn.completed.usage` fields (input, cached input, cache-write input, output, reasoning
-output); environment `CF_*` values remain a fallback for other runtimes. The ledger also records
-exit status. If the
-runtime exports `CF_INPUT_TOKENS`, `CF_OUTPUT_TOKENS`, or `CF_TOTAL_TOKENS`, those values are copied;
-otherwise the ledger records `unavailable`. Raw output remains a debugging artifact, not the primary
-run record.
+is written automatically unless `--ledger` overrides its path. It records the job, phase, profile,
+requested and effective model, reasoning effort, rollout-budget ceiling, attempt count,
+retryability, failure class, model policy, exit status, and token usage. Raw output remains a
+debugging artifact, not the primary run record.
+
+**Where a dispatch puts its files.** `--out` receives the report and nothing else. Events, stderr,
+and the ledger of a foreground dispatch go to a run directory: beside `--out` when that is already
+under `.runs/`, otherwise `<out directory>/.runs/<out name>/`, so a plan written to `docs/plans/`
+never gets raw attempt files next to it. `--artifacts-dir DIR` overrides the location. A background
+dispatch writes beside `--log`: `<name>.exit` (sentinel), `<name>.health`, `<name>.events.jsonl`,
+`<name>.report.md` (the build agent's own report), `<name>.final.md` (its last message), and
+`<name>.ledger.tsv`. A second dispatch to the same `--log` archives the earlier attempt's files to
+`attempts/<name>-N/` first, so a retry never overwrites the failure it follows.
+
+**Token figures.** Usage is read from the event stream: per-turn `turn.completed` usage summed, or
+the last cumulative token count when a run dies before a turn completes — the budget stop being
+exactly that case. `total_tokens` in the ledger and health file is input plus output, and input
+includes cached input. The rollout budget is enforced by the CLI on its own count, which need not
+equal that sum, so compare a run to its ceiling by `failure_class=budget`, not by arithmetic.
+`unavailable` means the stream carried no usage at all; `CF_INPUT_TOKENS`, `CF_OUTPUT_TOKENS`, and
+`CF_TOTAL_TOKENS` are then copied if the runtime exports them. Record the figure in the journal
+after each dispatch — an unmeasured budget is how one project raised its ceiling four times on
+experience instead of data.
 
 Retries are bounded by the remaining read-only profile pool and may be further limited with
 `--max-retries N`. Workspace-write and background dispatches never retry automatically after launch.
@@ -197,14 +255,33 @@ else
   printf '%s\n' 'plan-driven-build is not installed for Codex or Claude Code' >&2
   exit 2
 fi
-PLAN=docs/plans/$ID.md
-JOURNAL=docs/plans/$ID.run.md
-RUN=docs/plans/.runs/$ID
-CONTEXT_PACK=$RUN/context.md
+PLAN="docs/plans/${ID}.md"
+JOURNAL="docs/plans/${ID}.run.md"
+RUN="docs/plans/.runs/${ID}"
+CONTEXT_PACK="$RUN/context.md"
+EVIDENCE="$RUN/evidence.md"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
 MAX_CONTEXT_PACK_BYTES=65536
 MAX_CONTEXT_FILE_BYTES=24576
 mkdir -p "$RUN" && cp "$SKILLDIR/journal-template.md" "$JOURNAL"
+sh "$SKILLDIR/project-health.sh"
 ```
+
+`ID` starts with today's date from `date +%F`. `project-health.sh` prints one `NOTE` line per rule
+the project has drifted from — plans that outlived their change, an AI Context that became a log,
+modified files left uncommitted for days, a run of plans that deliver no requirement, runtime
+copies of a skill that differ, a repository inside a cloud-synced folder. It never blocks. Copy the
+`NOTE` lines into the journal and act on the ones that bear on this run before step 1:
+
+- **`worktree`** — tracked files modified more than a day ago are someone's unfinished work, not
+  background noise. Do not plan on top of them: get them committed or discarded first, or build in
+  a clean worktree. One project carried 47 uncommitted files for five days as its only copy.
+- **`plans`** — close out a stale plan before opening another; a transient plan that stays is a
+  second, wrong source of truth.
+- **`delivers`** — surface it. Three maintenance plans in a row is the signal that product work is
+  happening outside the requirements; see step 1 on `Delivers`.
+- **`location`** — a cloud-synced repository produces conflict copies such as `SKILL 2.md` while
+  agents write. Build in a git worktree outside the synced root.
 
 Then bind each level to a profile pool. **The profile names are the project's own aimux
 profiles** — read them from the runtime contract in `docs/00-ai-context.md` and set them here.
@@ -226,7 +303,7 @@ for pool in "$PROFILE_REASONING" "$PROFILE_IMPLEMENTATION" "$PROFILE_REVIEW"; do
   found=0
   for p in $(printf '%s' "$pool" | tr ',' ' '); do
     case "$p" in cli:*) found=1; continue ;; esac
-    grep -qE "^  $p:[[:space:]]*$" "$aimux_config" && { printf 'ok       %s\n' "$p"; found=1; }
+    grep -qE "^  ${p}:[[:space:]]*\$" "$aimux_config" && { printf 'ok       %s\n' "$p"; found=1; }
   done
   [ "$found" -eq 1 ] || printf 'MISSING  %s\n' "$pool"
 done
@@ -235,7 +312,9 @@ done
 A `MISSING` line means every profile in that pool is absent from `~/.aimux/config.yaml`, so the
 dispatch will fail unless the pool ends in a `cli:NAME` fallback entry — fix the pool in
 `docs/00-ai-context.md`, or run `aimux profile add <name> --cli <cli>`. `dispatch.sh` re-checks
-this per dispatch, but catch it here before the run starts. Which subscriptions fill which level,
+this per dispatch and, when no entry resolves, lists the profiles that do exist — but catch it here
+before the run starts. A pool is written as profile names or `cli:NAME`; a bare CLI name such as
+`codex` is read as a profile name. Which subscriptions fill which level,
 and in what order, is the project's decision: one profile may fill several levels, any profile may
 fill any level, and a pool exists to spread load across interchangeable subscriptions — not to give
 a level its own identity. For Implementation, the profile answers **who pays**; the explicit
@@ -266,21 +345,34 @@ Do not read the project's documents or code beyond what you need to state the ta
 read what it needs — that is the context you are not paying for twice.
 
 ```bash
-model_args=''
-[ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
-[ -n "${REASONING_EFFORT_REASONING:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_REASONING"
+set --
+[ -n "${MODEL_REASONING:-}" ] && set -- "$@" --model "$MODEL_REASONING"
+[ -n "${REASONING_EFFORT_REASONING:-}" ] && set -- "$@" --reasoning-effort "$REASONING_EFFORT_REASONING"
 
-"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" $model_args --mode read-only \
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" "$@" --mode read-only \
   --phase planning \
   --prompt-file "$SKILLDIR/prompts/1-plan.txt" \
   --var TASK="<one or two sentences: what should be true when this is done>" \
   --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
+  --var PLAN="$PLAN" --var BRANCH="$BRANCH" \
   --var DATE="$(date +%F)" \
-  --out "$PLAN" --max-lines 200
+  --out "$PLAN" --max-lines 220
 ```
 
 `TASK` is the only thing you contribute here, so make it carry the intent — the plan is only as good
 as this sentence. Build nothing in this step.
+
+**State the requirement and the milestone in `TASK` when you know them.** The plan's `Delivers`
+and `Milestone` fields are how an increment stays tied to where the project is going. `Delivers:
+None – maintenance` is for work with no behavior a user can observe. If the plan comes back `None`
+for work that adds or changes observable behavior, or cannot name a milestone, that is an
+**Escalation**, not a field to accept: write the requirement first, or record the deviation as a
+decision. Use `Track: research` for an experiment; it confines the work to one directory and keeps
+its output out of the product's contracts.
+
+**Size.** A plan that creates or changes more than about 12 files or needs more than 8 steps will
+not finish in one build dispatch. Split it now — two plans that each merge cost less than one build
+that stops at 80 % with an empty report.
 
 Immediately compile the plan's document references into the bounded context pack:
 
@@ -291,7 +383,9 @@ sh "$SKILLDIR/context-pack.sh" --plan "$PLAN" --out "$CONTEXT_PACK" \
 ```
 
 A pack failure is a planning defect, not permission to raise the ceiling. Narrow an oversized
-whole-file reference to an exact heading, remove irrelevant context, or split the increment. Record
+whole-file reference to an exact heading, remove irrelevant context, or split the increment. A
+heading reference matches the heading text as written, without backticks, or any unique part of
+it; an ID is enough (`#FR-017`). Record
 the resulting byte count and `git hash-object "$CONTEXT_PACK"` in the journal. The pack is local run state under `.runs/`; it is not
 committed and is never a new source of truth.
 
@@ -312,11 +406,11 @@ protects against `$PROFILE_REVIEW` being unresolved at runtime; if that fallback
 recorded on stdout and belongs in the journal.
 
 ```bash
-model_args=''
-[ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
-[ -n "${REASONING_EFFORT_REASONING:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_REASONING"
+set --
+[ -n "${MODEL_REASONING:-}" ] && set -- "$@" --model "$MODEL_REASONING"
+[ -n "${REASONING_EFFORT_REASONING:-}" ] && set -- "$@" --reasoning-effort "$REASONING_EFFORT_REASONING"
 
-"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REVIEW,$PROFILE_REASONING" $model_args --mode read-only \
+"$SKILLDIR/dispatch.sh" --profile "${PROFILE_REVIEW},${PROFILE_REASONING}" "$@" --mode read-only \
   --phase review \
   --prompt-file "$SKILLDIR/prompts/2-review.txt" \
   --var PLAN="$PLAN" --var CONTEXT_PACK="$CONTEXT_PACK" \
@@ -326,14 +420,68 @@ model_args=''
 The command prints `budget=within budget (n/40)` or `OVER BUDGET`. If it is over, read the first 40
 lines only and note the truncation in the journal.
 
-## Step 3 — Revise and classify decisions
+## Step 3 — Measure the baseline, revise, and classify decisions
 
-Write the objections you agree with into the plan yourself — a bounded edit, unlike reading source
-docs or diffs. Briefly justify the ones you dismiss; silent dismissal hides that the review happened.
+### 3a — Measure what the plan claims about today
+
+Every row of the plan's **Verification** table whose Baseline says `measure` is run now, on the
+commit the build will start from, before anything is approved:
+
+```bash
+sh "$SKILLDIR/evidence.sh" --out "$EVIDENCE" --label baseline-e2e \
+  --timeout-seconds 1800 --cmd '<the command from the Verification table>'
+```
+
+Add `--env-file .agents/build-env.sh` when the project has one. The script prints one `EVIDENCE`
+line with the exit code and keeps the output in `$RUN/evidence/`. Write the result into the plan's
+Baseline column (`green`, or `18 of 24 failing — evidence: baseline-e2e`) and make the Definition
+of Done relative to it. A plan that demands "exits 0" from a suite that is already red on the
+baseline cannot be met by a correct build, and neither the planner nor the reviewer can see that:
+they read code, they do not run it.
+
+A command that cannot run here cannot run for the verifier either. Fix the command, or the
+environment, before approving the plan.
+
+### 3b — Revise
+
+Review objections that turn on the code — a parser rule, an invariant, a data shape — go back to
+the planner, who has read the code. You have not, and a rule you write in from outside is a guess:
+one such rule ("a continuation line always belongs to the most recently opened node") was too
+absolute and cost a full build round. Marked **SPEC** in the review, they are revised by dispatch:
+
+```bash
+set --
+[ -n "${MODEL_REASONING:-}" ] && set -- "$@" --model "$MODEL_REASONING"
+[ -n "${REASONING_EFFORT_REASONING:-}" ] && set -- "$@" --reasoning-effort "$REASONING_EFFORT_REASONING"
+
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" "$@" --mode read-only \
+  --phase planning \
+  --prompt-file "$SKILLDIR/prompts/3-revise.txt" \
+  --var PLAN="$PLAN" --var REVIEW="$RUN/review.md" \
+  --var NOTES="<which objections you accept, which you dismiss and why; measured baselines>" \
+  --var PLAN_TEMPLATE="$SKILLDIR/plan-template.md" \
+  --out "$RUN/plan.revised.md" --max-lines 220
+```
+
+On exit 0, replace the plan with the revision (`cp "$RUN/plan.revised.md" "$PLAN"`). What you may
+write into the plan yourself is bounded: header fields, measured baselines, a resolved open
+question, wording — and, under **Follow-up rounds**, what you observed as a case: input, what
+happened, what should have happened. Never a rule about how the code must behave. Briefly justify
+the objections you dismiss; silent dismissal hides that the review happened.
+
+**Re-review when the revision changed behavior.** A revision that alters a step's description, the
+Verification table, or the Definition of Done is a new plan for the purposes of step 2: run the
+review once more against it. A revision that only tightens wording or fills a baseline is not.
+Stop after two revision rounds; a plan that still draws substantive objections is too large or
+rests on an unresolved decision — split it or escalate.
+
+### 3c — Scan and classify
 
 Before presenting it, scan the plan itself once more: placeholders ("TBD", "handle appropriately",
 a step with no file path or verification command), tasks that contradict each other or the stated
-`Excluded` list, and requirements a reader could take two ways. This is a bounded read of the plan
+`Excluded` list, requirements a reader could take two ways, a step whose Verification line needs a
+browser or GUI process instead of an Orchestrator-owned row, and a change that handles outside
+input with no **Real input for self-check**. This is a bounded read of the plan
 you already hold, not the source-diff reading the budget forbids. Fix what you can inline; classify anything you cannot resolve as Escalation or Reserved rather
 than using uncertainty itself as a blocker.
 
@@ -390,31 +538,41 @@ will answer. `--network` sets the sandbox's `network_access` for that one dispat
 read-only levels keep the default and the profile's stored configuration is untouched.
 
 ```bash
-build_env_args=
-[ -f .agents/build-env.sh ] && build_env_args='--env-file .agents/build-env.sh'
-[ -f .agents/build-env.local.sh ] && build_env_args='--env-file .agents/build-env.local.sh'
-
-test -n "${MODEL_IMPLEMENTATION:-}" || { printf '%s\n' 'MODEL_IMPLEMENTATION is required' >&2; exit 2; }
-test -n "${MAX_ROLLOUT_TOKENS_IMPLEMENTATION:-}" || { printf '%s\n' 'MAX_ROLLOUT_TOKENS_IMPLEMENTATION is required' >&2; exit 2; }
+test -n "${MODEL_IMPLEMENTATION:-}" || printf '%s\n' 'STOP: MODEL_IMPLEMENTATION is required' >&2
+test -n "${MAX_ROLLOUT_TOKENS_IMPLEMENTATION:-}" || printf '%s\n' 'STOP: MAX_ROLLOUT_TOKENS_IMPLEMENTATION is required' >&2
 
 STALL_TIMEOUT_IMPLEMENTATION=${STALL_TIMEOUT_IMPLEMENTATION:-1800}
 WALL_TIMEOUT_IMPLEMENTATION=${WALL_TIMEOUT_IMPLEMENTATION:-7200}
 HEARTBEAT_IMPLEMENTATION=${HEARTBEAT_IMPLEMENTATION:-30}
 MAX_SELF_HEAL_RESTARTS=${MAX_SELF_HEAL_RESTARTS:-1}
 
-model_args="--model $MODEL_IMPLEMENTATION --max-rollout-tokens $MAX_ROLLOUT_TOKENS_IMPLEMENTATION"
-[ -n "${REASONING_EFFORT_IMPLEMENTATION:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_IMPLEMENTATION"
+set -- --model "$MODEL_IMPLEMENTATION" --max-rollout-tokens "$MAX_ROLLOUT_TOKENS_IMPLEMENTATION"
+[ -n "${REASONING_EFFORT_IMPLEMENTATION:-}" ] && set -- "$@" --reasoning-effort "$REASONING_EFFORT_IMPLEMENTATION"
+if [ -f .agents/build-env.local.sh ]; then set -- "$@" --env-file .agents/build-env.local.sh
+elif [ -f .agents/build-env.sh ]; then set -- "$@" --env-file .agents/build-env.sh
+fi
+[ -f .agents/preflight.sh ] && set -- "$@" --preflight .agents/preflight.sh
 
-"$SKILLDIR/dispatch.sh" --profile "$PROFILE_IMPLEMENTATION" $model_args --mode workspace-write --background --network \
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_IMPLEMENTATION" "$@" --mode workspace-write --background --network \
   --phase implementation \
   --stall-timeout-seconds "$STALL_TIMEOUT_IMPLEMENTATION" \
   --wall-timeout-seconds "$WALL_TIMEOUT_IMPLEMENTATION" \
   --heartbeat-seconds "$HEARTBEAT_IMPLEMENTATION" \
-  $build_env_args \
+  --protect "$JOURNAL" --protect "$PLAN" \
   --prompt-file "$SKILLDIR/prompts/4-build.txt" \
   --var PLAN="$PLAN" --var CONTEXT_PACK="$CONTEXT_PACK" \
   --log "$RUN/build.log"
 ```
+
+`--protect` makes the orchestrator's files tamper-proof for the length of the build: the
+supervisor snapshots each one at launch and restores it if the build changed it, and names it in
+the build log. The journal and the plan are yours. A build agent once marked its own verification
+and review complete in the journal while it was still implementing.
+
+The build agent writes its own account to `$RUN/build.report.md` as it goes — which steps are
+done, which commands it ran with which result, what it corrected, what is `SANDBOX-BLOCKED` — and
+ends it with the line `IMPLEMENTATION_STEPS_COMPLETE` once every step is implemented. The
+dispatcher supplies that path to the prompt; you pass nothing for it.
 
 `$PROFILE_IMPLEMENTATION` may be a pool. `dispatch.sh` picks the first profile in it that
 resolves from `~/.aimux/config.yaml` to start the build, but never retries a failed build on the
@@ -430,8 +588,9 @@ not what it can overwrite, which is why it is granted per dispatch rather than s
 profile.
 
 The command returns immediately and prints the **supervisor PID**, sentinel path, health path,
-heartbeat interval, stall ceiling, and wall-clock ceiling. Record the supervisor PID and artifact
-paths in the journal.
+report path, heartbeat interval, stall ceiling, and wall-clock ceiling. Record the supervisor PID
+and artifact paths in the journal. It refuses to start while an earlier supervisor for the same
+`--log` is still alive; that is a running build, not an obstacle to remove.
 
 The supervisor, not the worker CLI, is the process the harness should track. It launches the CLI as
 its child, samples observable progress once per second, writes a compact `.health` heartbeat at the
@@ -467,7 +626,7 @@ Interpret it as follows:
 
 | Health result | Action |
 | --- | --- |
-| exit 0 / `state=finished` | Read the sentinel and continue from its exit code. |
+| exit 0 / `state=finished` | The line carries `exit`, `reason`, `steps_complete`, and `total_tokens`. Continue from them; on anything but `exit=0`, `tail -45 "$RUN/build.log"` is the readable summary. |
 | exit 10 / healthy running | Keep waiting; do not read the log. |
 | exit 20 / stale heartbeat | Treat the supervisor itself as unhealthy; do not assume the worker is fine. |
 | exit 30 / lost or unknown | Treat the dispatch as lost infrastructure state; never wait indefinitely for a sentinel that may never arrive. |
@@ -493,10 +652,49 @@ done
 A stale/lost supervisor is an environment failure, not evidence that implementation is still
 progressing.
 
+When the build has ended, the last lines of `$RUN/build.log` are a summary written for you: status
+and failure class, whether every step was reported complete, tokens used, protected files that
+were restored, files that are new and untracked since launch, the end of the build report, and —
+on failure — the last events in readable form. `tail -45` of it is the whole diagnosis you need in
+the normal case. Record `total_tokens` in the journal.
+
+### If the build stops on its rollout budget
+
+`reason=budget` is not one situation but two, and `steps_complete` tells them apart. The stop cuts
+the worker off mid-turn, so there is no final message; the build report and the working tree are
+what remain. The dispatcher asks the CLI to warn the agent when a quarter and a tenth of the
+budget is left, and the build prompt tells it to stop adding work and write its report at that
+point — but treat that as help, not a guarantee.
+
+| `steps_complete` | What happened | Do |
+| --- | --- | --- |
+| `yes` | The code was finished; the budget went on verification or on a command the sandbox could not run | **Do not re-dispatch.** Go to step 4b, run the verification yourself, then step 5 |
+| `no` | The build stopped part-way | Checkpoint, then continue with a narrower dispatch (below) |
+
+Raising the ceiling is the wrong first move in both rows. In four of five budget stops across
+three projects the code was already correct, and the fifth was a plan that was too large.
+
+To continue a part-way build without losing or re-doing work:
+
+1. Read the end of `$RUN/build.report.md` (it is in the log summary) for what is done and what is
+   not. If the report is empty, run the plan's sandbox-safe gate through `evidence.sh` to learn
+   whether the tree at least compiles.
+2. Commit the tree as it stands as a checkpoint, in the project's commit format and marked as such, on
+   the work branch or in the isolated worktree. This is Delegated; a checkpoint commit is what
+   makes the next dispatch's diff readable and its failure recoverable.
+3. Add a row to the plan's **Follow-up rounds** naming the steps that remain, and commit it.
+4. Dispatch step 4 again with the same plan. The earlier attempt's files are archived
+   automatically. The agent sees the committed checkpoint and the remaining steps; it does not
+   start over.
+
+If the same plan stops on its budget twice with `steps_complete=no`, the plan is too large: split
+it. Do not dispatch a third time.
+
 ### Self-heal a timed-out implementation
 
-`timeout.stalled` and `timeout.wall` are **retryable only from a clean baseline**. Never launch a
-second writer into the same partially modified tree.
+For a **background build**, `timeout.stalled` and `timeout.wall` are **retryable only from a clean
+baseline**. Never launch a second writer into the same partially modified tree. (A read-only
+foreground dispatch that times out wrote nothing and is retried on the next profile automatically.)
 
 When the increment runs in an orchestrator-owned isolated worktree, persist the restart budget in
 the run directory before recreating anything:
@@ -572,6 +770,49 @@ handoff <sessionId> --to <profile>` can continue the same session under another 
 summary — re-check its grasp of scope and Definition of Done before trusting it unattended. Untested
 end-to-end here; if it misbehaves, stop and report rather than improvising a fix mid-build.
 
+## Step 4b — Run the verification and record the evidence
+
+The verification agent is read-only. It cannot build, start a browser, or run the gate, so a
+condition that needs a command result reaches it only through what you record here. Skip this step
+and the honest answer to most of the Definition of Done is "uncertain" — which is what three
+projects got, and then accepted.
+
+Run every row of the plan's **Verification** table, whoever owns it. The build agent's own run of
+an Implementation-owned command is its claim; yours is the evidence.
+
+```bash
+sh "$SKILLDIR/evidence.sh" --out "$EVIDENCE" --label gate \
+  --timeout-seconds 1800 --cmd '<command from the Verification table>'
+```
+
+One call per command, with a label the verifier can cite (`gate`, `e2e`, `real-input`). Add
+`--env-file` as in step 4. The script closes stdin, keeps the full output in `$RUN/evidence/`,
+appends the command, exit code, commit, and last lines to `$EVIDENCE`, and prints one `EVIDENCE`
+line. It returns 0 whatever the command returned: a failing command is a finding to record, not a
+reason to stop recording.
+
+**Then run the product on real input** when the plan has a **Real input for self-check** row —
+the import, the conversion, the page, the command a user would run:
+
+```bash
+sh "$SKILLDIR/evidence.sh" --out "$EVIDENCE" --label real-input \
+  --cmd '<the product command on the real file, printing the properties the plan names>'
+```
+
+Compare what it prints with the plan's expected properties yourself. This is the check that is
+yours alone: the build agent and the verifier both work from fixtures and code, and "all tests
+green" has repeatedly coexisted with a product that mangled the first real document it met.
+
+What you do with a failure:
+
+| Result | Do |
+| --- | --- |
+| Fails the same way the baseline did | Not this plan's failure. The evidence shows it; continue |
+| A new failure, or the real input is wrong | Record it under the plan's **Follow-up rounds** as input / observed / expected, commit, and dispatch step 4 again. Do not write the fix or the rule |
+| The command cannot run on this machine | An environment finding. Fix the environment or record the condition as unproven; never report it as passed |
+
+Record each `EVIDENCE` line in the journal.
+
 ## Step 5 — Dispatch verification against the plan
 
 Do not read the diff yourself.
@@ -581,18 +822,28 @@ the evidence check for each Definition of Done condition; this workflow owns dis
 verification agent and deciding which gate comes next.
 
 ```bash
-model_args=''
-[ -n "${MODEL_REASONING:-}" ] && model_args="--model $MODEL_REASONING"
-[ -n "${REASONING_EFFORT_REASONING:-}" ] && model_args="$model_args --reasoning-effort $REASONING_EFFORT_REASONING"
+set --
+[ -n "${MODEL_REASONING:-}" ] && set -- "$@" --model "$MODEL_REASONING"
+[ -n "${REASONING_EFFORT_REASONING:-}" ] && set -- "$@" --reasoning-effort "$REASONING_EFFORT_REASONING"
 
-"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" $model_args --mode read-only \
+"$SKILLDIR/dispatch.sh" --profile "$PROFILE_REASONING" "$@" --mode read-only \
   --phase verification \
   --prompt-file "$SKILLDIR/prompts/5-verification.txt" \
   --var PLAN="$PLAN" --var CONTEXT_PACK="$CONTEXT_PACK" \
   --var SHA="<baseline SHA from the journal>" \
   --var BUILD_LOG="$RUN/build.log" \
+  --var EVIDENCE="$EVIDENCE" \
   --out "$RUN/verification.md"
 ```
+
+The report answers each Definition of Done condition with `done`, `not done`, `not in evidence`,
+or `uncertain`. Only `done` closes a condition:
+
+- **`not in evidence`** — the condition needs a command result nobody recorded. Go back to step 4b,
+  run it, and dispatch verification again. Do not accept the increment on it.
+- **`uncertain`** — the verifier could not decide from the diff and the evidence. Resolve it with a
+  recorded run or a spot-check of one hunk; an increment is not complete with an open `uncertain`.
+- **`not done`** — a follow-up round: step 4b's table applies.
 
 In a standalone run, report to the user what is done, what is not, and what was built outside
 `Included`. Under an active project-driver mission, return that same bounded result to the outer
@@ -600,6 +851,10 @@ orchestrator instead. Do **not** phrase increment completion as completion of th
 mission; `INCREMENT_COMPLETE` is an inner-workflow result, while only Mission Mandate state may
 declare `MISSION_COMPLETE`. You may spot-check a single hunk for a high-risk change or a report
 that looks wrong — a judgment call, not the default.
+
+**Say what was proven, not only what was built.** "Implemented and tests pass" and "run on real
+input with this result" are different claims. Use the second only when step 4b recorded it, and
+set a story to `Done` at closeout only then; otherwise it is `Built`.
 
 If Implementation stops, classify the cause. For a Delegated implementation or environment failure,
 apply the debugging/retry rules and re-dispatch rather than asking the user what to do. Under an
@@ -611,6 +866,9 @@ production coding itself.
 ## Step 6 — Commit and integrate internally
 
 Never leave the build as an ambiguous dirty tree. Commit verified Delegated work automatically.
+Before committing, look at `git status --short`: a file whose name ends in a space and a number
+(`dispatch 2.sh`, `SKILL 3.md`) is a sync-conflict copy, not part of the change — remove it rather
+than commit it.
 A standalone `interactive` run may still request its explicitly selected commit pause, but an active
 project-driver mission suppresses that pause. If the work ran in an orchestrator-created temporary
 branch or `.worktree`, integrate it back into the task's owning branch, verify the resulting commit
@@ -645,6 +903,12 @@ external code review.
 After the transition recorded in step 7, answer the plan's **At closeout** section from the run
 evidence and project documents. Write durable results immediately: architectural decisions to
 `docs/03-sad.md`, status/traceability to requirements, and durable change records where applicable.
+Write each into the section of the document where the subject already lives, replacing what it
+supersedes; never append a dated section ("Update 2026-…") to the end of a document — nine of
+those turned one project's architecture document into a log nobody could read as a description.
+Confirm `Current status` in `docs/00-ai-context.md` still describes the project, and run
+`sh "$SKILLDIR/project-health.sh"` once more: a `NOTE` it prints now is cheaper to clear than at
+the start of the next run.
 Escalate only when a closeout item itself crosses the authority boundary; do not turn bookkeeping
 into a user questionnaire.
 
@@ -663,7 +927,9 @@ not artifacts.
 
 If you are picking up a run you did not start — a new session, or another CLI taking over at a usage
 limit — read `docs/plans/*.run.md` and nothing else. It tells you the last completed step, whether a
-build is still running, and where the reports are. Continue from the next step. Do not re-dispatch a
+build is still running, and where the reports are. If it records a running build, ask
+`dispatch-health.sh` before anything else; a second build into the same tree is refused while the
+first supervisor lives. Continue from the next step. Do not re-dispatch a
 step the journal records as done, and do not reconstruct context by reading code.
 
 ## Notes

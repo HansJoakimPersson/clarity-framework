@@ -41,7 +41,7 @@ git -C "$PROJECT" commit -qm initial
 # Model the target release's exact name-scoped replacement rule used by framework-update.
 for skill in project-driver plan-driven-build; do
   for runtime_root in .agents/skills .claude/skills; do
-    rm -rf -- "$PROJECT/$runtime_root/$skill"
+    rm -rf -- "${PROJECT:?}/$runtime_root/$skill"
     cp -R "$TARGET/skills/$skill" "$PROJECT/$runtime_root/$skill"
   done
 done

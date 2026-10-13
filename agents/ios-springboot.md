@@ -1,9 +1,18 @@
-# AGENTS.md - iOS/iPadOS App + Spring Boot Backend v1.0
+# AGENTS.md - iOS/iPadOS App + Spring Boot Backend v1.1
 
 Guidance for agents working in a monorepo or closely coupled project with a Spring Boot backend and a native
 iOS/iPadOS frontend in Swift. Apply the Core Rules to every task, then apply the profiles that match the surface
 being changed. Always read the Integration Contract section before touching anything that crosses the client–server
 boundary.
+
+## Clarity Documents
+
+- This file is framework-owned and replaced on every framework update. Project rules belong in
+  `docs/`, which the framework never overwrites.
+- Documents are named here by canonical template name. When the project names one differently, the
+  "Where is more context?" table in `docs/00-ai-context.md` gives its path.
+- Change a document in the section that owns the fact. Do not append dated notes or progress logs,
+  and give a new ADR the highest existing number plus one.
 
 ## How To Use This Guide
 

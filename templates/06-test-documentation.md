@@ -262,6 +262,8 @@ Flaky tests must be tracked explicitly with an owner and a removal or repair pla
 - [ ] Unit tests cover new business logic and boundary conditions.
 - [ ] Integration and contract tests pass where boundaries changed.
 - [ ] All acceptance criteria are verified and mapped to test cases.
+- [ ] Each acceptance criterion was observed on real input, not only on fixtures written for the
+      change, and the observation is recorded. Until then the story is `Built`, not `Done`.
 - [ ] Negative, failure, and permission paths are covered where relevant.
 - [ ] Skipped or quarantined tests have a reason, owner, and follow-up condition.
 
@@ -288,4 +290,4 @@ negatives. Do not hide them in CI configuration without recording the risk.
 
 *Next step: Produce the Runbook when the system is ready for its first deployment to staging.*
 
-*Clarity Framework v4.4.0 – Test Documentation*
+*Clarity Framework v4.5.0 – Test Documentation*

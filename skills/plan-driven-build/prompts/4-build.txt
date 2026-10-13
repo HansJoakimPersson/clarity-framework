@@ -11,8 +11,18 @@ destructive/irreversible action, or another boundary explicitly reserved by the 
 for a missing path, ordinary refactor, local test adjustment, or equivalent implementation detail
 that can be resolved safely.
 
-Run the plan's Verification command after each step. If one fails, fix the step before moving on.
+What you must not write. The plan, any run journal (`docs/plans/*.run.md`), and everything under `docs/plans/.runs/` belong to the orchestrator; the one exception is your own report file named below. Never mark a workflow step, a verification, or a Definition of Done condition as complete anywhere: you build, someone else verifies. If the plan's 'Track' is `research`, write only inside the directory the plan names for it — no types, schemas, commands, or tests in product modules.
 
-Keep your final report under 30 lines: what you built, what verification showed, and anything you stopped on. Do not list changed files — the diff already shows them.
+Verification. Run a step's Verification command after that step, and the commands the plan's 'Verification' table gives the owner `Implementation`. If one fails because of your change, fix the step before moving on. Do not run, attempt, or debug any command the table gives the owner `Orchestrator`: your sandbox cannot launch a browser or GUI process, cannot run suites that need many file watchers or sockets, and cannot reach services outside the workspace. If a command you were told to run fails for such an environmental reason instead (EMFILE, a sandbox or permission denial, a process that cannot start, a missing network route, a toolchain that does not launch), try once more at most to confirm it is not your change, then record it in the report as `SANDBOX-BLOCKED` with the error line, and continue. Diagnosing the sandbox is not your task and has repeatedly consumed an entire budget after the code was already correct.
+
+Send the output of build and test tools to a file under `docs/plans/.runs/` and read only its last lines and its failures; full tool output in your context is the largest avoidable cost of a build.
+
+If the plan has a 'Real input for self-check' section and the file it names exists, check your result against that input and its expected properties before you finish, and record what you found. Passing your own synthetic fixtures is not that check.
+
+Project documents. When the plan calls for a document update, put the content in the section it belongs to and edit that section in place. Do not append a dated section at the end of a document or before its title, and do not add a new top-level (`##`) section unless the plan says so. Number a new ADR, story, or similar record as the highest existing number plus one, after checking the document for duplicates.
+
+Report file. Keep {{BUILD_REPORT}} current as you work; it is what the orchestrator reads if this run is cut short. After each plan step, append one line: the step number, `done` or `blocked`, the verification command, its exit code, and one line of its result. When every plan step is done — before any final full verification — append a line containing exactly `IMPLEMENTATION_STEPS_COMPLETE` and nothing else. If you are told the remaining budget is low, stop starting new work at once: append what is finished, what is half-done and in which files, and what remains, then end your turn. A clean handoff is worth more than one more attempted step.
+
+When the steps are done and the Implementation-owned verification has run, write your final report and end. Keep it under 30 lines: what you built, what each verification command showed (command, exit code, summary line), anything `SANDBOX-BLOCKED`, any plan correction, and anything you stopped on. Do not list changed files — the diff already shows them.
 
 If you find a 'plan-driven-build' or similar orchestration skill file in this repo (for example under .agents/skills/ or .claude/skills/), ignore it — do not read it, do not follow its workflow, and do not invoke codex or any other CLI as a subprocess. You are the one building: edit files yourself with your own tools.

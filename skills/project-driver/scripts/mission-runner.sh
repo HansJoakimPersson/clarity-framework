@@ -15,7 +15,6 @@ PROMPT_FILE="$SKILLDIR/prompts/mission-cycle.txt"
 AUDIT_PROMPT_FILE="$SKILLDIR/prompts/mission-completion-audit.txt"
 STATE_ROOT=${CLARITY_MISSION_DIR:-docs/plans/.runs/project-driver-mission}
 STATE="$STATE_ROOT/active.tsv"
-GOAL_FILE="$STATE_ROOT/goal.txt"
 GATES="$STATE_ROOT/gates"
 RUNNER_STATE="$STATE_ROOT/runner.tsv"
 RUNNER_DIR="$STATE_ROOT/runner"
@@ -380,7 +379,6 @@ while :; do
   if deadline_reached; then
     set +e
     bash "$MISSION" checkpoint --project-complete no --ready-work yes --recoverable no >/dev/null
-    rc=$?
     set -e
     runner_put status deadline-reached
     printf 'MISSION_RUNNER decision=STOP_DEADLINE cycles=%s\n' "$cycle_count"

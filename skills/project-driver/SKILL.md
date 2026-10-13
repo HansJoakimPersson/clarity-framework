@@ -214,6 +214,26 @@ Do not ask the user to prioritize choices already implied by dependency order, r
 the documented milestone. Prefer the next increment that unblocks the most project value while
 keeping the system buildable.
 
+### Direction review
+
+Each increment is checked against its plan; nothing in that loop checks the plans against the
+product. Run a direction review before the first increment of a mission, at every milestone
+boundary, and after every fifth integrated increment. It is a read, not a ceremony:
+
+1. Run `sh .agents/skills/plan-driven-build/project-health.sh` and read its `NOTE` lines. A
+   `delivers` note means the recent plans delivered no requirement.
+2. Compare the last increments with `docs/01-vision-scope.md` (goals, in scope, out of scope) and
+   the active milestone: does each one advance a stated goal, and is the milestone closer than it
+   was at the previous review?
+3. Check that the status the documents report is the status the evidence supports: a story is
+   `Done` only when its acceptance criteria were observed on real input, `Built` otherwise.
+
+Record the result in the mission state in two or three lines. When the work has drifted — built
+behavior nobody asked for, a milestone that is not converging, research presented as product —
+correct the backlog first: that is Delegated. Changing what the product is for is
+`mission.material-intent-change` and Reserved; adding or removing product scope is an Escalation.
+A direction review never asks the user whether to continue.
+
 ### Build a wave only when it buys latency
 
 Default to `max-workflows: 2`. A wave may contain two increments only when:

@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 4.4.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 4.5.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -51,6 +51,7 @@ clarity-framework/
 │
 ├── skills/
 │   ├── README.md                   # Skill catalog, ownership, installation, and precedence
+│   ├── RENAMES                     # Old skill name → new name, read by framework-update
 │   ├── clarity-bootstrap/           # Need-driven setup of a new or unmanaged project
 │   │   └── SKILL.md
 │   ├── project-driver/               # Outer loop: project intent → successive verified increments
@@ -60,7 +61,7 @@ clarity-framework/
 │   │   └── tests/                   # Approval, continuation, and multi-cycle regression tests
 │   ├── framework-update/            # Upgrade framework-owned files without losing project content
 │   │   ├── SKILL.md
-│   │   ├── scripts/                 # Update-scope and commit-rendering helpers
+│   │   ├── scripts/                 # Project inspection, update-scope, runtime-verification, and commit-rendering helpers
 │   │   └── tests/                   # Regression tests for update safety
 │   └── plan-driven-build/           # Governed planning, review, build, verification, and impact gates
 │       ├── SKILL.md                 # Orchestrator procedure
@@ -69,7 +70,11 @@ clarity-framework/
 │       ├── background-supervisor.sh # Heartbeat, stall/wall watchdog, process-tree teardown, and completion sentinel
 │       ├── dispatch-health.sh        # Mechanical finished/healthy/stale/lost liveness probe
 │       ├── context-pack.sh           # Builds the frozen bounded project-document context for a run
-│       ├── tests/                   # Dispatch and context-pack regression tests
+│       ├── dispatch-tail.sh          # Bounded, readable tail of a dispatch event stream
+│       ├── evidence.sh               # Records orchestrator-run verification and baselines for the verifier
+│       ├── project-health.sh         # Non-blocking report on the rules nothing else enforces
+│       ├── usage.awk                 # Token usage from a Codex event stream
+│       ├── tests/                   # Dispatch, context-pack, and tool regression tests
 │       ├── plan-template.md         # Copy of templates/plan.md
 │       ├── journal-template.md      # Cross-session workflow state
 │       ├── setup.md                 # One-time profile, sandbox, and permissions setup
@@ -261,4 +266,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v4.4.0*
+*Clarity Framework v4.5.0*

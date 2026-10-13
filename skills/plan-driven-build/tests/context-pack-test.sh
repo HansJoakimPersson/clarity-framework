@@ -111,4 +111,79 @@ if sh "$PACKER" --plan docs/plans/test.md --out docs/plans/tiny.md --max-bytes 1
 fi
 grep -F 'context pack exceeds' tiny.err >/dev/null
 
+# A planner cites what it sees: the exact heading, a GitHub-style slug, or the heading without the
+# backticks a backticked reference cannot carry. All must resolve, the exact match must win over a
+# looser one, and a `#` line inside a code fence is neither a heading nor a section boundary.
+cat > docs/04-datamodell.md <<'EOF'
+# Datamodell
+
+## AI-arbetsflöde och roller
+Not this one; the exact heading below must win.
+
+## AI-arbetsflöde
+Workflow section body.
+
+```sh
+# a shell comment, not a heading
+echo still-in-section
+```
+
+#### `entity`, `entity_alias` och `entity_mention`
+Entity tables body.
+
+## Efteråt
+Must not be included.
+EOF
+
+pack_one() {
+  cat > docs/plans/sel.md <<EOF
+# Plan
+## Context to read first
+| Reference | Why |
+| --- | --- |
+| \`$1\` | selector under test |
+## Steps
+EOF
+  sh "$PACKER" --plan docs/plans/sel.md --out docs/plans/sel-context.md >/dev/null
+}
+
+pack_one 'docs/04-datamodell.md#AI-arbetsflöde'
+grep -F 'Workflow section body.' docs/plans/sel-context.md >/dev/null
+grep -F 'echo still-in-section' docs/plans/sel-context.md >/dev/null
+grep -F 'Entity tables body.' docs/plans/sel-context.md >/dev/null
+if grep -F 'Not this one' docs/plans/sel-context.md >/dev/null; then
+  printf 'context-pack-test: an exact heading must win over a longer one containing it\n' >&2; exit 1
+fi
+if grep -F 'Must not be included.' docs/plans/sel-context.md >/dev/null; then
+  printf 'context-pack-test: section must end at the next heading of the same level\n' >&2; exit 1
+fi
+
+pack_one 'docs/04-datamodell.md#ai-arbetsflöde'
+grep -F 'Workflow section body.' docs/plans/sel-context.md >/dev/null
+if grep -F 'Not this one' docs/plans/sel-context.md >/dev/null; then
+  printf 'context-pack-test: a slug must resolve to the heading it is the slug of\n' >&2; exit 1
+fi
+
+pack_one 'docs/04-datamodell.md#entity, entity_alias och entity_mention'
+grep -F 'Entity tables body.' docs/plans/sel-context.md >/dev/null
+if grep -F 'Workflow section body.' docs/plans/sel-context.md >/dev/null; then
+  printf 'context-pack-test: a backtick-free selector must select only its own section\n' >&2; exit 1
+fi
+
+pack_one 'docs/04-datamodell.md#entity-entity_alias-och-entity_mention'
+grep -F 'Entity tables body.' docs/plans/sel-context.md >/dev/null
+
+cat > docs/plans/sel.md <<'EOF'
+# Plan
+## Context to read first
+| Reference | Why |
+| --- | --- |
+| `docs/04-datamodell.md#no such heading` | missing |
+## Steps
+EOF
+if sh "$PACKER" --plan docs/plans/sel.md --out docs/plans/sel-context.md 2> sel.err; then
+  printf 'context-pack-test: an unknown selector should fail\n' >&2; exit 1
+fi
+grep -F 'heading selector not found' sel.err >/dev/null
+
 printf 'context-pack-test: ok\n'

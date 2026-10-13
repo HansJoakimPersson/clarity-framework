@@ -2,6 +2,8 @@
 
 # Background worker supervisor for dispatch.sh. Runs one CLI process, emits a heartbeat/health file,
 # and converts stalled or overlong workers into classified exit 124 instead of waiting forever.
+# When the worker ends it restores any protected file the worker changed, and appends a readable
+# summary to the log so that the log, not the raw event stream, is what a human or agent reads.
 
 set -eu
 
@@ -42,8 +44,51 @@ write_health() {
     printf 'heartbeat_seconds\t%s\n' "$CFD_HEARTBEAT_SECONDS"
     printf 'stall_timeout_seconds\t%s\n' "$CFD_STALL_TIMEOUT_SECONDS"
     printf 'wall_timeout_seconds\t%s\n' "$CFD_WALL_TIMEOUT_SECONDS"
+    printf 'steps_complete\t%s\n' "$(steps_complete)"
+    printf 'input_tokens\t%s\n' "$input_tokens"
+    printf 'cached_input_tokens\t%s\n' "$cached_input_tokens"
+    printf 'output_tokens\t%s\n' "$output_tokens"
+    printf 'total_tokens\t%s\n' "$total_tokens"
   } > "$tmp"
   mv -- "$tmp" "$CFD_HEALTH_FILE"
+}
+
+# The build prompt asks the worker to write this exact marker line to its report once every plan
+# step is done. It is what separates "stopped half-way" from "finished, then ran out of budget
+# talking about it".
+steps_complete() {
+  if [ -n "${CFD_REPORT_FILE:-}" ] && [ -r "$CFD_REPORT_FILE" ]; then
+    if grep -Fxq 'IMPLEMENTATION_STEPS_COMPLETE' "$CFD_REPORT_FILE" 2>/dev/null; then
+      printf yes
+    else
+      printf no
+    fi
+  else
+    printf unknown
+  fi
+}
+
+input_tokens=${CF_INPUT_TOKENS:-unavailable}
+cached_input_tokens=${CF_CACHED_INPUT_TOKENS:-unavailable}
+cache_write_input_tokens=${CF_CACHE_WRITE_INPUT_TOKENS:-unavailable}
+output_tokens=${CF_OUTPUT_TOKENS:-unavailable}
+reasoning_output_tokens=${CF_REASONING_OUTPUT_TOKENS:-unavailable}
+total_tokens=${CF_TOTAL_TOKENS:-unavailable}
+
+# Refresh the token fields from the event stream. Called on every heartbeat as well as at the end,
+# so consumption is visible while the build runs and survives a worker that dies on its budget.
+read_usage() {
+  [ -r "$CFD_EVENTS" ] || return 0
+  usage=$(awk -f "${CFD_SKILLDIR:-$(dirname "$0")}/usage.awk" "$CFD_EVENTS" 2>/dev/null || true)
+  [ -n "$usage" ] || return 0
+  # shellcheck disable=SC2086
+  set -- $usage
+  input_tokens=$1
+  cached_input_tokens=$2
+  cache_write_input_tokens=$3
+  output_tokens=$4
+  reasoning_output_tokens=$5
+  total_tokens=$(($1 + $4))
 }
 
 terminate_tree() {
@@ -83,18 +128,20 @@ case "$CFD_CLI" in
       [ -z "${CFD_MODEL:-}" ] || set -- "$@" -m "$CFD_MODEL"
       set -- "$@" -- codex -a never
       [ -z "${CFD_REASONING_EFFORT:-}" ] || set -- "$@" -c "model_reasoning_effort=$CFD_REASONING_EFFORT"
-      [ -z "${CFD_MAX_ROLLOUT_TOKENS:-}" ] || set -- "$@" -c "features.rollout_budget={enabled=true,limit_tokens=$CFD_MAX_ROLLOUT_TOKENS,reminder_at_remaining_tokens=[],sampling_token_weight=1.0,prefill_token_weight=1.0}"
+      [ -z "${CFD_ROLLOUT_CONFIG:-}" ] || set -- "$@" -c "$CFD_ROLLOUT_CONFIG"
       [ "${CFD_NETWORK:-0}" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
       set -- "$@" exec --json -s "$CFD_MODE"
       [ -z "${CFD_MODEL:-}" ] || set -- "$@" -m "$CFD_MODEL"
+      [ -z "${CFD_FINAL_FILE:-}" ] || set -- "$@" -o "$CFD_FINAL_FILE"
       set -- "$@" "$CFD_PROMPT"
     else
       set -- codex -a never
       [ -z "${CFD_REASONING_EFFORT:-}" ] || set -- "$@" -c "model_reasoning_effort=$CFD_REASONING_EFFORT"
-      [ -z "${CFD_MAX_ROLLOUT_TOKENS:-}" ] || set -- "$@" -c "features.rollout_budget={enabled=true,limit_tokens=$CFD_MAX_ROLLOUT_TOKENS,reminder_at_remaining_tokens=[],sampling_token_weight=1.0,prefill_token_weight=1.0}"
+      [ -z "${CFD_ROLLOUT_CONFIG:-}" ] || set -- "$@" -c "$CFD_ROLLOUT_CONFIG"
       [ "${CFD_NETWORK:-0}" -eq 0 ] || set -- "$@" -c "sandbox_workspace_write.network_access=true"
       set -- "$@" exec --json -s "$CFD_MODE"
       [ -z "${CFD_MODEL:-}" ] || set -- "$@" -m "$CFD_MODEL"
+      [ -z "${CFD_FINAL_FILE:-}" ] || set -- "$@" -o "$CFD_FINAL_FILE"
       set -- "$@" "$CFD_PROMPT"
     fi
     ;;
@@ -102,7 +149,8 @@ case "$CFD_CLI" in
 esac
 
 rm -f "$CFD_EVENTS" "$CFD_EXIT_FILE" "$CFD_HEALTH_FILE"
-"$@" >"$CFD_EVENTS" 2>>"$CFD_LOG" &
+[ -z "${CFD_FINAL_FILE:-}" ] || rm -f "$CFD_FINAL_FILE"
+"$@" >"$CFD_EVENTS" 2>>"$CFD_LOG" </dev/null &
 worker_pid=$!
 started=$(date +%s)
 last_progress=$started
@@ -141,6 +189,7 @@ while kill -0 "$worker_pid" 2>/dev/null; do
   fi
 
   if [ $((now - last_heartbeat)) -ge "$CFD_HEARTBEAT_SECONDS" ]; then
+    read_usage
     write_health running none "$now" "$bytes"
     last_heartbeat=$now
   fi
@@ -158,7 +207,10 @@ if [ -n "$timeout_class" ]; then
   failure_class=$timeout_class
   retryable=1
 elif [ "$status" -ne 0 ]; then
-  if grep -Eiq 'shared rollout token budget exhausted|rollout.?budget.*exhaust' "$CFD_LOG" "$CFD_EVENTS" 2>/dev/null; then
+  if [ ! -s "$CFD_EVENTS" ] && grep -Eiq 'operation not permitted' "$CFD_LOG" 2>/dev/null; then
+    # Died before the first event: the CLI was launched from inside another sandbox.
+    failure_class=environment.sandbox-nested
+  elif grep -Eiq 'shared rollout token budget exhausted|rollout.?budget.*exhaust' "$CFD_LOG" "$CFD_EVENTS" 2>/dev/null; then
     failure_class=budget
   elif grep -Eiq 'rate.?limit|too many requests|quota exceeded|temporarily unavailable|server overloaded|try again later' "$CFD_LOG" "$CFD_EVENTS" 2>/dev/null; then
     failure_class=environment.rate_limit
@@ -186,41 +238,64 @@ if [ "$status" -eq 0 ] && [ -n "${CFD_MODEL_EVIDENCE:-}" ]; then
   fi
 fi
 
-input_tokens=${CF_INPUT_TOKENS:-unavailable}
-cached_input_tokens=${CF_CACHED_INPUT_TOKENS:-unavailable}
-cache_write_input_tokens=${CF_CACHE_WRITE_INPUT_TOKENS:-unavailable}
-output_tokens=${CF_OUTPUT_TOKENS:-unavailable}
-reasoning_output_tokens=${CF_REASONING_OUTPUT_TOKENS:-unavailable}
-total_tokens=${CF_TOTAL_TOKENS:-unavailable}
-if [ -r "$CFD_EVENTS" ]; then
-  u_input=0; u_cached=0; u_cache_write=0; u_output=0; u_reasoning=0; u_found=0
-  while IFS= read -r line; do
-    case "$line" in
-      *'"type":"turn.completed"'*|*'"type": "turn.completed"'*)
-        n=$(printf '%s\n' "$line" | sed -n 's/.*"input_tokens":[[:space:]]*\([0-9][0-9]*\).*/\1/p')
-        [ -n "$n" ] || continue
-        c=$(printf '%s\n' "$line" | sed -n 's/.*"cached_input_tokens":[[:space:]]*\([0-9][0-9]*\).*/\1/p')
-        w=$(printf '%s\n' "$line" | sed -n 's/.*"cache_write_input_tokens":[[:space:]]*\([0-9][0-9]*\).*/\1/p')
-        o=$(printf '%s\n' "$line" | sed -n 's/.*"output_tokens":[[:space:]]*\([0-9][0-9]*\).*/\1/p')
-        q=$(printf '%s\n' "$line" | sed -n 's/.*"reasoning_output_tokens":[[:space:]]*\([0-9][0-9]*\).*/\1/p')
-        u_found=1
-        u_input=$((u_input + n))
-        u_cached=$((u_cached + ${c:-0}))
-        u_cache_write=$((u_cache_write + ${w:-0}))
-        u_output=$((u_output + ${o:-0}))
-        u_reasoning=$((u_reasoning + ${q:-0}))
-        ;;
-    esac
-  done < "$CFD_EVENTS"
-  if [ "$u_found" -eq 1 ]; then
-    input_tokens=$u_input
-    cached_input_tokens=$u_cached
-    cache_write_input_tokens=$u_cache_write
-    output_tokens=$u_output
-    reasoning_output_tokens=$u_reasoning
-    total_tokens=$((u_input + u_output))
-  fi
+read_usage
+
+# Restore anything the worker was told to leave alone. The manifest pairs a snapshot with its
+# original path; a changed or deleted original is put back and the violation is recorded.
+protected_changed=''
+if [ -n "${CFD_PROTECT_MANIFEST:-}" ] && [ -s "$CFD_PROTECT_MANIFEST" ]; then
+  while IFS='	' read -r snapshot original; do
+    [ -n "$snapshot" ] && [ -n "$original" ] || continue
+    if [ ! -f "$original" ] || ! cmp -s "$snapshot" "$original"; then
+      mkdir -p "$(dirname "$original")"
+      cp -p -- "$snapshot" "$original"
+      protected_changed="$protected_changed $original"
+    fi
+  done < "$CFD_PROTECT_MANIFEST"
 fi
+
+steps=$(steps_complete)
+
+# Readable summary. Everything above this point in the log is supervisor and CLI stderr noise.
+{
+  printf '\nDISPATCH finished  status=%s  failure_class=%s  steps_complete=%s  total_tokens=%s  rollout_budget=%s\n' \
+    "$status" "$failure_class" "$steps" "$total_tokens" "${CFD_MAX_ROLLOUT_TOKENS:-unbounded}"
+  if [ "$failure_class" = budget ]; then
+    if [ "$steps" = yes ]; then
+      printf '%s\n' 'DISPATCH budget stop after the report marked every plan step complete: verify the tree before re-dispatching.'
+    else
+      printf '%s\n' 'DISPATCH budget stop before every plan step was reported complete: read the build report for what remains.'
+    fi
+  fi
+  if [ -n "$protected_changed" ]; then
+    printf 'DISPATCH protected file(s) changed by the worker and restored:%s\n' "$protected_changed"
+  fi
+  if [ -n "${CFD_UNTRACKED_BEFORE:-}" ] && [ -r "$CFD_UNTRACKED_BEFORE" ]; then
+    new_untracked=$(git ls-files --others --exclude-standard 2>/dev/null | sort | comm -13 "$CFD_UNTRACKED_BEFORE" - 2>/dev/null || true)
+    printf '\n--- untracked files new since launch (any other untracked file predates this build) ---\n'
+    if [ -n "$new_untracked" ]; then
+      printf '%s\n' "$new_untracked" | head -40
+      extra=$(($(printf '%s\n' "$new_untracked" | wc -l) - 40))
+      [ "$extra" -le 0 ] || printf '… and %s more\n' "$extra"
+    else
+      printf 'none\n'
+    fi
+  fi
+  if [ -n "${CFD_REPORT_FILE:-}" ] && [ -s "$CFD_REPORT_FILE" ]; then
+    printf '\n--- build report (%s), last 30 lines ---\n' "$CFD_REPORT_FILE"
+    tail -n 30 "$CFD_REPORT_FILE" | cut -c 1-300
+  else
+    printf '\n--- build report: not written ---\n'
+  fi
+  if [ "$status" -ne 0 ] && [ -s "$CFD_EVENTS" ]; then
+    printf '\n--- last events (%s) ---\n' "$CFD_EVENTS"
+    sh "${CFD_SKILLDIR:-$(dirname "$0")}/dispatch-tail.sh" --events "$CFD_EVENTS" --lines 12 2>/dev/null || true
+  fi
+  if [ -n "${CFD_FINAL_FILE:-}" ] && [ -s "$CFD_FINAL_FILE" ]; then
+    printf '\n--- final message (%s) ---\n' "$CFD_FINAL_FILE"
+    head -n 40 "$CFD_FINAL_FILE" | cut -c 1-300
+  fi
+} >> "$CFD_LOG"
 
 printf '%s\n' "$status" > "$CFD_EXIT_FILE"
 if [ -n "${CFD_LEDGER:-}" ]; then

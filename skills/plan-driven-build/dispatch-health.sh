@@ -2,6 +2,8 @@
 
 # Read one background dispatch's sentinel/health files without tailing its logs.
 # Exit codes: 0 finished, 10 healthy/running, 20 stale heartbeat, 30 lost/unknown, 2 usage.
+# A finished line also reports whether the worker's build report marked every plan step complete
+# and the tokens the run consumed, so a budget stop can be triaged without opening the log.
 
 set -eu
 
@@ -27,11 +29,17 @@ health_file="$base.health"
 if [ -r "$exit_file" ]; then
   code=$(cat "$exit_file")
   reason=unknown
+  steps=unknown
+  tokens=unavailable
   if [ -r "$health_file" ]; then
     reason=$(awk -F '\t' '$1 == "reason" { print $2; exit }' "$health_file")
     [ -n "$reason" ] || reason=unknown
+    steps=$(awk -F '\t' '$1 == "steps_complete" { print $2; exit }' "$health_file")
+    [ -n "$steps" ] || steps=unknown
+    tokens=$(awk -F '\t' '$1 == "total_tokens" { print $2; exit }' "$health_file")
+    [ -n "$tokens" ] || tokens=unavailable
   fi
-  printf 'DISPATCH_HEALTH\tstate=finished\texit=%s\treason=%s\n' "$code" "$reason"
+  printf 'DISPATCH_HEALTH\tstate=finished\texit=%s\treason=%s\tsteps_complete=%s\ttotal_tokens=%s\n' "$code" "$reason" "$steps" "$tokens"
   exit 0
 fi
 

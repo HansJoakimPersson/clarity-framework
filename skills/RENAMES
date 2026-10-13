@@ -1,0 +1,11 @@
+# Clarity Framework – renamed skills.
+#
+# framework-update reads this file from the target release. A project-managed skill name that the
+# release no longer ships is looked up here before it is treated as retired: a renamed skill is
+# updated under its new name and the project's `skills:` line is rewritten.
+#
+# One rename per line: old-name new-name first-release-with-the-new-name
+# Add a line in the same commit that renames a skill directory. Never remove a line.
+
+planstyrt-bygge       plan-driven-build   3.6.0
+ramverksuppdatering   framework-update    3.6.0

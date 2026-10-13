@@ -82,6 +82,15 @@ done < <(git status --porcelain=v1 -z --untracked-files=all)
 if [ "${#CONFLICTS[@]}" -gt 0 ]; then
   printf '%s\n' 'UPDATE-SCOPE: blocked; resolve or explicitly approve these update-surface changes first:' >&2
   printf '  %s\n' "${CONFLICTS[@]}" >&2
+  # The block is correct but its cause is usually ordinary: say what clears it.
+  copies=0
+  for entry in "${CONFLICTS[@]}"; do
+    if [[ "${entry:0:2}" == '??' && "${entry:3}" =~ \ [0-9]+(\.[^/\ ]+)*$ ]]; then copies=$((copies + 1)); fi
+  done
+  printf '%s\n' 'UPDATE-SCOPE: hint: these paths are ones the update itself writes. Commit them (an ordinary commit of your own work is enough) or discard them, then run the update again. Nothing has been changed.' >&2
+  if [ "$copies" -gt 0 ]; then
+    printf 'UPDATE-SCOPE: hint: %s untracked path(s) end in a space and a number, the name a sync client (iCloud, Dropbox, OneDrive) gives a conflict copy. They are duplicates, not project content: delete them.\n' "$copies" >&2
+  fi
   exit 2
 fi
 

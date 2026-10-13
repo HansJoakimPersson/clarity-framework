@@ -18,14 +18,18 @@ jobs:
         run: |
           sh skills/plan-driven-build/tests/dispatch-test.sh
           sh skills/plan-driven-build/tests/context-pack-test.sh
+          sh skills/plan-driven-build/tests/tools-test.sh
           bash skills/project-driver/tests/authority-test.sh
           bash skills/project-driver/tests/mission-control-test.sh
           bash skills/project-driver/tests/mission-runner-test.sh
           bash skills/framework-update/tests/check-update-scope-test.sh
+          bash skills/framework-update/tests/inspect-project-test.sh
           bash skills/framework-update/tests/verify-managed-runtime-test.sh
           bash skills/framework-update/tests/runtime-replacement-test.sh
           bash skills/framework-update/tests/render-update-commit-test.sh
           bash framework/scripts/tests/check-version-consistency-test.sh
           bash framework/scripts/tests/check-context-budgets-test.sh
           bash framework/scripts/check-context-budgets.sh
+          bash framework/scripts/tests/check-skill-snippets-test.sh
+          bash framework/scripts/check-skill-snippets.sh
           bash framework/scripts/tests/lint-shell-test.sh

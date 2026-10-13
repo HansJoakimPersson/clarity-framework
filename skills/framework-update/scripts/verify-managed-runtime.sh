@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
 # Verify that Clarity-managed runtime skills were copied exactly from the pinned target release.
-# For project-driver, also verify its required dependency and optionally run runtime smoke tests.
+# For plan-driven-build and project-driver, also verify the required payload and optionally run the
+# installed runtime's smoke tests.
+#
+# It writes nothing, so it also serves as a standalone check between updates: point --target-root
+# at a checkout of the release the project records and run it with --smoke no in a project gate to
+# catch an edited or half-copied managed skill before the next update does.
 
 set -euo pipefail
 
@@ -47,9 +52,12 @@ for skill in "${SKILLS[@]}"; do
   for runtime_root in .agents/skills .claude/skills; do
     installed="$runtime_root/$skill"
     [ -d "$installed" ] || die "RUNTIME-VERIFY: missing installed skill: $installed"
-    if ! diff -qr "$TARGET_ROOT/skills/$skill" "$installed" >/dev/null; then
+    if ! diff -qr -x .DS_Store "$TARGET_ROOT/skills/$skill" "$installed" >/dev/null; then
       printf 'RUNTIME-VERIFY: installed %s differs from target release at %s\n' "$skill" "$installed" >&2
-      diff -qr "$TARGET_ROOT/skills/$skill" "$installed" >&2 || true
+      diff -qr -x .DS_Store "$TARGET_ROOT/skills/$skill" "$installed" >&2 || true
+      if find "$installed" -type f -name '* [0-9]*' 2>/dev/null | grep -qE ' [0-9]+(\.[^/ ]+)*$'; then
+        printf '%s\n' 'RUNTIME-VERIFY: hint: a file name ending in a space and a number is a sync-conflict copy (iCloud, Dropbox, OneDrive). Delete it and verify again.' >&2
+      fi
       exit 2
     fi
 
@@ -62,6 +70,48 @@ for skill in "${SKILLS[@]}"; do
     done < <(find "$TARGET_ROOT/skills/$skill" -type f -print0)
   done
 done
+
+if has_skill plan-driven-build; then
+  required_plan_driver=(
+    SKILL.md
+    setup.md
+    plan-template.md
+    journal-template.md
+    dispatch.sh
+    background-supervisor.sh
+    dispatch-health.sh
+    dispatch-tail.sh
+    context-pack.sh
+    evidence.sh
+    project-health.sh
+    usage.awk
+    prompts/1-plan.txt
+    prompts/2-review.txt
+    prompts/3-revise.txt
+    prompts/4-build.txt
+    prompts/5-verification.txt
+    tests/dispatch-test.sh
+    tests/context-pack-test.sh
+    tests/tools-test.sh
+  )
+  for rel in "${required_plan_driver[@]}"; do
+    for runtime_root in .agents/skills .claude/skills; do
+      [ -f "$runtime_root/plan-driven-build/$rel" ] ||
+        die "RUNTIME-VERIFY: plan-driven-build payload missing: $runtime_root/plan-driven-build/$rel"
+    done
+  done
+  # dispatch.sh is invoked by path, so a copy that lost its mode fails at the first dispatch.
+  for runtime_root in .agents/skills .claude/skills; do
+    [ -x "$runtime_root/plan-driven-build/dispatch.sh" ] ||
+      die "RUNTIME-VERIFY: not executable: $runtime_root/plan-driven-build/dispatch.sh (copy with cp -R, or chmod +x)"
+  done
+
+  if [ "$SMOKE" = yes ]; then
+    sh .agents/skills/plan-driven-build/tests/dispatch-test.sh
+    sh .agents/skills/plan-driven-build/tests/context-pack-test.sh
+    sh .agents/skills/plan-driven-build/tests/tools-test.sh
+  fi
+fi
 
 if has_skill project-driver; then
   has_skill plan-driven-build ||
@@ -85,24 +135,10 @@ if has_skill project-driver; then
     done
   done
 
-  required_plan_driver=(
-    dispatch.sh
-    background-supervisor.sh
-    dispatch-health.sh
-    tests/dispatch-test.sh
-  )
-  for rel in "${required_plan_driver[@]}"; do
-    for runtime_root in .agents/skills .claude/skills; do
-      [ -f "$runtime_root/plan-driven-build/$rel" ] ||
-        die "RUNTIME-VERIFY: plan-driven-build payload missing: $runtime_root/plan-driven-build/$rel"
-    done
-  done
-
   if [ "$SMOKE" = yes ]; then
     bash .agents/skills/project-driver/tests/authority-test.sh
     bash .agents/skills/project-driver/tests/mission-control-test.sh
     bash .agents/skills/project-driver/tests/mission-runner-test.sh
-    sh .agents/skills/plan-driven-build/tests/dispatch-test.sh
   fi
 fi
 

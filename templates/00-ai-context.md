@@ -3,13 +3,15 @@
 ## [Product name]
 
 > **Purpose:** A compact project overview for a new AI session or team member.
-> **Length:** One page maximum. Brevity is a quality, not a deficiency.
+> **Length:** Everything above `## AI workflow` is one page, about 100 lines. The AI workflow
+> section is a runtime contract and is not counted; the whole file stays under 16 KB. Brevity is a
+> quality, not a deficiency.
 > **Update when:** The phase changes, an ADR is added, an NFR changes, or technical debt changes.
 
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v4.4.0 |
+| **Framework version** | Clarity Framework v4.5.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -129,7 +131,7 @@ redefining the workflow.
 | Orchestrator | [e.g. Claude Code or Codex] | — | — | [e.g. allowlist in `.claude/settings.json` or a Codex orchestrator profile] | Sequences the workflow, exercises Delegated authority, resolves Escalations internally, and presents only Reserved human gates. An active project-driver mission persists continuation across increments and resumed sessions. Does not read the codebase or diff itself. |
 | Reasoning | [e.g. pool `codework1,codework2` — aimux profile names] | [optional; empty uses profile default] | [optional] | `read-only` + approval `never` | Writes the plan to `docs/plans/` and verifies the diff against it. Does not build or approve its own work. Uses a different profile pool from the Orchestrator. |
 | Review *(optional)* | [e.g. reuse Reasoning's pool, or its own] | [optional; empty uses profile default] | [optional] | `read-only` + approval `never` | Reviews the plan cold against the code, from a different prompt file than Reasoning's. Does not need a different profile — the prompt is what separates it. |
-| Implementation | [e.g. pool `codework3,codework4` — aimux profile names] | [required exact model, e.g. `gpt-5.6-luna`] | [required positive token ceiling, e.g. `120000`] | `workspace-write` + approval `never` | Builds the approved plan. Model and budget remain fixed when another profile pays. May resolve local reversible implementation gaps but must escalate boundary changes. |
+| Implementation | [e.g. pool `codework3,codework4` — aimux profile names] | [required exact model, e.g. `gpt-5.6-luna`] | [required positive token ceiling sized to the plan, e.g. `300000`; see `plan-driven-build` `setup.md`, "Sizing the rollout budget"] | `workspace-write` + approval `never` | Builds the approved plan. Model and budget remain fixed when another profile pays. May resolve local reversible implementation gaps but must escalate boundary changes. |
 
 > Sandbox and approval are independent settings. If only the sandbox is set, approval remains at its
 > default and an unattended run may stop to ask. Always set both.
@@ -217,6 +219,22 @@ unknown_external=escalation
 # reserve=project-specific.irreversible-action
 <!-- clarity-authority:end -->
 
+Use the framework's action names where one fits, so an override replaces a default instead of
+sitting beside it. Reserved by default: `production.deploy`, `production.release`,
+`production-data.delete`, `migration.destructive`, `credential.*`, `permission.*`,
+`economic.commitment`, `git.push.protected-main`, `git.merge.protected-main`,
+`mission.material-intent-change`. Escalation by default: `architecture.material-change`,
+`product-scope.material-change`, `dependency.new-external-service`, `dependency.new-paid-service`,
+`public-api.breaking-change`, `security-boundary.change`, `externally-visible-behavior.change`.
+Delegated by default: `code.*`, `tests.*`, `docs.*`, `plan.*`, `debug.*`, `ci.fix`, `git.commit`,
+`git.worktree.*`, `git.branch.local`, `git.merge.internal`, `git.push.task-branch`,
+`dependency.update-existing`, `dependency.add-free-local`, `migration.create-reversible`,
+`network.dependency-resolution`.
+
+This block governs what an agent may decide. The client's own permission settings
+(`.claude/settings.json`, a Codex profile) govern which commands run without a prompt; they are
+configured separately and neither replaces the other.
+
 > Uncertainty alone is not a reason to ask. Use repository evidence, project intent, conventions, and
 > the least-consequential reversible option for Delegated decisions; record the assumption and
 > continue. A user-facing approval question during an active mission requires an issued
@@ -226,19 +244,25 @@ unknown_external=escalation
 
 ## Where is more context?
 
-| Question | Document |
-| --- | --- |
-| Why is it being built? | `docs/01-vision-scope.md` |
-| What is being built? | `docs/02-requirements.md` |
-| What should it look like? (if UI) | `docs/09-visual-profile.md` |
-| How is it built? | `docs/03-sad.md` |
-| Data model and API? | `docs/04-data-model-api.md` |
-| How is it deployed? | `docs/05-deployment-view.md` |
-| How is it tested? | `docs/06-test-documentation.md` |
-| How is it operated? | `docs/07-runbook.md` |
-| What is being built now? | `docs/plans/` (when the plan-driven workflow is used) |
-| Historical/superseded material? | `docs/archive/` — explicit lookup only; never normal session context |
+> The **Canonical name** column is how agent starters, skills, and `framework-update` refer to a
+> document. When the project names a file differently (another language, another convention), write
+> the project's path in **Document** and leave the canonical name as it is. Delete rows for
+> documents the project does not have.
+
+| Question | Document | Canonical name |
+| --- | --- | --- |
+| Why is it being built? | `docs/01-vision-scope.md` | `01-vision-scope.md` |
+| What is being built? | `docs/02-requirements.md` | `02-requirements.md` |
+| What should it look like? (if UI) | `docs/09-visual-profile.md` | `09-visual-profile.md` |
+| How is it built? | `docs/03-sad.md` | `03-sad.md` |
+| Data model and API? | `docs/04-data-model-api.md` | `04-data-model-api.md` |
+| How is it deployed? | `docs/05-deployment-view.md` | `05-deployment-view.md` |
+| How is it tested? | `docs/06-test-documentation.md` | `06-test-documentation.md` |
+| How is it operated? | `docs/07-runbook.md` | `07-runbook.md` |
+| What changed, and when? | `docs/08-change-management.md` | `08-change-management.md` |
+| What is being built now? | `docs/plans/` (when the plan-driven workflow is used) | — |
+| Historical/superseded material? | `docs/archive/` — explicit lookup only; never normal session context | — |
 
 ---
 
-*Clarity Framework v4.4.0 – AI Context Document*
+*Clarity Framework v4.5.0 – AI Context Document*

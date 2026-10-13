@@ -11,10 +11,94 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
-## Unreleased
+## [4.5.0] – Unreleased
+
+Fixes for the problems recorded in three project retrospectives of v4.4.0. They fall into four
+groups: the workflow claimed more than it proved, the orchestrator could not see what a dispatch
+was doing or had cost, the snippets and scripts assumed bash and a tidy machine, and an update
+could not carry a project across a rename or notice that it was moving it backwards.
+
+### Added
+
+- **Evidence the verifier can read.** `plan-driven-build` ships `evidence.sh`, which runs one
+  orchestrator-owned command — a baseline, a browser check, the project gate — with stdin closed and
+  an optional timeout, and appends a bounded, commit-stamped entry to an evidence file. The
+  verification prompt receives that file and reports each Definition-of-Done condition as
+  `done`, `not done`, `not in evidence`, or `uncertain` instead of inferring a result it could not
+  run. New workflow step 4b runs the orchestrator-owned verification; step 3a measures a baseline
+  before the plan is approved, so "the tests pass" is judged against what passed before.
+- **Plan fields for what is being claimed.** `templates/plan.md` adds `Milestone` and `Track`
+  (product or research) to the header, a `Verification` table with an `Owner` (Implementation or
+  Orchestrator) and `Baseline` per command, a `Real input for self-check` section, and a
+  `Follow-up rounds` table (reproduction, observed, expected). `Delivers` must name a requirement
+  or state `None – maintenance: <reason>`. The plan carries a size test (about 12 files or 8 steps)
+  above which it is split.
+- **Story status `Built`.** `templates/02-requirements.md` and `templates/02-user-stories.md` add
+  `Built` between `In review` and `Done`: verified against the plan with a green gate, but not yet
+  observed on real input. `Done` keeps its meaning and gains a definition. Existing documents stay
+  valid. `templates/06-test-documentation.md` Definition of Done gains the matching line.
+- **Revise dispatch.** `prompts/3-revise.txt` and step 3b: review findings are applied to the plan
+  by a Reasoning dispatch rather than by the orchestrator editing the plan in its own context.
+- **Budget-stop protocol.** The build report carries an `IMPLEMENTATION_STEPS_COMPLETE` marker and
+  the sentinel a `steps_complete` field, so a build that exhausts its rollout budget is handled by
+  rule: finished steps go to verification, unfinished ones get a checkpoint commit, a
+  `Follow-up rounds` row, and a re-dispatch; a second stop splits the plan.
+- `dispatch.sh --protect FILE` snapshots files an implementation dispatch must not change (the plan
+  and the run journal) and restores them when it does.
+- `dispatch-tail.sh` prints the last events of a dispatch's JSONL stream as one bounded line each;
+  `usage.awk` extracts token usage, including from a run that died on its budget before any turn
+  completed. Token figures are refreshed on every heartbeat.
+- `project-health.sh` reports, without blocking, the rules nothing enforced: AI Context size, plans
+  that outlived their change, old uncommitted work, a cloud-synced or space-containing repository
+  path, drift between the two runtime copies of a skill, documents that describe CI the repository
+  does not have, an env file without a preflight, and a run of plans that deliver no requirement.
+  Run at step 0 and at closeout.
+- `framework-update` ships `scripts/inspect-project.sh`. Before anything is written it reports a
+  project that is ahead of the newest release (so an update never downgrades it), a framework-owned
+  file edited since the release the project records, renamed and retired skills, conflict copies,
+  project copies of the templates, documents without a canonical name, and an outdated model-pool
+  syntax. `skills/RENAMES` records skill renames; a project managing a skill under its old name is
+  carried to the new one.
+- `framework-update` documents "Add a skill to a managed project", including collecting every value
+  the skill's runtime contract needs in one question.
+- `project-driver` adds a direction review — before the first increment, at each milestone boundary,
+  and after every fifth increment — that checks recent plans against vision, scope, and milestone.
+- `framework/scripts/check-skill-snippets.sh` rejects shell snippets in Markdown that zsh reads
+  differently from bash, and runs in CI.
+- Every agent starter gains a short "Clarity Documents" rule set: the file is framework-owned,
+  document names resolve through the AI Context table, and documents are changed in the section
+  that owns the fact rather than by appended dated notes. Starter versions are incremented.
+- `templates/00-ai-context.md` lists the framework's default authority action names beside the
+  `clarity-authority` block, states that client permission settings are separate from it, and adds
+  a **Canonical name** column to "Where is more context?" so a project may name its documents in
+  its own language.
+
+### Changed
+
+- Read-only dispatches run with stdin closed and under a foreground watchdog (15 minutes without
+  output, one hour wall), and a dispatch started from inside another sandbox fails at once as
+  `environment.sandbox-nested` instead of hanging. `dispatch.sh` prints where a dispatch put its
+  files and warns when the repository path contains a space.
+- `plan-driven-build/SKILL.md` snippets are zsh-safe: argument lists are built with `set --`, a
+  variable followed by a colon is braced, and dates come from `date`. `framework-update` and
+  `clarity-bootstrap` brace `${NEW}:skills` and `${CLARITY_TAG}:skills`.
+- `setup.md` covers a sandboxed orchestrator, what the build sandbox cannot do, repositories in
+  cloud-synced directories, reading a dispatch's output, and sizing the rollout budget from the
+  plan. The `MAVEN_OPTS` example uses a relative repository path, and the preflight example runs
+  the build tool. The AI Context example budget is no longer `120000`.
+- `verify-managed-runtime.sh` verifies the `plan-driven-build` payload and runs its regression
+  tests whenever that skill is managed, not only as a `project-driver` dependency; it ignores
+  `.DS_Store`, requires `dispatch.sh` to be executable, and names a sync-conflict copy for what it
+  is. `check-update-scope.sh` says what clears a block.
+- `clarity-bootstrap` writes `.agents/preflight.sh` when `plan-driven-build` is selected and the
+  stack has a build tool, and records project-specific document names against canonical ones.
+- The AI Context length rule is one page above `## AI workflow` and 16 KB for the file; the
+  template and `framework/ai-usage-guide.md` no longer contradict the workflow section's size.
+- `AGENTS.md` lists all fifteen regression tests, which CI already ran in part.
 
 ### Fixed
 
+- A build that exhausted its rollout budget reported no token usage.
 - `render-update-commit-test.sh` no longer uses GNU-only `sed -i` to stamp its fixture documents, so
   the regression test also runs on macOS/BSD. Test-only change; shipped scripts are unaffected.
 
