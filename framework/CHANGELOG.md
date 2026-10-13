@@ -11,9 +11,14 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
-## [4.6.0] – Unreleased
+## [4.6.0] – 2026-10-13
 
 The orchestrator's procedure is shorter, and a small change no longer pays for the full chain.
+
+This release also carries the changes prepared as 4.5.0, which was never tagged: fixes for the
+problems recorded in three project retrospectives of v4.4.0. They fall into four groups: the workflow claimed more than it proved, the orchestrator could not see what a dispatch
+was doing or had cost, the snippets and scripts assumed bash and a tidy machine, and an update
+could not carry a project across a rename or notice that it was moving it backwards.
 
 ### Added
 
@@ -33,24 +38,6 @@ The orchestrator's procedure is shorter, and a small change no longer pays for t
   plan gap, usage limit, and the reasons behind the rules. It opens with a situation-to-section
   table and is read one section at a time. `verify-managed-runtime.sh` requires it in both
   runtime copies.
-
-### Changed
-
-- **`skills/plan-driven-build/SKILL.md` is 543 lines instead of 953.** It holds the steps, the
-  reading budget, the path choice, and one table that routes a failed build to the matching
-  `reference.md` section. No command, flag, placeholder, or script changed; the step 4 snippet no
-  longer sets `MAX_SELF_HEAL_RESTARTS`, which now lives with the restart procedure that uses it.
-  `setup.md` and `framework/ai-usage-guide.md` point at the new locations.
-
-## [4.5.0] – Unreleased
-
-Fixes for the problems recorded in three project retrospectives of v4.4.0. They fall into four
-groups: the workflow claimed more than it proved, the orchestrator could not see what a dispatch
-was doing or had cost, the snippets and scripts assumed bash and a tidy machine, and an update
-could not carry a project across a rename or notice that it was moving it backwards.
-
-### Added
-
 - **Evidence the verifier can read.** `plan-driven-build` ships `evidence.sh`, which runs one
   orchestrator-owned command — a baseline, a browser check, the project gate — with stdin closed and
   an optional timeout, and appends a bounded, commit-stamped entry to an evidence file. The
@@ -106,6 +93,11 @@ could not carry a project across a rename or notice that it was moving it backwa
 
 ### Changed
 
+- **`skills/plan-driven-build/SKILL.md` is 543 lines instead of 953.** It holds the steps, the
+  reading budget, the path choice, and one table that routes a failed build to the matching
+  `reference.md` section. No command, flag, placeholder, or script changed; the step 4 snippet no
+  longer sets `MAX_SELF_HEAL_RESTARTS`, which now lives with the restart procedure that uses it.
+  `setup.md` and `framework/ai-usage-guide.md` point at the new locations.
 - Read-only dispatches run with stdin closed and under a foreground watchdog (15 minutes without
   output, one hour wall), and a dispatch started from inside another sandbox fails at once as
   `environment.sandbox-nested` instead of hanging. `dispatch.sh` prints where a dispatch put its
