@@ -21,6 +21,7 @@
 | **Plan** | `docs/plans/YYYY-MM-DD-short-name.md` |
 | **Branch** | `[branch-name]` |
 | **Gate profile** | interactive / semi-automatic / unattended |
+| **Path** | full / short — [why the short-path conditions hold, or what ended the short path] |
 | **Orchestrator** | [CLI and profile currently running the workflow] |
 | **Raw output** | `docs/plans/.runs/YYYY-MM-DD-short-name/` (local, gitignored) |
 
@@ -39,8 +40,8 @@ fallback.
 | # | Step | Status | Level — profile used | Artifact |
 | --- | --- | --- | --- | --- |
 | 1 | Plan | ☐ | Reasoning — `[profile]` | `<plan>` |
-| 2 | Review | ☐ | Review — `[profile]` | `.runs/.../review.md` |
-| 3 | Baseline + revision + scope gate | ☐ | Orchestrator / Reasoning — `[profile]` | `.runs/.../plan.revised.md` |
+| 2 | Review *(full path)* | ☐ | Review — `[profile]` | `.runs/.../review.md` |
+| 3 | Baseline + revision *(full path)* + scope gate | ☐ | Orchestrator / Reasoning — `[profile]` | `.runs/.../plan.revised.md` |
 | 4 | Build | ☐ | Implementation — `[profile]` | `.runs/.../build.log`, `build.report.md` |
 | 4b | Evidence: verification commands + real input | ☐ | Orchestrator | `.runs/.../evidence.md` |
 | 5 | Verification | ☐ | Reasoning — `[profile]` | `.runs/.../verification.md` |
@@ -48,7 +49,7 @@ fallback.
 | 7 | Impact gate / delegated transition | ☐ | orchestrator / human only if Escalation or Reserved | — |
 | 8 | Closeout | ☐ | orchestrator | — |
 
-Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see Deviations)
+Status: ☐ not started · ▶ in progress · ☑ complete · ✗ stopped (see Deviations) · – skipped (short path)
 
 ---
 
@@ -101,6 +102,7 @@ keeps its context budget.
 | 1 | Plan | | |
 | 1 | Context pack (limit 64 KiB by default) | | |
 | 2 | Review (limit 40) | | |
+| any | `reference.md` section read, and why | | |
 | 4 | Build log summary (limit 45) | | |
 | 4b | Evidence summary lines | | |
 | 5 | Verification (limit: DoD conditions + 10) | | |

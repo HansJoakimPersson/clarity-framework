@@ -11,7 +11,7 @@
 | | |
 | --- | --- |
 | **Last updated** | YYYY-MM-DD |
-| **Framework version** | Clarity Framework v4.5.0 |
+| **Framework version** | Clarity Framework v4.6.0 |
 | **Project phase** | Initiation / Requirements / Design / Implementation / Operations |
 
 ---
@@ -265,4 +265,4 @@ configured separately and neither replaces the other.
 
 ---
 
-*Clarity Framework v4.5.0 – AI Context Document*
+*Clarity Framework v4.6.0 – AI Context Document*

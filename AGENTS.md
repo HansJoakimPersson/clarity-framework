@@ -11,7 +11,7 @@ governed by documented decisions, verification gates, and human accountability.
 
 **Three core principles:** Just enough documentation · Documentation as code · Clarity over completeness
 
-**Current version:** 4.5.0
+**Current version:** 4.6.0
 
 **Repository structure:**
 
@@ -94,6 +94,7 @@ git grep -lE 'Clarity Framework v[0-9]+\.[0-9]+\.[0-9]+|Current version:|\*\*Ver
 | `templates/plan.md` | Identical `skills/plan-driven-build/plan-template.md`; verify with `diff` |
 | Story block in `templates/02-requirements.md` §2.6 | The same block in `templates/02-user-stories.md`. Splitting the backlog moves stories between them, so a field added to one and not the other silently disappears on the move |
 | Dispatch prompt change | The matching prompt and `SKILL.md` when placeholders change |
+| `plan-driven-build` procedure change | `SKILL.md` holds the steps; anything read only when a situation arises goes in `reference.md`, with a row in its situation table. Keep `SKILL.md` under about 550 lines |
 | Shipped script change | The script and its test in the same directory's `tests/` (a skill's or `framework/scripts/`) |
 | New file in a managed skill | The required-payload list in `skills/framework-update/scripts/verify-managed-runtime.sh` and the file table in `skills/README.md` |
 | Skill rename or removal | A line in `skills/RENAMES`; `framework-update` reads it to carry a project from the old name to the new one |
@@ -150,4 +151,4 @@ The tag is the only source read by `skills/framework-update/`. A project never u
 
 ---
 
-*Clarity Framework v4.5.0*
+*Clarity Framework v4.6.0*

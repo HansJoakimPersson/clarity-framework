@@ -11,6 +11,37 @@ ever tagged is folded into the release that shipped it rather than left as a hea
 tag that does not exist — `framework-update` and `clarity-bootstrap` both resolve the latest stable
 tag, so an untagged heading here is a version no project can reach.
 
+## [4.6.0] – Unreleased
+
+The orchestrator's procedure is shorter, and a small change no longer pays for the full chain.
+
+### Added
+
+- **Short path in `plan-driven-build`.** A new "Choose the path" section offers three outcomes
+  after step 1: do not run the workflow, the short path (steps 0, 1, 3a, 3c, 4, 4b, 5, 6–8 — no
+  critique and no revision), or the full path. The short path requires all of: at most 3 steps and
+  5 files; no change to a requirement, ADR, schema or migration, public interface, security
+  boundary, or dependency line; no change to how outside input is parsed; every Verification row a
+  command that is green on the baseline; no open Escalation or Reserved question. Baseline,
+  orchestrator-run evidence, and verification are unchanged. A run leaves the short path — step 2
+  on the plan as it stands — when the build stops part-way, verification returns `not done`, or a
+  second build round is needed. `journal-template.md` gains a `Path` row and a "skipped" status.
+- **`skills/plan-driven-build/reference.md`.** Situational material moved out of `SKILL.md`: shell
+  rules, project-health notes, profile pools, gate-profile and discipline-hook tables, failure
+  classes (now one table with an action per class), preflight, model evidence, dispatch files and
+  token figures, build environment, waiting without notifications, budget stop, timed-out build,
+  plan gap, usage limit, and the reasons behind the rules. It opens with a situation-to-section
+  table and is read one section at a time. `verify-managed-runtime.sh` requires it in both
+  runtime copies.
+
+### Changed
+
+- **`skills/plan-driven-build/SKILL.md` is 543 lines instead of 953.** It holds the steps, the
+  reading budget, the path choice, and one table that routes a failed build to the matching
+  `reference.md` section. No command, flag, placeholder, or script changed; the step 4 snippet no
+  longer sets `MAX_SELF_HEAL_RESTARTS`, which now lives with the restart procedure that uses it.
+  `setup.md` and `framework/ai-usage-guide.md` point at the new locations.
+
 ## [4.5.0] – Unreleased
 
 Fixes for the problems recorded in three project retrospectives of v4.4.0. They fall into four

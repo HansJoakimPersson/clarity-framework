@@ -106,7 +106,8 @@ framework update.
 
 | File | Role |
 | --- | --- |
-| `SKILL.md` | The procedure; the only file the orchestrator reads when invoked |
+| `SKILL.md` | The procedure: the steps, the reading budget, and the choice between the short and the full path. The only file the orchestrator reads on every run |
+| `reference.md` | Situational reference read one section at a time: shell rules, failure classes, profile pools, budget stop, timed-out build, plan gap, usage limit, and the reasons behind the rules |
 | `prompts/*.txt` | Instructions for dispatched agents, kept outside the orchestrator's context: plan, review, revise, build, and verification |
 | `dispatch.sh` | Dispatch entry point; sets sandbox/approval, pins execution policy, starts supervised background jobs, and records native usage |
 | `background-supervisor.sh` | Owns a background worker, writes health heartbeats, detects no-progress and wall-clock timeouts, terminates the process tree, and always produces a classified completion sentinel |
@@ -167,4 +168,4 @@ blindly.
 
 ---
 
-*Clarity Framework v4.5.0*
+*Clarity Framework v4.6.0*

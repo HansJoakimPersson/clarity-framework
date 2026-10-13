@@ -1,6 +1,7 @@
 # Setup – Plan-Driven Build
 
-One-time setup per machine. `SKILL.md` assumes this is complete and does not read this file while running.
+One-time setup per machine. `SKILL.md` assumes this is complete and does not read this file while
+running; what a run needs when something goes wrong is in `reference.md`.
 
 > **Verify flags and configuration keys against your installed version** before trusting them in an
 > unattended workflow. Codex and Claude Code have changed flag and settings names between versions.
@@ -330,7 +331,7 @@ files, and split a plan that would need more than about 600 000. Then replace th
 largest figure the project's own completed builds actually used, plus a third. Input tokens are
 counted on every turn, so a long build re-reads its context many times; the figure is far larger
 than the size of the diff. A budget stop with every step reported complete is a verification
-problem, not a reason to raise the ceiling — see `SKILL.md` step 4.
+problem, not a reason to raise the ceiling — see `reference.md`, "Budget stop".
 
 Codex reads the shared skill from `.agents/skills/plan-driven-build/SKILL.md`. Start the orchestrator
 profile and select `$plan-driven-build`; no separate prompt installation is needed.

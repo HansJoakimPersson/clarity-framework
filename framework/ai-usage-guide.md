@@ -222,7 +222,8 @@ raw output, and stop on non-retryable environment, routing, verification, budget
 safety failures. For Codex, `dispatch.sh` runs `exec --json` and records native
 `turn.completed.usage` fields — input, cached input, cache-write input, output, and reasoning output
 tokens — so optimization is based on measured usage rather than assumed cost. The executable
-contract and flags live in `skills/plan-driven-build/SKILL.md` and its `dispatch.sh`.
+contract and flags live in `skills/plan-driven-build/reference.md` and its `dispatch.sh`;
+`SKILL.md` holds only the steps.
 
 Discipline skills are modular policy modules. `plan-driven-build` invokes them conditionally at
 failure, verification, review, and closeout boundaries through their documented integration
@@ -296,6 +297,14 @@ sequence of plans delivers it. At the other end, a change too small to justify s
 verification does not need this workflow at all — orchestration overhead would cost more than the
 change.
 
+Between those two sits the **short path**: plan, build, evidence, verification, with no cold
+critique and no revision round. It applies only when the plan that came back is small (at most 3
+steps and 5 files), touches no requirement, ADR, schema, public interface, security boundary,
+dependency line, or parsing of outside input, and every verification row is a command that is
+green on the baseline. The critique is what is dropped, never the evidence, and a short-path run
+that needs a second build round returns to the full path. The conditions are deliberately
+mechanical so that choosing the path is a Delegated decision rather than a judgment call.
+
 ## 10. Continuous improvement of governed execution
 
 Experience from repeated framework runs should improve the execution layer itself. Treat recurring
@@ -306,4 +315,4 @@ project documentation should contain only the resulting stable execution rules.
 
 ---
 
-*Clarity Framework v4.5.0 – AI Usage Guide*
+*Clarity Framework v4.6.0 – AI Usage Guide*

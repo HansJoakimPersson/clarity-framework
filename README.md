@@ -4,7 +4,7 @@
 > personal side project to a team of 20. AI agents are a first-class execution layer governed by
 > documented decisions, verification gates, and human accountability.
 
-**Version:** 4.5.0 · [CHANGELOG](./framework/CHANGELOG.md)
+**Version:** 4.6.0 · [CHANGELOG](./framework/CHANGELOG.md)
 
 ## Three core principles
 
@@ -77,6 +77,7 @@ clarity-framework/
 │       ├── tests/                   # Dispatch, context-pack, and tool regression tests
 │       ├── plan-template.md         # Copy of templates/plan.md
 │       ├── journal-template.md      # Cross-session workflow state
+│       ├── reference.md             # Situational reference: failures, recovery, shell rules
 │       ├── setup.md                 # One-time profile, sandbox, and permissions setup
 │       └── settings.example.json    # Claude Code permissions example
 │
@@ -266,4 +267,4 @@ replace human visual inspection.
 
 ---
 
-*Clarity Framework v4.5.0*
+*Clarity Framework v4.6.0*

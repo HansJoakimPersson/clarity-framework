@@ -394,4 +394,4 @@ of it.
 
 ---
 
-*Clarity Framework v4.5.0 - Java Application Agent Starter*
+*Clarity Framework v4.6.0 - Java Application Agent Starter*

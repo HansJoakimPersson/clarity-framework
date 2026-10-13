@@ -74,6 +74,7 @@ done
 if has_skill plan-driven-build; then
   required_plan_driver=(
     SKILL.md
+    reference.md
     setup.md
     plan-template.md
     journal-template.md
